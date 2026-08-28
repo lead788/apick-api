@@ -127,6 +127,19 @@ await excel.save('./scores.xlsx');
 
 `ApickBinaryResult` provides `bytes`, `size`, `filename`, `contentType`, `meta`, `toArrayBuffer()`, `toBlob()`, and `save(path)`.
 
+## 신분증 마스킹 / Identity masking
+
+```js
+const resident = await apick.maskResidentNumber('./id-card.jpg', { type: 3 });
+await resident.save('./masked.png');
+
+const passport = await apick.maskPassport('./passport.jpg');
+console.log(passport.data.result.fields);
+```
+
+`maskResidenceCard`, `maskPassport`, `maskIdCard`, `maskDriverLicense`는 JSON 결과를 반환합니다. `maskResidentNumber`는 PNG 바이너리를 반환하며 `type`은 `1`, `2`, `3` 중 하나입니다.
+The four document-specific methods return JSON. `maskResidentNumber` returns PNG bytes and requires `type` 1, 2, or 3.
+
 ## 오류 처리 / Error handling
 
 ```js
@@ -136,13 +149,14 @@ try {
   await apick.whois('invalid value');
 } catch (error) {
   if (error instanceof ApickApiError) {
-    console.error(error.code, error.status, error.message);
+    console.error(error.code, error.serviceCode, error.status, error.message);
   }
 }
 ```
 
 오류 코드는 `APICK_AUTH_ERROR`, `APICK_TIMEOUT`, `APICK_NETWORK_ERROR`, `APICK_INVALID_RESPONSE`, `APICK_API_ERROR` 중 하나입니다.
 Error codes are one of `APICK_AUTH_ERROR`, `APICK_TIMEOUT`, `APICK_NETWORK_ERROR`, `APICK_INVALID_RESPONSE`, and `APICK_API_ERROR`.
+신분증 서비스의 상세 오류 코드는 선택적 `serviceCode`에 보존됩니다. Identity-specific service errors are exposed through optional `serviceCode`.
 
 ## 보안과 과금 / Security and billing
 

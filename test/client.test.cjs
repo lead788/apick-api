@@ -16,8 +16,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 20 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 20);
+test('exports a focused catalog of 25 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 25);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -134,6 +134,41 @@ test('uploads OCR images as multipart form data', async () => {
 	assert.equal(request.options.headers['Content-Type'], undefined);
 	assert.equal(request.options.body.get('image').name, 'scan.png');
 	assert.equal(result.data.result.full_text, 'hello');
+});
+
+test('uploads five identity masking services with the documented output contracts', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, options });
+			if (url.endsWith('/rest/hide_rrn')) return new Response(Uint8Array.from([137, 80, 78, 71]), { status: 200, headers: { 'content-type': 'image/png' } });
+			return jsonResponse({ data: { result: { masked_image: 'aQ==' }, success: 1 }, api: { success: true, cost: 30 } });
+		}
+	});
+	const input = Uint8Array.from([137, 80, 78, 71]);
+	const binary = await client.maskResidentNumber(input, { type: 3, filename: 'id.png', contentType: 'image/png' });
+	assert.ok(binary instanceof ApickBinaryResult);
+	assert.equal(requests[0].options.body.get('type'), '3');
+	for (const method of ['maskResidenceCard', 'maskPassport', 'maskIdCard', 'maskDriverLicense']) {
+		const result = await client[method](input, { filename: 'id.png', contentType: 'image/png' });
+		assert.equal(result.data.success, 1);
+	}
+	assert.throws(() => client.maskResidentNumber(input, { type: 4, filename: 'id.png', contentType: 'image/png' }), /1, 2, 3/);
+});
+
+test('preserves identity service errors separately from the generic SDK error code', async () => {
+	const client = new ApickClient({ apiKey: 'key', fetch: async () => jsonResponse({
+		data: { success: 0, error: '글자를 읽지 못했습니다.', error_code: 'IDENTITY_TEXT_UNREADABLE' },
+		api: { success: false, cost: 0 },
+	}, { status: 422 }) });
+	await assert.rejects(client.maskIdCard(Uint8Array.from([137, 80, 78, 71]), { filename: 'id.png', contentType: 'image/png' }), (error) => {
+		assert.equal(error.code, 'APICK_API_ERROR');
+		assert.equal(error.serviceCode, 'IDENTITY_TEXT_UNREADABLE');
+		assert.equal(error.status, 422);
+		assert.equal(error.toJSON().serviceCode, 'IDENTITY_TEXT_UNREADABLE');
+		return true;
+	});
 });
 
 test('aborts requests at the configured timeout', async () => {

@@ -119,6 +119,18 @@ JSON methods resolve to:
 
 `meta.cost` is the point charge reported by the API response. See the APICK documentation for current rates.
 
+## Identity masking
+
+```js
+const png = await client.maskResidentNumber('./id-card.jpg', { type: 3 });
+await png.save('./masked.png');
+
+const result = await client.maskDriverLicense('./license.jpg');
+console.log(result.data.result.fields);
+```
+
+The document-specific methods are `maskResidenceCard`, `maskPassport`, `maskIdCard`, and `maskDriverLicense`. Identity errors are exposed as `IDENTITY_TEXT_UNREADABLE`, `IDENTITY_DOCUMENT_MISMATCH`, or `IDENTITY_PROCESSING_FAILED` through `ApickApiError.serviceCode`.
+
 ## Errors and retries
 
-`ApickApiError` includes only public error information: `code`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.
+`ApickApiError` includes public error information: `code`, optional `serviceCode`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.

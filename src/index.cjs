@@ -14,6 +14,11 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	holidays: { endpoint: '/rest/holiday_info', timeoutMs: 35_000, output: 'json' },
 	searchAddress: { endpoint: '/rest/search_juso', timeoutMs: 20_000, output: 'json' },
 	ocr: { endpoint: '/rest/ocr', timeoutMs: 35_000, output: 'json' },
+	maskResidentNumber: { endpoint: '/rest/hide_rrn', timeoutMs: 35_000, output: 'binary', filename: 'masked.png' },
+	maskResidenceCard: { endpoint: '/rest/identity_document_residence_card', timeoutMs: 35_000, output: 'json' },
+	maskPassport: { endpoint: '/rest/identity_document_passport', timeoutMs: 35_000, output: 'json' },
+	maskIdCard: { endpoint: '/rest/identity_document_id_card', timeoutMs: 35_000, output: 'json' },
+	maskDriverLicense: { endpoint: '/rest/identity_document_driver_license', timeoutMs: 35_000, output: 'json' },
 	dnsLookup: { endpoint: '/rest/nslookup', timeoutMs: 16_000, output: 'json' },
 	geolocate: { endpoint: '/rest/location', timeoutMs: 35_000, output: 'json' },
 	whois: { endpoint: '/rest/whois', timeoutMs: 35_000, output: 'json' },
@@ -172,6 +177,7 @@ class ApickApiError extends Error {
 		this.name = 'ApickApiError';
 		this.status = options && options.status || 0;
 		this.code = options && options.code || 'APICK_API_ERROR';
+		this.serviceCode = options && options.serviceCode || undefined;
 	}
 
 	toJSON() {
@@ -179,7 +185,8 @@ class ApickApiError extends Error {
 			name: this.name,
 			message: this.message,
 			status: this.status,
-			code: this.code
+			code: this.code,
+			serviceCode: this.serviceCode
 		};
 	}
 }
@@ -310,7 +317,8 @@ class ApickClient {
 		if (!response.ok || bodyFailed || definition.output === 'binary') {
 			throw new ApickApiError(failureMessage, {
 				status: response.status,
-				code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR'
+				code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR',
+				serviceCode: body && body.data && typeof body.data.error_code === 'string' ? body.data.error_code : undefined
 			});
 		}
 
@@ -376,6 +384,26 @@ class ApickClient {
 		form.append('image', upload.blob, upload.filename);
 		return this._call('ocr', null, form);
 	}
+
+	async _maskImage(serviceName, image, options, type) {
+		const upload = await normalizeImage(image, options);
+		const form = new FormData();
+		form.append('image', upload.blob, upload.filename);
+		if (type !== undefined) form.append('type', String(type));
+		return this._call(serviceName, null, form);
+	}
+
+	maskResidentNumber(image, options) {
+		const config = options || {};
+		const type = Number(config.type);
+		if (![1, 2, 3].includes(type)) throw new RangeError('type must be one of: 1, 2, 3.');
+		return this._maskImage('maskResidentNumber', image, config, type);
+	}
+
+	maskResidenceCard(image, options) { return this._maskImage('maskResidenceCard', image, options); }
+	maskPassport(image, options) { return this._maskImage('maskPassport', image, options); }
+	maskIdCard(image, options) { return this._maskImage('maskIdCard', image, options); }
+	maskDriverLicense(image, options) { return this._maskImage('maskDriverLicense', image, options); }
 
 	dnsLookup(domain) {
 		return this._call('dnsLookup', { domain: requiredString('domain', domain) });

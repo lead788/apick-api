@@ -12,12 +12,16 @@ const ocr: Promise<ApickResult> = client.ocr(new Uint8Array([1, 2, 3]), {
   filename: 'scan.png',
   contentType: 'image/png'
 });
+const maskedResidentNumber: Promise<ApickBinaryResult> = client.maskResidentNumber(new Uint8Array([1, 2, 3]), { type: 3, filename: 'id.png', contentType: 'image/png' });
+const maskedIdCard: Promise<ApickResult> = client.maskIdCard(new Uint8Array([1, 2, 3]), { filename: 'id.png', contentType: 'image/png' });
 const pdf: Promise<ApickBinaryResult> = client.htmlToPdf('<h1>Report</h1>');
 const endpoint: string = SERVICES.businessDetails.endpoint;
 let error!: ApickApiError;
 
 void business;
 void ocr;
+void maskedResidentNumber;
+void maskedIdCard;
 void pdf;
 void endpoint;
 void error;

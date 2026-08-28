@@ -27,14 +27,20 @@ export interface OcrOptions {
 	contentType?: 'image/png' | 'image/jpeg';
 }
 
+export interface MaskResidentNumberOptions extends OcrOptions {
+	type: 1 | 2 | 3;
+}
+
 export class ApickApiError extends Error {
 	readonly status: number;
 	readonly code: string;
+	readonly serviceCode?: string;
 	toJSON(): {
 		name: string;
 		message: string;
 		status: number;
 		code: string;
+		serviceCode?: string;
 	};
 }
 
@@ -67,6 +73,11 @@ export class ApickClient {
 	holidays(year: number | string, month: number | string): Promise<ApickResult>;
 	searchAddress(query: string, options?: { page?: number }): Promise<ApickResult>;
 	ocr(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
+	maskResidentNumber(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options: MaskResidentNumberOptions): Promise<ApickBinaryResult>;
+	maskResidenceCard(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
+	maskPassport(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
+	maskIdCard(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
+	maskDriverLicense(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
 	dnsLookup(domain: string): Promise<ApickResult>;
 	geolocate(address: string): Promise<ApickResult>;
 	whois(address: string): Promise<ApickResult>;

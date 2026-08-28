@@ -119,6 +119,18 @@ JSON 메서드:
 
 `meta.cost`는 실제 응답에 포함된 차감 포인트입니다. API별 현재 요금은 에이픽 문서를 확인하세요.
 
+## 신분증 마스킹
+
+```js
+const png = await client.maskResidentNumber('./id-card.jpg', { type: 3 });
+await png.save('./masked.png');
+
+const result = await client.maskDriverLicense('./license.jpg');
+console.log(result.data.result.fields);
+```
+
+문서별 메서드는 `maskResidenceCard`, `maskPassport`, `maskIdCard`, `maskDriverLicense`입니다. 글자 판독 불가, 문서 불일치, 처리 실패는 각각 `IDENTITY_TEXT_UNREADABLE`, `IDENTITY_DOCUMENT_MISMATCH`, `IDENTITY_PROCESSING_FAILED`로 `ApickApiError.serviceCode`에 제공됩니다.
+
 ## 오류와 재시도
 
-`ApickApiError`에는 공개 오류 정보인 `code`, `status`, `message`만 포함됩니다. SDK는 중복 호출과 중복 과금을 방지하기 위해 자동 재시도를 하지 않습니다. 재시도가 필요하면 작업의 멱등성과 오류 코드를 확인한 뒤 애플리케이션에서 명시적으로 결정하세요.
+`ApickApiError`에는 공개 오류 정보인 `code`, `serviceCode`, `status`, `message`가 포함됩니다. SDK는 중복 호출과 중복 과금을 방지하기 위해 자동 재시도를 하지 않습니다. 재시도가 필요하면 작업의 멱등성과 오류 코드를 확인한 뒤 애플리케이션에서 명시적으로 결정하세요.

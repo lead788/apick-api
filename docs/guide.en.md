@@ -1,0 +1,124 @@
+# apick-api English guide
+
+`apick-api` is the official zero-dependency Node.js SDK for a focused set of popular APICK REST APIs. It supports ESM, CommonJS, and TypeScript.
+
+## Install and authenticate
+
+```bash
+npm install apick-api
+```
+
+```js
+import { ApickClient } from 'apick-api';
+
+const client = new ApickClient({
+  apiKey: process.env.APICK_API_KEY,
+  timeoutMs: 60_000
+});
+```
+
+Pass the API key only to the constructor. The SDK does not keep it in enumerable client properties and never prints it in logs or error messages.
+
+## Business, validation, and addresses
+
+```js
+const business = await client.businessDetails('439-87-00761');
+const venture = await client.ventureBusiness('4398700761');
+const email = await client.validateEmail('sample@example.com');
+const phone = await client.validatePhone('01012341234');
+const holidays = await client.holidays(2026, 10);
+const addresses = await client.searchAddress('가산디지털로', { page: 1 });
+```
+
+Hyphens are removed from business numbers automatically. Invalid required values fail locally with `TypeError` or `RangeError` before an API request is sent.
+
+## Parcel tracking
+
+Use carrier-specific tracking when you know the carrier:
+
+```js
+const parcel = await client.trackParcel('cj', '123456789012');
+```
+
+Use automatic carrier detection when you only have the tracking number:
+
+```js
+const parcel = await client.trackParcelAuto('123456789012');
+```
+
+## Domain and search tools
+
+```js
+const dns = await client.dnsLookup('apick.app');
+const location = await client.geolocate('apick.app');
+const registration = await client.whois('apick.app');
+const web = await client.googleSearch('APICK API', { page: 1 });
+const images = await client.googleImageSearch('Seoul skyline', { page: 1 });
+```
+
+## OCR
+
+OCR accepts PNG and JPEG files up to 50MB.
+
+```js
+const ocr = await client.ocr('./receipt.jpg');
+console.log(ocr.data.result.full_text);
+```
+
+For in-memory input, supply a filename and MIME type when needed:
+
+```js
+await client.ocr(bytes, {
+  filename: 'scan.png',
+  contentType: 'image/png'
+});
+```
+
+## Generated files
+
+```js
+const screenshot = await client.screenshot('https://example.com');
+await screenshot.save('./example.jpeg');
+
+const speech = await client.textToSpeech('Hello.', { language: 'en' });
+await speech.save('./hello.mp3');
+
+const pdf = await client.htmlToPdf('<h1>Report</h1>', { pagination: true });
+await pdf.save('./report.pdf');
+
+const excel = await client.jsonToExcel([{ item: 'A', count: 3 }], {
+  sheetName: 'Inventory'
+});
+await excel.save('./inventory.xlsx');
+```
+
+Binary results expose `bytes`, `size`, `filename`, `contentType`, and `meta`. `save()` writes a file in Node.js, while `toBlob()` creates a standard `Blob`.
+
+## Text AI
+
+```js
+const summary = await client.summarize(longText);
+const polished = await client.polish(draftText);
+```
+
+Text input is limited to 100,000 characters.
+
+## Response shape
+
+JSON methods resolve to:
+
+```ts
+{
+  data: unknown;
+  meta: {
+    cost: number | null;
+    durationMs: number | null;
+  };
+}
+```
+
+`meta.cost` is the point charge reported by the API response. See the APICK documentation for current rates.
+
+## Errors and retries
+
+`ApickApiError` includes only public error information: `code`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.

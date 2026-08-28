@@ -1,0 +1,23 @@
+import ApickClient, {
+  ApickApiError,
+  ApickBinaryResult,
+  ApickResult,
+  SERVICES
+} from '../src/index.js';
+
+const client = new ApickClient('test-key');
+
+const business: Promise<ApickResult> = client.businessDetails('4398700761');
+const ocr: Promise<ApickResult> = client.ocr(new Uint8Array([1, 2, 3]), {
+  filename: 'scan.png',
+  contentType: 'image/png'
+});
+const pdf: Promise<ApickBinaryResult> = client.htmlToPdf('<h1>Report</h1>');
+const endpoint: string = SERVICES.businessDetails.endpoint;
+let error!: ApickApiError;
+
+void business;
+void ocr;
+void pdf;
+void endpoint;
+void error;

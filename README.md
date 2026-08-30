@@ -67,7 +67,7 @@ Get an API key from your account page after signing up at [apick.app](https://ap
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
 | `cancelTtsJob(jobId)` | 대기 중 TTS 작업 취소 / Cancel waiting TTS job | JSON |
-| `downloadTtsResult(jobId)` | TTS 결과 1회 다운로드 / One-time TTS result | ZIP |
+| `downloadTtsResult(jobId)` | TTS 결과 1회 다운로드 / One-time TTS result | MP3 |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |
@@ -132,9 +132,11 @@ await excel.save('./scores.xlsx');
 
 ## 비동기 TTS Jobs / Asynchronous TTS Jobs
 
-기존 동기 TTS는 종료되었습니다. 한국어 내레이션은 작업을 접수하고 `completed`가 될 때까지 2~5초 간격으로 상태를 확인한 뒤 결과 ZIP을 한 번만 내려받습니다. ZIP에는 `final.mp3`가 포함됩니다.
+기존 동기 TTS는 종료되었습니다. 한국어 내레이션은 작업을 접수하고 `completed`가 될 때까지 2~5초 간격으로 상태를 확인한 뒤 MP3 결과를 한 번만 내려받습니다.
 
-The legacy synchronous TTS API has retired. Create a Korean narration job, poll every 2–5 seconds until it is `completed`, then download the result ZIP once. The ZIP contains `final.mp3`.
+The legacy synchronous TTS API has retired. Create a Korean narration job, poll every 2–5 seconds until it is `completed`, then download the MP3 result once.
+
+17 neutral narration voices are supported: the five original `narrator_m_01`–`narrator_m_05` voices plus `narrator_f_10s_01`–`03`, `narrator_m_20s_01`, `narrator_f_20s_01`–`04`, `narrator_m_30s_01`–`02`, `narrator_m_40s_01`, and `narrator_m_80s_01`. Import `TTS_VOICE_IDS` for the exact list.
 
 ```js
 const created = await apick.createTtsJob('오늘의 이야기를 시작합니다.', {
@@ -150,9 +152,13 @@ do {
 
 if (job.data.status === 'completed') {
   const result = await apick.downloadTtsResult(jobId);
-  await result.save(`./${jobId}.zip`);
+  await result.save(`./${jobId}.mp3`);
 }
 ```
+
+접수 성공 시 과금되며 취소해도 환불되지 않습니다. 취소는 `waiting` 상태에서만 가능하고, 결과 다운로드가 시작되면 서버 원본이 즉시 폐기되므로 전송 중단 시에도 다시 받을 수 없습니다.
+
+The charge is final when the job is accepted. Cancellation is allowed only while `waiting`. Starting the result download immediately consumes the server copy, so an interrupted transfer cannot be downloaded again.
 
 ## 신분증 마스킹 / Identity masking
 

@@ -76,6 +76,8 @@ await client.ocr(bytes, {
 
 ## 파일 생성
 
+TTS는 기존 남성 내레이터 5개와 신규 중립 내레이션 12개를 합쳐 17개 `voice_id`를 지원합니다. 정확한 목록은 `TTS_VOICE_IDS` 상수로 확인할 수 있습니다.
+
 ```js
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
@@ -89,8 +91,11 @@ while (job.data.status === 'waiting' || job.data.status === 'processing') {
 }
 if (job.data.status === 'completed') {
   const result = await client.downloadTtsResult(jobId);
-  await result.save(`./${jobId}.zip`); // final.mp3 포함, 1회만 다운로드 가능
+  await result.save(`./${jobId}.mp3`); // audio/mpeg, 1회만 다운로드 가능
 }
+
+// 취소는 waiting 상태에서만 가능하며 이미 과금된 금액은 환불되지 않습니다.
+// 다운로드가 시작되면 서버 원본이 즉시 폐기되어 재다운로드할 수 없습니다.
 
 const pdf = await client.htmlToPdf('<h1>보고서</h1>', { pagination: true });
 await pdf.save('./report.pdf');

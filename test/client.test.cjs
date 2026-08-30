@@ -6,7 +6,8 @@ const {
 	ApickClient,
 	ApickApiError,
 	ApickBinaryResult,
-	SERVICES
+	SERVICES,
+	TTS_VOICE_IDS
 } = require('../src/index.cjs');
 
 function jsonResponse(body, options) {
@@ -117,35 +118,38 @@ test('returns binary results with headers and bytes', async () => {
 	assert.deepEqual(result.meta, { cost: 10, durationMs: 25 });
 });
 
-test('implements the asynchronous TTS Jobs contract and one-time ZIP result', async () => {
+test('implements the asynchronous TTS Jobs contract and one-time MP3 result', async () => {
+	assert.equal(TTS_VOICE_IDS.length, 17);
+	assert.ok(TTS_VOICE_IDS.includes('narrator_f_10s_01'));
+	assert.ok(TTS_VOICE_IDS.includes('narrator_m_80s_01'));
 	const requests = [];
 	const jobId = 'a'.repeat(32);
 	const client = new ApickClient({
 		apiKey: 'key',
 		fetch: async (url, options) => {
 			requests.push({ url, options });
-			if (url.endsWith('/result')) return new Response(Uint8Array.from([80, 75, 3, 4]), {
+			if (url.endsWith('/result')) return new Response(Uint8Array.from([255, 251, 144, 0]), {
 				status: 200,
-				headers: { 'content-type': 'application/zip', 'content-disposition': `attachment; filename="${jobId}.zip"` }
+				headers: { 'content-type': 'audio/mpeg', 'content-disposition': `attachment; filename="${jobId}.mp3"` }
 			});
 			if (url.endsWith('/cancel')) return jsonResponse({ data: { job_id: jobId, status: 'cancelled' }, api: { success: true, cost: 0 } });
 			if (url.endsWith('/' + jobId)) return jsonResponse({ data: { job_id: jobId, status: 'processing', result_available: false }, api: { success: true, cost: 0 } });
-			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'narrator_m_03', character_count: 14 }, api: { success: true, cost: 40 } }, { status: 202 });
+			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'narrator_m_03', character_count: 14 }, api: { success: true, cost: 10 } }, { status: 202 });
 		}
 	});
 	const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
 	assert.equal(created.data.status, 'waiting');
-	assert.equal(created.meta.cost, 40);
+	assert.equal(created.meta.cost, 10);
 	assert.deepEqual(JSON.parse(requests[0].options.body), { voice_id: 'narrator_m_03', text: '오늘의 이야기를 시작합니다.' });
 	assert.equal((await client.getTtsJob(jobId)).data.status, 'processing');
 	assert.equal(requests[1].options.method, 'GET');
 	assert.equal(requests[1].options.body, undefined);
 	assert.equal((await client.cancelTtsJob(jobId)).data.status, 'cancelled');
-	const zip = await client.downloadTtsResult(jobId);
-	assert.ok(zip instanceof ApickBinaryResult);
-	assert.equal(zip.filename, jobId + '.zip');
-	assert.equal(zip.contentType, 'application/zip');
-	assert.deepEqual([...zip.bytes], [80, 75, 3, 4]);
+	const mp3 = await client.downloadTtsResult(jobId);
+	assert.ok(mp3 instanceof ApickBinaryResult);
+	assert.equal(mp3.filename, jobId + '.mp3');
+	assert.equal(mp3.contentType, 'audio/mpeg');
+	assert.deepEqual([...mp3.bytes], [255, 251, 144, 0]);
 	assert.throws(() => client.createTtsJob('hello', { voiceId: 'unknown' }), /voiceId/);
 	assert.throws(() => client.getTtsJob('bad-id'), /jobId/);
 });

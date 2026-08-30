@@ -3,6 +3,14 @@
 const DEFAULT_BASE_URL = 'https://apick.app';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_OCR_BYTES = 50 * 1024 * 1024;
+const TTS_VOICE_IDS = Object.freeze([
+	'narrator_m_01', 'narrator_m_02', 'narrator_m_03', 'narrator_m_04', 'narrator_m_05',
+	'narrator_f_10s_01', 'narrator_f_10s_02', 'narrator_f_10s_03',
+	'narrator_m_20s_01', 'narrator_f_20s_01', 'narrator_f_20s_02',
+	'narrator_f_20s_03', 'narrator_f_20s_04', 'narrator_m_30s_01',
+	'narrator_m_30s_02', 'narrator_m_40s_01', 'narrator_m_80s_01'
+]);
+const TTS_VOICE_ID_SET = new Set(TTS_VOICE_IDS);
 
 const SERVICE_DEFINITIONS = Object.freeze({
 	businessDetails: { endpoint: '/rest/biz_detail', timeoutMs: 50_000, output: 'json' },
@@ -95,7 +103,7 @@ function normalizeTtsJobId(value) {
 
 function normalizeTtsVoice(value) {
 	const voiceId = requiredString('voiceId', value);
-	if (!/^narrator_m_0[1-5]$/.test(voiceId)) throw new RangeError('voiceId must be one of: narrator_m_01, narrator_m_02, narrator_m_03, narrator_m_04, narrator_m_05.');
+	if (!TTS_VOICE_ID_SET.has(voiceId)) throw new RangeError('voiceId must be one of the supported TTS voice IDs.');
 	return voiceId;
 }
 
@@ -457,7 +465,7 @@ class ApickClient {
 		const config = options || {};
 		return this._call('createTtsJob', {
 			voice_id: normalizeTtsVoice(config.voiceId || 'narrator_m_03'),
-			text: requiredString('text', text, 20_000)
+			text: requiredString('text', text, 800)
 		});
 	}
 
@@ -477,7 +485,7 @@ class ApickClient {
 			endpoint: '/rest/tts/jobs/' + id + '/result',
 			method: 'GET',
 			output: 'binary',
-			filename: id + '.zip'
+			filename: id + '.mp3'
 		});
 	}
 
@@ -511,5 +519,6 @@ module.exports = {
 	ApickApiError,
 	ApickBinaryResult,
 	SERVICES,
+	TTS_VOICE_IDS,
 	DEFAULT_BASE_URL
 };

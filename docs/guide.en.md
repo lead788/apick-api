@@ -76,6 +76,8 @@ await client.ocr(bytes, {
 
 ## Generated files
 
+TTS supports 17 neutral narration `voice_id` values: five original narrators and twelve new voices. Import `TTS_VOICE_IDS` for the exact list.
+
 ```js
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
@@ -89,8 +91,11 @@ while (job.data.status === 'waiting' || job.data.status === 'processing') {
 }
 if (job.data.status === 'completed') {
   const result = await client.downloadTtsResult(jobId);
-  await result.save(`./${jobId}.zip`); // contains final.mp3; downloadable once
+  await result.save(`./${jobId}.mp3`); // audio/mpeg; downloadable once
 }
+
+// Cancellation is available only while waiting and does not refund the accepted charge.
+// Starting a download consumes the server copy immediately; it cannot be downloaded again.
 
 const pdf = await client.htmlToPdf('<h1>Report</h1>', { pagination: true });
 await pdf.save('./report.pdf');

@@ -117,6 +117,39 @@ test('returns binary results with headers and bytes', async () => {
 	assert.deepEqual(result.meta, { cost: 10, durationMs: 25 });
 });
 
+test('implements the asynchronous TTS Jobs contract and one-time ZIP result', async () => {
+	const requests = [];
+	const jobId = 'a'.repeat(32);
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, options });
+			if (url.endsWith('/result')) return new Response(Uint8Array.from([80, 75, 3, 4]), {
+				status: 200,
+				headers: { 'content-type': 'application/zip', 'content-disposition': `attachment; filename="${jobId}.zip"` }
+			});
+			if (url.endsWith('/cancel')) return jsonResponse({ data: { job_id: jobId, status: 'cancelled' }, api: { success: true, cost: 0 } });
+			if (url.endsWith('/' + jobId)) return jsonResponse({ data: { job_id: jobId, status: 'processing', result_available: false }, api: { success: true, cost: 0 } });
+			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'narrator_m_03', character_count: 14 }, api: { success: true, cost: 40 } }, { status: 202 });
+		}
+	});
+	const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
+	assert.equal(created.data.status, 'waiting');
+	assert.equal(created.meta.cost, 40);
+	assert.deepEqual(JSON.parse(requests[0].options.body), { voice_id: 'narrator_m_03', text: '오늘의 이야기를 시작합니다.' });
+	assert.equal((await client.getTtsJob(jobId)).data.status, 'processing');
+	assert.equal(requests[1].options.method, 'GET');
+	assert.equal(requests[1].options.body, undefined);
+	assert.equal((await client.cancelTtsJob(jobId)).data.status, 'cancelled');
+	const zip = await client.downloadTtsResult(jobId);
+	assert.ok(zip instanceof ApickBinaryResult);
+	assert.equal(zip.filename, jobId + '.zip');
+	assert.equal(zip.contentType, 'application/zip');
+	assert.deepEqual([...zip.bytes], [80, 75, 3, 4]);
+	assert.throws(() => client.createTtsJob('hello', { voiceId: 'unknown' }), /voiceId/);
+	assert.throws(() => client.getTtsJob('bad-id'), /jobId/);
+});
+
 test('uploads OCR images as multipart form data', async () => {
 	let request;
 	const client = new ApickClient({
@@ -190,7 +223,7 @@ test('validates inputs before making a request', async () => {
 	const client = new ApickClient({ apiKey: 'key', fetch: async () => { calls += 1; } });
 	assert.throws(() => client.businessDetails('1234'), /10 digits/);
 	assert.throws(() => client.holidays(1800, 1), /1900/);
-	assert.throws(() => client.textToSpeech('hello', { language: 'xx' }), /language/);
+	assert.throws(() => client.createTtsJob('', { voiceId: 'narrator_m_03' }), /text/);
 	assert.throws(() => client.jsonToExcel({ value: 1 }), /array/);
 	assert.equal(calls, 0);
 });

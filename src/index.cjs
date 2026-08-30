@@ -25,7 +25,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	googleSearch: { endpoint: '/rest/google_search', timeoutMs: 35_000, output: 'json' },
 	googleImageSearch: { endpoint: '/rest/google_image_search', timeoutMs: 35_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
-	textToSpeech: { endpoint: '/rest/tts', timeoutMs: 35_000, output: 'binary', filename: 'speech.mp3' },
+	createTtsJob: { endpoint: '/rest/tts/jobs', timeoutMs: 35_000, output: 'json' },
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
 	jsonToExcel: { endpoint: '/rest/json_to_excel', timeoutMs: 45_000, output: 'binary', filename: 'data.xlsx' },
 	summarize: { endpoint: '/rest/llm/text_summary', timeoutMs: 75_000, output: 'json' },
@@ -85,6 +85,18 @@ function normalizeUrl(value) {
 		throw new TypeError('url must use HTTP or HTTPS.');
 	}
 	return parsed.toString();
+}
+
+function normalizeTtsJobId(value) {
+	const jobId = requiredString('jobId', value);
+	if (!/^[a-f0-9]{32}$/.test(jobId)) throw new TypeError('jobId must be a 32-character lowercase hexadecimal string.');
+	return jobId;
+}
+
+function normalizeTtsVoice(value) {
+	const voiceId = requiredString('voiceId', value);
+	if (!/^narrator_m_0[1-5]$/.test(voiceId)) throw new RangeError('voiceId must be one of: narrator_m_01, narrator_m_02, narrator_m_03, narrator_m_04, narrator_m_05.');
+	return voiceId;
 }
 
 function numberOrNull(value) {
@@ -252,9 +264,10 @@ class ApickClient {
 			: positiveInteger('timeoutMs', options.timeoutMs);
 	}
 
-	async _call(serviceName, payload, formData) {
-		const definition = SERVICE_DEFINITIONS[serviceName];
-		if (!definition) throw new TypeError(`Unknown APICK service: ${serviceName}`);
+	async _call(serviceName, payload, formData, requestOptions) {
+		const baseDefinition = SERVICE_DEFINITIONS[serviceName];
+		if (!baseDefinition) throw new TypeError(`Unknown APICK service: ${serviceName}`);
+		const definition = Object.assign({}, baseDefinition, requestOptions || {});
 
 		const controller = new AbortController();
 		const timeoutMs = this.#timeoutMs || definition.timeoutMs || DEFAULT_TIMEOUT_MS;
@@ -263,14 +276,17 @@ class ApickClient {
 			Accept: definition.output === 'binary' ? '*/*' : 'application/json',
 			CL_AUTH_KEY: this.#apiKey
 		};
+		const method = definition.method || 'POST';
 		const request = {
-			method: 'POST',
+			method,
 			headers,
-			body: formData || JSON.stringify(payload || {}),
 			signal: controller.signal,
 			redirect: 'error'
 		};
-		if (!formData) headers['Content-Type'] = 'application/json';
+		if (method !== 'GET') {
+			request.body = formData || JSON.stringify(payload || {});
+			if (!formData) headers['Content-Type'] = 'application/json';
+		}
 
 		let response;
 		try {
@@ -318,7 +334,7 @@ class ApickClient {
 			throw new ApickApiError(failureMessage, {
 				status: response.status,
 				code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR',
-				serviceCode: body && body.data && typeof body.data.error_code === 'string' ? body.data.error_code : undefined
+				serviceCode: body && body.data && typeof (body.data.code || body.data.error_code) === 'string' ? (body.data.code || body.data.error_code) : undefined
 			});
 		}
 
@@ -437,15 +453,31 @@ class ApickClient {
 		return this._call('screenshot', { url: normalizeUrl(url) });
 	}
 
-	textToSpeech(text, options) {
+	createTtsJob(text, options) {
 		const config = options || {};
-		const language = config.language || 'ko';
-		if (!['ko', 'en', 'zh', 'de', 'es', 'fr', 'ja'].includes(language)) {
-			throw new RangeError('language must be one of: ko, en, zh, de, es, fr, ja.');
-		}
-		return this._call('textToSpeech', {
-			content: requiredString('text', text, 1_000),
-			language
+		return this._call('createTtsJob', {
+			voice_id: normalizeTtsVoice(config.voiceId || 'narrator_m_03'),
+			text: requiredString('text', text, 20_000)
+		});
+	}
+
+	getTtsJob(jobId) {
+		const id = normalizeTtsJobId(jobId);
+		return this._call('createTtsJob', null, null, { endpoint: '/rest/tts/jobs/' + id, method: 'GET' });
+	}
+
+	cancelTtsJob(jobId) {
+		const id = normalizeTtsJobId(jobId);
+		return this._call('createTtsJob', null, null, { endpoint: '/rest/tts/jobs/' + id + '/cancel' });
+	}
+
+	downloadTtsResult(jobId) {
+		const id = normalizeTtsJobId(jobId);
+		return this._call('createTtsJob', null, null, {
+			endpoint: '/rest/tts/jobs/' + id + '/result',
+			method: 'GET',
+			output: 'binary',
+			filename: id + '.zip'
 		});
 	}
 

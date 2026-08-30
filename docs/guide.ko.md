@@ -80,8 +80,17 @@ await client.ocr(bytes, {
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
 
-const speech = await client.textToSpeech('안녕하세요.', { language: 'ko' });
-await speech.save('./hello.mp3');
+const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
+const jobId = created.data.job_id;
+let job = await client.getTtsJob(jobId);
+while (job.data.status === 'waiting' || job.data.status === 'processing') {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  job = await client.getTtsJob(jobId);
+}
+if (job.data.status === 'completed') {
+  const result = await client.downloadTtsResult(jobId);
+  await result.save(`./${jobId}.zip`); // final.mp3 포함, 1회만 다운로드 가능
+}
 
 const pdf = await client.htmlToPdf('<h1>보고서</h1>', { pagination: true });
 await pdf.save('./report.pdf');

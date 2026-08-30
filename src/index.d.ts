@@ -31,6 +31,16 @@ export interface MaskResidentNumberOptions extends OcrOptions {
 	type: 1 | 2 | 3;
 }
 
+export type TtsVoiceId = 'narrator_m_01' | 'narrator_m_02' | 'narrator_m_03' | 'narrator_m_04' | 'narrator_m_05';
+
+export interface TtsJobData {
+	job_id: string;
+	status: 'waiting' | 'processing' | 'completed' | 'cancelled' | 'failed';
+	voice_id?: TtsVoiceId;
+	character_count?: number;
+	result_available?: boolean;
+}
+
 export class ApickApiError extends Error {
 	readonly status: number;
 	readonly code: string;
@@ -84,7 +94,10 @@ export class ApickClient {
 	googleSearch(keyword: string, options?: { page?: number }): Promise<ApickResult>;
 	googleImageSearch(keyword: string, options?: { page?: number }): Promise<ApickResult>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
-	textToSpeech(text: string, options?: { language?: 'ko' | 'en' | 'zh' | 'de' | 'es' | 'fr' | 'ja' }): Promise<ApickBinaryResult>;
+	createTtsJob(text: string, options?: { voiceId?: TtsVoiceId }): Promise<ApickResult<TtsJobData>>;
+	getTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
+	cancelTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
+	downloadTtsResult(jobId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;
 	summarize(text: string): Promise<ApickResult>;

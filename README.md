@@ -2,9 +2,9 @@
 
 # APICK API for Node.js
 
-**에이픽 주요 API 20개를 API 키 하나로 간편하게 호출하는 공식 Node.js SDK**
+**에이픽 주요 API 25개를 API 키 하나로 간편하게 호출하는 공식 Node.js SDK**
 
-**Official zero-dependency Node.js SDK for 20 popular APICK Korean data and AI APIs**
+**Official zero-dependency Node.js SDK for 25 popular APICK Korean data and AI APIs**
 
 [![npm](https://img.shields.io/npm/v/apick-api?color=%230a7cff&label=npm%20apick-api)](https://www.npmjs.com/package/apick-api)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933)](https://nodejs.org/)
@@ -64,7 +64,10 @@ Get an API key from your account page after signing up at [apick.app](https://ap
 | `googleSearch(keyword, options)` | 웹 검색 / Web search | JSON |
 | `googleImageSearch(keyword, options)` | 이미지 검색 / Image search | JSON |
 | `screenshot(url)` | 웹페이지 화면캡처 / Web screenshot | Binary |
-| `textToSpeech(text, options)` | 음성 합성 / Text to speech | Binary |
+| `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
+| `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
+| `cancelTtsJob(jobId)` | 대기 중 TTS 작업 취소 / Cancel waiting TTS job | JSON |
+| `downloadTtsResult(jobId)` | TTS 결과 1회 다운로드 / One-time TTS result | ZIP |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |
@@ -126,6 +129,30 @@ await excel.save('./scores.xlsx');
 ```
 
 `ApickBinaryResult` provides `bytes`, `size`, `filename`, `contentType`, `meta`, `toArrayBuffer()`, `toBlob()`, and `save(path)`.
+
+## 비동기 TTS Jobs / Asynchronous TTS Jobs
+
+기존 동기 TTS는 종료되었습니다. 한국어 내레이션은 작업을 접수하고 `completed`가 될 때까지 2~5초 간격으로 상태를 확인한 뒤 결과 ZIP을 한 번만 내려받습니다. ZIP에는 `final.mp3`가 포함됩니다.
+
+The legacy synchronous TTS API has retired. Create a Korean narration job, poll every 2–5 seconds until it is `completed`, then download the result ZIP once. The ZIP contains `final.mp3`.
+
+```js
+const created = await apick.createTtsJob('오늘의 이야기를 시작합니다.', {
+  voiceId: 'narrator_m_03'
+});
+const jobId = created.data.job_id;
+
+let job;
+do {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  job = await apick.getTtsJob(jobId);
+} while (job.data.status === 'waiting' || job.data.status === 'processing');
+
+if (job.data.status === 'completed') {
+  const result = await apick.downloadTtsResult(jobId);
+  await result.save(`./${jobId}.zip`);
+}
+```
 
 ## 신분증 마스킹 / Identity masking
 

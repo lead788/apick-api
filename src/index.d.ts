@@ -31,7 +31,14 @@ export interface MaskResidentNumberOptions extends OcrOptions {
 	type: 1 | 2 | 3;
 }
 
-export type TtsVoiceId = 'narrator_m_01' | 'narrator_m_02' | 'narrator_m_03' | 'narrator_m_04' | 'narrator_m_05';
+export const TTS_VOICE_IDS: readonly [
+	'narrator_m_01', 'narrator_m_02', 'narrator_m_03', 'narrator_m_04', 'narrator_m_05',
+	'narrator_f_10s_01', 'narrator_f_10s_02', 'narrator_f_10s_03',
+	'narrator_m_20s_01', 'narrator_f_20s_01', 'narrator_f_20s_02',
+	'narrator_f_20s_03', 'narrator_f_20s_04', 'narrator_m_30s_01',
+	'narrator_m_30s_02', 'narrator_m_40s_01', 'narrator_m_80s_01'
+];
+export type TtsVoiceId = typeof TTS_VOICE_IDS[number];
 
 export interface TtsJobData {
 	job_id: string;

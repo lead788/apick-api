@@ -2,9 +2,10 @@ import ApickClient, {
   ApickApiError,
   ApickBinaryResult,
   ApickResult,
-  SERVICES
+  SERVICES,
+  TTS_VOICE_IDS
 } from '../src/index.js';
-import type { TtsJobData } from '../src/index.js';
+import type { TtsJobData, TtsVoiceId } from '../src/index.js';
 
 const client = new ApickClient('test-key');
 
@@ -17,6 +18,8 @@ const maskedResidentNumber: Promise<ApickBinaryResult> = client.maskResidentNumb
 const maskedIdCard: Promise<ApickResult> = client.maskIdCard(new Uint8Array([1, 2, 3]), { filename: 'id.png', contentType: 'image/png' });
 const pdf: Promise<ApickBinaryResult> = client.htmlToPdf('<h1>Report</h1>');
 const ttsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
+const newTtsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('새 목소리입니다.', { voiceId: 'narrator_f_10s_01' });
+const voiceId: TtsVoiceId = TTS_VOICE_IDS[16];
 const endpoint: string = SERVICES.businessDetails.endpoint;
 let error!: ApickApiError;
 
@@ -26,5 +29,7 @@ void maskedResidentNumber;
 void maskedIdCard;
 void pdf;
 void ttsJob;
+void newTtsJob;
+void voiceId;
 void endpoint;
 void error;

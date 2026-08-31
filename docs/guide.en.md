@@ -78,6 +78,8 @@ await client.ocr(bytes, {
 
 TTS supports 17 neutral narration `voice_id` values: five original narrators and twelve new voices. Import `TTS_VOICE_IDS` for the exact list.
 
+Voice labels: `narrator_m_01` 태준, `narrator_m_02` 민석, `narrator_m_03` 도현, `narrator_m_04` 강우, `narrator_m_05` 성훈, `narrator_f_10s_01` 서아, `narrator_f_10s_02` 하린, `narrator_f_10s_03` 예린, `narrator_m_20s_01` 도윤, `narrator_f_20s_01` 지안, `narrator_f_20s_02` 서윤, `narrator_f_20s_03` 소연, `narrator_f_20s_04` 유나, `narrator_m_30s_01` 현우, `narrator_m_30s_02` 준혁, `narrator_m_40s_01` 정우, `narrator_m_80s_01` 영수.
+
 ```js
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
@@ -94,7 +96,7 @@ if (job.data.status === 'completed') {
   await result.save(`./${jobId}.mp3`); // audio/mpeg; downloadable once
 }
 
-// Cancellation is available only while waiting and does not refund the accepted charge.
+// Cancellation is available while waiting or processing and does not refund the accepted charge.
 // Starting a download consumes the server copy immediately; it cannot be downloaded again.
 
 const pdf = await client.htmlToPdf('<h1>Report</h1>', { pagination: true });

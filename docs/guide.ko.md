@@ -78,6 +78,8 @@ await client.ocr(bytes, {
 
 TTS는 기존 남성 내레이터 5개와 신규 중립 내레이션 12개를 합쳐 17개 `voice_id`를 지원합니다. 정확한 목록은 `TTS_VOICE_IDS` 상수로 확인할 수 있습니다.
 
+표시 이름: `narrator_m_01` 태준, `narrator_m_02` 민석, `narrator_m_03` 도현, `narrator_m_04` 강우, `narrator_m_05` 성훈, `narrator_f_10s_01` 서아, `narrator_f_10s_02` 하린, `narrator_f_10s_03` 예린, `narrator_m_20s_01` 도윤, `narrator_f_20s_01` 지안, `narrator_f_20s_02` 서윤, `narrator_f_20s_03` 소연, `narrator_f_20s_04` 유나, `narrator_m_30s_01` 현우, `narrator_m_30s_02` 준혁, `narrator_m_40s_01` 정우, `narrator_m_80s_01` 영수.
+
 ```js
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
@@ -94,7 +96,7 @@ if (job.data.status === 'completed') {
   await result.save(`./${jobId}.mp3`); // audio/mpeg, 1회만 다운로드 가능
 }
 
-// 취소는 waiting 상태에서만 가능하며 이미 과금된 금액은 환불되지 않습니다.
+// 취소는 waiting 또는 processing 상태에서 가능하며 이미 과금된 금액은 환불되지 않습니다.
 // 다운로드가 시작되면 서버 원본이 즉시 폐기되어 재다운로드할 수 없습니다.
 
 const pdf = await client.htmlToPdf('<h1>보고서</h1>', { pagination: true });

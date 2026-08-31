@@ -118,7 +118,7 @@ test('returns binary results with headers and bytes', async () => {
 	assert.deepEqual(result.meta, { cost: 10, durationMs: 25 });
 });
 
-test('implements the asynchronous TTS Jobs contract and one-time MP3 result', async () => {
+test('implements processing cancellation and the one-time MP3 TTS Jobs contract', async () => {
 	assert.equal(TTS_VOICE_IDS.length, 17);
 	assert.ok(TTS_VOICE_IDS.includes('narrator_f_10s_01'));
 	assert.ok(TTS_VOICE_IDS.includes('narrator_m_80s_01'));
@@ -145,6 +145,8 @@ test('implements the asynchronous TTS Jobs contract and one-time MP3 result', as
 	assert.equal(requests[1].options.method, 'GET');
 	assert.equal(requests[1].options.body, undefined);
 	assert.equal((await client.cancelTtsJob(jobId)).data.status, 'cancelled');
+	assert.ok(requests[2].url.endsWith('/rest/tts/jobs/' + jobId + '/cancel'));
+	assert.equal(requests[2].options.method, 'POST');
 	const mp3 = await client.downloadTtsResult(jobId);
 	assert.ok(mp3 instanceof ApickBinaryResult);
 	assert.equal(mp3.filename, jobId + '.mp3');

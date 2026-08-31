@@ -66,7 +66,7 @@ Get an API key from your account page after signing up at [apick.app](https://ap
 | `screenshot(url)` | 웹페이지 화면캡처 / Web screenshot | Binary |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
-| `cancelTtsJob(jobId)` | 대기 중 TTS 작업 취소 / Cancel waiting TTS job | JSON |
+| `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |
 | `downloadTtsResult(jobId)` | TTS 결과 1회 다운로드 / One-time TTS result | MP3 |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
@@ -138,6 +138,8 @@ The legacy synchronous TTS API has retired. Create a Korean narration job, poll 
 
 17 neutral narration voices are supported: the five original `narrator_m_01`–`narrator_m_05` voices plus `narrator_f_10s_01`–`03`, `narrator_m_20s_01`, `narrator_f_20s_01`–`04`, `narrator_m_30s_01`–`02`, `narrator_m_40s_01`, and `narrator_m_80s_01`. Import `TTS_VOICE_IDS` for the exact list.
 
+표시 이름 / voice labels: `narrator_m_01` 태준, `narrator_m_02` 민석, `narrator_m_03` 도현, `narrator_m_04` 강우, `narrator_m_05` 성훈, `narrator_f_10s_01` 서아, `narrator_f_10s_02` 하린, `narrator_f_10s_03` 예린, `narrator_m_20s_01` 도윤, `narrator_f_20s_01` 지안, `narrator_f_20s_02` 서윤, `narrator_f_20s_03` 소연, `narrator_f_20s_04` 유나, `narrator_m_30s_01` 현우, `narrator_m_30s_02` 준혁, `narrator_m_40s_01` 정우, `narrator_m_80s_01` 영수.
+
 ```js
 const created = await apick.createTtsJob('오늘의 이야기를 시작합니다.', {
   voiceId: 'narrator_m_03'
@@ -156,9 +158,9 @@ if (job.data.status === 'completed') {
 }
 ```
 
-접수 성공 시 과금되며 취소해도 환불되지 않습니다. 취소는 `waiting` 상태에서만 가능하고, 결과 다운로드가 시작되면 서버 원본이 즉시 폐기되므로 전송 중단 시에도 다시 받을 수 없습니다.
+접수 성공 시 과금되며 취소해도 환불되지 않습니다. 취소는 `waiting` 또는 `processing` 상태에서 가능하고, 결과 다운로드가 시작되면 서버 원본이 즉시 폐기되므로 전송 중단 시에도 다시 받을 수 없습니다.
 
-The charge is final when the job is accepted. Cancellation is allowed only while `waiting`. Starting the result download immediately consumes the server copy, so an interrupted transfer cannot be downloaded again.
+The charge is final when the job is accepted. Cancellation is allowed while `waiting` or `processing`. Starting the result download immediately consumes the server copy, so an interrupted transfer cannot be downloaded again.
 
 ## 신분증 마스킹 / Identity masking
 

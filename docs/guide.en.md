@@ -19,6 +19,8 @@ const client = new ApickClient({
 
 Pass the API key only to the constructor. The SDK does not keep it in enumerable client properties and never prints it in logs or error messages.
 
+Leave the allowed-IP list blank for unrestricted access. To restrict access, register the public IPv4 address seen by APICK as an exact address or CIDR such as `/32`. Changes apply immediately with no separate synchronization.
+
 ## Business, validation, and addresses
 
 ```js
@@ -94,10 +96,12 @@ while (job.data.status === 'waiting' || job.data.status === 'processing') {
 if (job.data.status === 'completed') {
   const result = await client.downloadTtsResult(jobId);
   await result.save(`./${jobId}.mp3`); // audio/mpeg; downloadable once
+  const subtitles = await client.downloadTtsSubtitles(jobId);
+  await subtitles.save(`./${jobId}.ass`); // ASS subtitles; separately downloadable once
 }
 
 // Cancellation is available while waiting or processing and does not refund the accepted charge.
-// Starting a download consumes the server copy immediately; it cannot be downloaded again.
+// MP3 and ASS downloads each consume their server copy immediately and cannot be repeated.
 
 const pdf = await client.htmlToPdf('<h1>Report</h1>', { pagination: true });
 await pdf.save('./report.pdf');

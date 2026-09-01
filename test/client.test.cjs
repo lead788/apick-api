@@ -132,6 +132,10 @@ test('implements processing cancellation and the one-time MP3 TTS Jobs contract'
 				status: 200,
 				headers: { 'content-type': 'audio/mpeg', 'content-disposition': `attachment; filename="${jobId}.mp3"` }
 			});
+			if (url.endsWith('/subtitles')) return new Response('[Script Info]\n[Events]\n', {
+				status: 200,
+				headers: { 'content-type': 'text/plain; charset=utf-8', 'content-disposition': `attachment; filename="${jobId}.ass"` }
+			});
 			if (url.endsWith('/cancel')) return jsonResponse({ data: { job_id: jobId, status: 'cancelled' }, api: { success: true, cost: 0 } });
 			if (url.endsWith('/' + jobId)) return jsonResponse({ data: { job_id: jobId, status: 'processing', result_available: false }, api: { success: true, cost: 0 } });
 			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'narrator_m_03', character_count: 14 }, api: { success: true, cost: 10 } }, { status: 202 });
@@ -152,6 +156,11 @@ test('implements processing cancellation and the one-time MP3 TTS Jobs contract'
 	assert.equal(mp3.filename, jobId + '.mp3');
 	assert.equal(mp3.contentType, 'audio/mpeg');
 	assert.deepEqual([...mp3.bytes], [255, 251, 144, 0]);
+	const subtitles = await client.downloadTtsSubtitles(jobId);
+	assert.ok(subtitles instanceof ApickBinaryResult);
+	assert.equal(subtitles.filename, jobId + '.ass');
+	assert.equal(subtitles.contentType, 'text/plain');
+	assert.match(new TextDecoder().decode(subtitles.bytes), /\[Events\]/);
 	assert.throws(() => client.createTtsJob('hello', { voiceId: 'unknown' }), /voiceId/);
 	assert.throws(() => client.getTtsJob('bad-id'), /jobId/);
 });

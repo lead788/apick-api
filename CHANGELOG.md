@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0 - 2026-09-01
+
+- `downloadTtsSubtitles(jobId)`로 발화 타이밍 ASS 자막을 별도 1회 다운로드할 수 있습니다.
+- TTS 상태 타입에 `subtitles_available`을 추가했습니다.
+- 허용 IP 공란, 단일 IPv4·CIDR 등록, 즉시 반영 규칙을 한영 문서에 추가했습니다.
+
 ## 2.0.1 - 2026-08-31
 
 - TTS 작업 취소 범위를 `waiting`과 `processing` 상태로 확장했습니다.

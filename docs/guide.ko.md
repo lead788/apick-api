@@ -19,6 +19,8 @@ const client = new ApickClient({
 
 인증키는 생성자에만 전달하세요. 클라이언트 객체의 열거 가능한 속성에 저장되지 않으며 SDK가 로그로 출력하지 않습니다.
 
+마이페이지의 허용 IP가 공란이면 제한 없이 호출할 수 있습니다. 제한하려면 APICK에 도착하는 공인 IPv4를 단일 주소 또는 CIDR(`/32` 등)로 등록하세요. 저장 즉시 반영되며 별도 동기화는 필요하지 않습니다.
+
 ## 조회와 검증
 
 ```js
@@ -94,10 +96,12 @@ while (job.data.status === 'waiting' || job.data.status === 'processing') {
 if (job.data.status === 'completed') {
   const result = await client.downloadTtsResult(jobId);
   await result.save(`./${jobId}.mp3`); // audio/mpeg, 1회만 다운로드 가능
+  const subtitles = await client.downloadTtsSubtitles(jobId);
+  await subtitles.save(`./${jobId}.ass`); // ASS 자막, 별도 1회 다운로드
 }
 
 // 취소는 waiting 또는 processing 상태에서 가능하며 이미 과금된 금액은 환불되지 않습니다.
-// 다운로드가 시작되면 서버 원본이 즉시 폐기되어 재다운로드할 수 없습니다.
+// MP3와 ASS는 각각 다운로드 시작 시 해당 서버 원본이 즉시 폐기되어 재다운로드할 수 없습니다.
 
 const pdf = await client.htmlToPdf('<h1>보고서</h1>', { pagination: true });
 await pdf.save('./report.pdf');

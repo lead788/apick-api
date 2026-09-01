@@ -489,6 +489,16 @@ class ApickClient {
 		});
 	}
 
+	downloadTtsSubtitles(jobId) {
+		const id = normalizeTtsJobId(jobId);
+		return this._call('createTtsJob', null, null, {
+			endpoint: '/rest/tts/jobs/' + id + '/subtitles',
+			method: 'GET',
+			output: 'binary',
+			filename: id + '.ass'
+		});
+	}
+
 	htmlToPdf(html, options) {
 		const config = options || {};
 		return this._call('htmlToPdf', {

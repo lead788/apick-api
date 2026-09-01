@@ -19,6 +19,7 @@ const maskedIdCard: Promise<ApickResult> = client.maskIdCard(new Uint8Array([1, 
 const pdf: Promise<ApickBinaryResult> = client.htmlToPdf('<h1>Report</h1>');
 const ttsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
 const newTtsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('새 목소리입니다.', { voiceId: 'narrator_f_10s_01' });
+const ttsSubtitles: Promise<ApickBinaryResult> = client.downloadTtsSubtitles('a'.repeat(32));
 const voiceId: TtsVoiceId = TTS_VOICE_IDS[16];
 const endpoint: string = SERVICES.businessDetails.endpoint;
 let error!: ApickApiError;
@@ -30,6 +31,7 @@ void maskedIdCard;
 void pdf;
 void ttsJob;
 void newTtsJob;
+void ttsSubtitles;
 void voiceId;
 void endpoint;
 void error;

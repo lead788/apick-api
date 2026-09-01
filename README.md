@@ -45,6 +45,9 @@ console.log(result.data);
 인증키는 [apick.app](https://apick.app) 가입 후 마이페이지에서 발급할 수 있습니다.
 Get an API key from your account page after signing up at [apick.app](https://apick.app).
 
+마이페이지의 허용 IP가 공란이면 제한 없이 호출할 수 있습니다. 제한하려면 APICK에 도착하는 공인 IPv4를 단일 주소 또는 CIDR(`/32` 등)로 등록하세요. 저장 즉시 반영되며 별도 동기화는 필요하지 않습니다.
+Leave the allowed-IP list blank for unrestricted access. To restrict access, register the public IPv4 address seen by APICK as an exact address or CIDR such as `/32`. Changes apply immediately with no separate synchronization.
+
 ## 제공 서비스 / Included services
 
 | Method | APICK service | Result |
@@ -68,6 +71,7 @@ Get an API key from your account page after signing up at [apick.app](https://ap
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |
 | `downloadTtsResult(jobId)` | TTS 결과 1회 다운로드 / One-time TTS result | MP3 |
+| `downloadTtsSubtitles(jobId)` | TTS 자막 1회 다운로드 / One-time TTS subtitles | ASS |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |
@@ -155,12 +159,14 @@ do {
 if (job.data.status === 'completed') {
   const result = await apick.downloadTtsResult(jobId);
   await result.save(`./${jobId}.mp3`);
+  const subtitles = await apick.downloadTtsSubtitles(jobId);
+  await subtitles.save(`./${jobId}.ass`);
 }
 ```
 
-접수 성공 시 과금되며 취소해도 환불되지 않습니다. 취소는 `waiting` 또는 `processing` 상태에서 가능하고, 결과 다운로드가 시작되면 서버 원본이 즉시 폐기되므로 전송 중단 시에도 다시 받을 수 없습니다.
+접수 성공 시 과금되며 취소해도 환불되지 않습니다. 취소는 `waiting` 또는 `processing` 상태에서 가능하고, MP3와 ASS 자막은 각각 한 번만 내려받을 수 있습니다. 각 다운로드가 시작되면 해당 서버 원본이 즉시 폐기되므로 전송 중단 시에도 다시 받을 수 없습니다.
 
-The charge is final when the job is accepted. Cancellation is allowed while `waiting` or `processing`. Starting the result download immediately consumes the server copy, so an interrupted transfer cannot be downloaded again.
+The charge is final when the job is accepted. Cancellation is allowed while `waiting` or `processing`. The MP3 and ASS subtitles can each be downloaded once. Starting either download immediately consumes that server copy, so an interrupted transfer cannot be downloaded again.
 
 ## 신분증 마스킹 / Identity masking
 

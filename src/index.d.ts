@@ -46,6 +46,7 @@ export interface TtsJobData {
 	voice_id?: TtsVoiceId;
 	character_count?: number;
 	result_available?: boolean;
+	subtitles_available?: boolean;
 }
 
 export class ApickApiError extends Error {
@@ -105,6 +106,7 @@ export class ApickClient {
 	getTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	cancelTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	downloadTtsResult(jobId: string): Promise<ApickBinaryResult>;
+	downloadTtsSubtitles(jobId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;
 	summarize(text: string): Promise<ApickResult>;

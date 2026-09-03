@@ -151,6 +151,8 @@ console.log(result.data.result.fields);
 
 The document-specific methods are `maskResidenceCard`, `maskPassport`, `maskIdCard`, and `maskDriverLicense`. Identity errors are exposed as `IDENTITY_TEXT_UNREADABLE`, `IDENTITY_DOCUMENT_MISMATCH`, or `IDENTITY_PROCESSING_FAILED` through `ApickApiError.serviceCode`.
 
+`maskResidenceCard` accepts one front-side image of a residence card, permanent resident card, or overseas Korean resident card. Permanent and overseas Korean card support is limited to PII masking and does not expand the alien registration card authenticity-check scope.
+
 ## Errors and retries
 
 `ApickApiError` includes public error information: `code`, optional `serviceCode`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.

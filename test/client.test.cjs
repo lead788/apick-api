@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 const {
 	ApickClient,
@@ -203,6 +205,16 @@ test('uploads five identity masking services with the documented output contract
 		assert.equal(result.data.success, 1);
 	}
 	assert.throws(() => client.maskResidentNumber(input, { type: 4, filename: 'id.png', contentType: 'image/png' }), /1, 2, 3/);
+});
+
+test('documents three residence-card forms as masking-only without changing the endpoint', () => {
+	const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+	for (const document of ['외국인등록증', '영주증', '외국국적동포 국내거소신고증']) {
+		assert.match(read('README.md'), new RegExp(document));
+		assert.match(read('docs/guide.ko.md'), new RegExp(document));
+	}
+	assert.match(read('docs/guide.en.md'), /masking and does not expand the alien registration card authenticity-check scope/);
+	assert.equal(SERVICES.maskResidenceCard.endpoint, '/rest/identity_document_residence_card');
 });
 
 test('preserves identity service errors separately from the generic SDK error code', async () => {

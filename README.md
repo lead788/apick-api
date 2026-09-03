@@ -181,6 +181,9 @@ console.log(passport.data.result.fields);
 `maskResidenceCard`, `maskPassport`, `maskIdCard`, `maskDriverLicense`는 JSON 결과를 반환합니다. `maskResidentNumber`는 PNG 바이너리를 반환하며 `type`은 `1`, `2`, `3` 중 하나입니다.
 The four document-specific methods return JSON. `maskResidentNumber` returns PNG bytes and requires `type` 1, 2, or 3.
 
+`maskResidenceCard`는 외국인등록증·영주증·외국국적동포 국내거소신고증의 앞면 한 장을 지원합니다. 영주증과 외국국적동포 국내거소신고증 지원은 개인정보 마스킹에만 적용되며 외국인등록증 진위확인 범위는 변경되지 않습니다.
+`maskResidenceCard` accepts one front-side image of a residence card, permanent resident card, or overseas Korean resident card. Permanent and overseas Korean card support is limited to PII masking and does not expand the alien registration card authenticity-check scope.
+
 ## 오류 처리 / Error handling
 
 ```js

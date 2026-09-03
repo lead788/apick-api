@@ -151,6 +151,8 @@ console.log(result.data.result.fields);
 
 문서별 메서드는 `maskResidenceCard`, `maskPassport`, `maskIdCard`, `maskDriverLicense`입니다. 글자 판독 불가, 문서 불일치, 처리 실패는 각각 `IDENTITY_TEXT_UNREADABLE`, `IDENTITY_DOCUMENT_MISMATCH`, `IDENTITY_PROCESSING_FAILED`로 `ApickApiError.serviceCode`에 제공됩니다.
 
+`maskResidenceCard`는 외국인등록증·영주증·외국국적동포 국내거소신고증의 앞면 한 장을 지원합니다. 영주증과 외국국적동포 국내거소신고증은 개인정보 마스킹만 지원하며 외국인등록증 진위확인 범위에는 포함되지 않습니다.
+
 ## 오류와 재시도
 
 `ApickApiError`에는 공개 오류 정보인 `code`, `serviceCode`, `status`, `message`가 포함됩니다. SDK는 중복 호출과 중복 과금을 방지하기 위해 자동 재시도를 하지 않습니다. 재시도가 필요하면 작업의 멱등성과 오류 코드를 확인한 뒤 애플리케이션에서 명시적으로 결정하세요.

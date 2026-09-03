@@ -1,6 +1,6 @@
 {
   "name": "apick-api",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Official zero-dependency Node.js client for 25 APICK APIs. 에이픽 주요 API 25개를 간편하게 호출하는 공식 Node.js SDK.",
   "type": "module",
   "main": "./src/index.cjs",

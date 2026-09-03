@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0 - 2026-09-03
+
+- `maskResidenceCard()`의 개인정보 마스킹 대상을 외국인등록증·영주증·외국국적동포 국내거소신고증으로 확대했습니다.
+- 요청·응답 형식과 `document_type: residence_card` 계약은 유지합니다.
+- 진위확인 API의 지원 범위는 기존 외국인등록증으로 유지됩니다.
+
 ## 2.1.0 - 2026-09-01
 
 - `downloadTtsSubtitles(jobId)`로 발화 타이밍 ASS 자막을 별도 1회 다운로드할 수 있습니다.

@@ -127,17 +127,25 @@ const polished = await client.polish(draftText);
 
 ```js
 const result = await client.generateImages('흰 배경의 제품 사진', {
-  count: 4,
+  imageCount: 4,
   size: '1024x1024',
   outputFormat: 'webp',
   idempotencyKey: 'product-draft-001'
 });
 
-const job = await client.createImageGenerationJob('가로형 커버 시안', { count: 20, size: '1536x1024' });
+const referenceResult = await client.generateImages('제품 모양과 구도는 유지하고 배경을 햇살 좋은 주방으로 변경', {
+  referenceImage: './reference.png',
+  referenceFilename: 'reference.png',
+  referenceContentType: 'image/png'
+});
+
+const job = await client.createImageGenerationJob('가로형 커버 시안', { imageCount: 20, size: '1536x1024' });
 const status = await client.getImageJob(job.data.job_id);
 ```
 
-동기 생성·편집은 1~4장, 작업형 생성·편집은 1~50장입니다. 편집은 50MB 이하의 PNG/JPEG/WebP 원본 이미지 한 장과 프롬프트를 받으며 마스크 파일은 지원하지 않습니다. 성공 이미지 한 장당 25포인트가 확정되며 실패·취소 수량의 예약 포인트는 해제됩니다. 결과 보관 기간은 완료 후 24시간입니다.
+`imageCount`는 만들 이미지 장수이며 생략하면 1장입니다. 동기 생성·편집은 1~4장, 작업형 생성·편집은 1~50장입니다. 생성에 `referenceImage`를 함께 전달하면 참고 이미지의 구도·색감·제품 형태 등을 프롬프트와 조합할 수 있습니다. 편집은 50MB 이하의 PNG/JPEG/WebP 원본 이미지 한 장과 프롬프트를 받으며 마스크 파일은 지원하지 않습니다. 크기는 `1024x1024`, `1536x1024`, `1024x1536`, `1152x864`, `864x1152` 중에서 선택합니다. 성공 이미지 한 장당 25포인트가 확정되며 실패·취소 수량의 예약 포인트는 해제됩니다. 결과 보관 기간은 완료 후 24시간입니다.
+
+`idempotencyKey`는 같은 요청이 통신 오류로 두 번 전송됐을 때 중복 생성과 중복 과금을 막는 안전번호입니다. 영문·숫자·밑줄·하이픈으로 8~128자를 만들고, 같은 작업을 다시 보낼 때는 같은 값을 사용하세요. 프롬프트나 옵션이 달라진 새 작업에는 새 값을 사용해야 합니다.
 
 지원 메서드: `generateImages`, `editImages`, `createImageGenerationJob`, `createImageEditJob`, `getImageJob`, `cancelImageJob`, `downloadImageJobImage`, `downloadImageJobArchive`.
 

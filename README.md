@@ -107,23 +107,29 @@ Images cost 25 points each. Synchronous calls support 1–4 images and job calls
 
 ```js
 const made = await apick.generateImages("따뜻한 조명의 미니멀 제품 사진", {
-  count: 2, size: "1024x1024", outputFormat: "webp",
+  imageCount: 2, size: "1024x1024", outputFormat: "webp",
   idempotencyKey: "catalog-cover-20260905"
+});
+
+const referenced = await apick.generateImages("구도와 제품 형태는 유지하고 여름 해변 분위기로", {
+  referenceImage: "./reference.png",
+  referenceFilename: "reference.png",
+  referenceContentType: "image/png"
 });
 
 const edited = await apick.editImages("./source.png", "컵 색상을 파란색으로 변경", {
   outputFormat: "png"
 });
 
-const queued = await apick.createImageGenerationJob("여행 포스터 시안", { count: 20 });
+const queued = await apick.createImageGenerationJob("여행 포스터 시안", { imageCount: 20 });
 const job = await apick.getImageJob(queued.data.job_id);
 const image = await apick.downloadImageJobImage(job.data.job_id, 0);
 await image.save("./result.png");
 ```
 
-PNG·JPEG·WebP 출력, 투명 배경 미리보기(PNG/WebP), 표준 및 사용자 지정 크기를 지원합니다. 입력 프롬프트는 최대 6,000자입니다. 자동 재시도는 하지 않습니다.
+PNG·JPEG·WebP 출력, 투명 배경 미리보기(PNG/WebP), 5개 표준 크기(`1024x1024`, `1536x1024`, `1024x1536`, `1152x864`, `864x1152`)를 지원합니다. 입력 프롬프트는 최대 6,000자입니다. `idempotencyKey`는 네트워크 재전송 때 중복 생성과 중복 과금을 막는 8~128자의 요청 식별자이며, 같은 작업을 다시 보낼 때 같은 값을 사용합니다. 자동 재시도는 하지 않습니다.
 
-PNG, JPEG, and WebP outputs, transparent-background previews for PNG/WebP, and standard or custom sizes are supported. Prompts are limited to 6,000 characters. Requests are never retried automatically.
+PNG, JPEG, and WebP outputs, transparent-background previews for PNG/WebP, and five standard sizes are supported. Prompts are limited to 6,000 characters. `idempotencyKey` identifies the same request during network retransmission to prevent duplicate generation and billing. Requests are never retried automatically.
 
 OCR은 PNG/JPEG 파일 경로, `Blob`, `ArrayBuffer`, `Uint8Array`를 받습니다. 최대 크기는 50MB입니다.
 OCR accepts a PNG/JPEG file path, `Blob`, `ArrayBuffer`, or `Uint8Array`, up to 50MB.

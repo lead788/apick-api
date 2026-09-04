@@ -127,15 +127,23 @@ Text input is limited to 100,000 characters.
 
 ```js
 const result = await client.generateImages('A clean product photo on white', {
-  count: 4, size: '1024x1024', outputFormat: 'webp',
+  imageCount: 4, size: '1024x1024', outputFormat: 'webp',
   idempotencyKey: 'product-draft-001'
 });
 
-const job = await client.createImageGenerationJob('Landscape article cover concepts', { count: 20, size: '1536x1024' });
+const referenceResult = await client.generateImages('Keep the product shape and composition, and change the background to a sunny kitchen', {
+  referenceImage: './reference.png',
+  referenceFilename: 'reference.png',
+  referenceContentType: 'image/png'
+});
+
+const job = await client.createImageGenerationJob('Landscape article cover concepts', { imageCount: 20, size: '1536x1024' });
 const status = await client.getImageJob(job.data.job_id);
 ```
 
-Synchronous generation and editing support 1–4 images; job methods support 1–50. Editing accepts one PNG, JPEG, or WebP source up to 50 MB plus a prompt; mask files are not supported. Each stored successful image costs 25 points, while reservations for failed or cancelled items are released. Results remain available for 24 hours.
+`imageCount` is the number of images to make and defaults to one. Synchronous generation and editing support 1–4 images; job methods support 1–50. Add `referenceImage` to generation when the prompt should build from an existing composition, palette, or product shape. Editing accepts one PNG, JPEG, or WebP source up to 50 MB plus a prompt; mask files are not supported. Choose one of five sizes: `1024x1024`, `1536x1024`, `1024x1536`, `1152x864`, or `864x1152`. Each stored successful image costs 25 points, while reservations for failed or cancelled items are released. Results remain available for 24 hours.
+
+`idempotencyKey` is a safety identifier that prevents duplicate generation and billing if a network problem sends the same request twice. Use 8–128 letters, numbers, underscores, or hyphens. Reuse it only for the exact same request and create a new value when the prompt or options change.
 
 Methods: `generateImages`, `editImages`, `createImageGenerationJob`, `createImageEditJob`, `getImageJob`, `cancelImageJob`, `downloadImageJobImage`, and `downloadImageJobArchive`.
 

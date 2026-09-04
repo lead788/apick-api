@@ -4,6 +4,8 @@ const DEFAULT_BASE_URL = 'https://apick.app';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_OCR_BYTES = 50 * 1024 * 1024;
 const MAX_IMAGE_AI_BYTES = 50 * 1024 * 1024;
+const IMAGE_AI_SIZES = Object.freeze(['1024x1024', '1536x1024', '1024x1536', '1152x864', '864x1152']);
+const IMAGE_AI_SIZE_SET = new Set(IMAGE_AI_SIZES);
 const TTS_VOICE_IDS = Object.freeze([
 	'narrator_m_01', 'narrator_m_02', 'narrator_m_03', 'narrator_m_04', 'narrator_m_05',
 	'narrator_f_10s_01', 'narrator_f_10s_02', 'narrator_f_10s_03',
@@ -529,17 +531,18 @@ class ApickClient {
 
 	_imageOptions(prompt, options, maxCount) {
 		const config = options || {};
-		for (const key of ['model', 'quality', 'n', 'input_fidelity', 'moderation', 'mask', 'maskFilename', 'maskContentType']) {
+		for (const key of ['model', 'quality', 'count', 'n', 'outputCompression', 'input_fidelity', 'moderation', 'mask', 'maskFilename', 'maskContentType']) {
 			if (Object.prototype.hasOwnProperty.call(config, key)) throw new TypeError(`${key} is not a supported image option.`);
 		}
-		const count = positiveInteger('count', config.count, 1);
-		if (count > maxCount) throw new RangeError(`count must not exceed ${maxCount}.`);
+		const imageCount = positiveInteger('imageCount', config.imageCount, 1);
+		if (imageCount > maxCount) throw new RangeError(`imageCount must not exceed ${maxCount}.`);
+		const size = config.size || '1024x1024';
+		if (!IMAGE_AI_SIZE_SET.has(size)) throw new TypeError(`size must be one of: ${IMAGE_AI_SIZES.join(', ')}.`);
 		const payload = {
-			prompt: requiredString('prompt', prompt, 6_000), count,
-			size: config.size || '1024x1024', output_format: config.outputFormat || 'png',
+			prompt: requiredString('prompt', prompt, 6_000), image_count: imageCount,
+			size, output_format: config.outputFormat || 'png',
 			background: config.background || 'auto'
 		};
-		if (config.outputCompression !== undefined) payload.output_compression = config.outputCompression;
 		if (config.idempotencyKey !== undefined) {
 			payload.idempotency_key = requiredString('idempotencyKey', config.idempotencyKey, 128);
 			if (!/^[A-Za-z0-9_-]{8,128}$/.test(payload.idempotency_key)) throw new TypeError('idempotencyKey must use 8-128 letters, numbers, underscores, or hyphens.');
@@ -547,8 +550,18 @@ class ApickClient {
 		return payload;
 	}
 
-	generateImages(prompt, options) {
-		return this._call('generateImages', this._imageOptions(prompt, options, 4));
+	async generateImages(prompt, options) {
+		const config = options || {}, payload = this._imageOptions(prompt, config, 4);
+		if (config.referenceImage === undefined) return this._call('generateImages', payload);
+		const uploadOptions = {
+			filename: config.referenceFilename, contentType: config.referenceContentType,
+			allowedTypes:['image/png','image/jpeg','image/webp'], maxBytes:MAX_IMAGE_AI_BYTES,
+			typeError:'referenceImage must be PNG, JPEG, or WebP.'
+		};
+		const source = await normalizeImage(config.referenceImage, uploadOptions), form = new FormData();
+		Object.entries(payload).forEach(([key,value]) => form.append(key, String(value)));
+		form.append('reference_image', source.blob, source.filename);
+		return this._call('generateImages', null, form);
 	}
 
 	async editImages(image, prompt, options) {
@@ -560,8 +573,18 @@ class ApickClient {
 		return this._call('generateImages', null, form, { endpoint:'/rest/image-generation/edit' });
 	}
 
-	createImageGenerationJob(prompt, options) {
-		return this._call('generateImages', this._imageOptions(prompt, options, 50), null, { endpoint:'/rest/image-generation/jobs/generate', timeoutMs:60_000 });
+	async createImageGenerationJob(prompt, options) {
+		const config = options || {}, payload = this._imageOptions(prompt, config, 50);
+		if (config.referenceImage === undefined) return this._call('generateImages', payload, null, { endpoint:'/rest/image-generation/jobs/generate', timeoutMs:60_000 });
+		const uploadOptions = {
+			filename: config.referenceFilename, contentType: config.referenceContentType,
+			allowedTypes:['image/png','image/jpeg','image/webp'], maxBytes:MAX_IMAGE_AI_BYTES,
+			typeError:'referenceImage must be PNG, JPEG, or WebP.'
+		};
+		const source = await normalizeImage(config.referenceImage, uploadOptions), form = new FormData();
+		Object.entries(payload).forEach(([key,value]) => form.append(key, String(value)));
+		form.append('reference_image', source.blob, source.filename);
+		return this._call('generateImages', null, form, { endpoint:'/rest/image-generation/jobs/generate', timeoutMs:60_000 });
 	}
 
 	async createImageEditJob(image, prompt, options) {

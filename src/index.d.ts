@@ -32,7 +32,7 @@ export type ImageAiBackground = 'auto' | 'opaque' | 'transparent';
 export type ImageAiStatus = 'waiting' | 'processing' | 'completed' | 'completed_partial' | 'cancelled' | 'failed';
 export type ApickImageErrorCode = `APICK_IMAGE_${string}`;
 export interface ImageAiOptions { count?: number; size?: string; outputFormat?: ImageAiFormat; background?: ImageAiBackground; outputCompression?: number; idempotencyKey?: string; }
-export interface ImageAiEditOptions extends ImageAiOptions { mask?: string | BinaryInput | ArrayBuffer | ArrayBufferView; filename?: string; contentType?: 'image/png'|'image/jpeg'|'image/webp'; maskFilename?: string; maskContentType?: 'image/png'|'image/webp'; }
+export interface ImageAiEditOptions extends ImageAiOptions { filename?: string; contentType?: 'image/png'|'image/jpeg'|'image/webp'; }
 export interface ImageAiResultImage { index:number; b64_json:string; mime_type:'image/png'|'image/jpeg'|'image/webp'; width:number; height:number; }
 export interface ImageAiResultData { request_id:string; count:number; images:ImageAiResultImage[]; idempotent_replay?:boolean; }
 export interface ImageAiJobData { job_id:string; status:ImageAiStatus; requested_count:number; completed_count?:number; failed_count?:number; charged_point?:number; result_available?:boolean; expires_at?:string|null; error_code?:ApickImageErrorCode|null; }

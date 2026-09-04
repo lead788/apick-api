@@ -112,7 +112,7 @@ const made = await apick.generateImages("따뜻한 조명의 미니멀 제품 �
 });
 
 const edited = await apick.editImages("./source.png", "컵 색상을 파란색으로 변경", {
-  mask: "./mask.png", outputFormat: "png"
+  outputFormat: "png"
 });
 
 const queued = await apick.createImageGenerationJob("여행 포스터 시안", { count: 20 });

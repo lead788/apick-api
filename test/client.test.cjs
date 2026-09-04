@@ -53,17 +53,15 @@ test('supports synchronous and batch image contracts without provider options', 
 	assert.throws(()=>client.generateImages('x',{model:'hidden'}),/not a supported image option/);
 	assert.throws(()=>client.generateImages('x',{idempotencyKey:'short'}),/8-128/);
 	await client.editImages(Uint8Array.from([1]), '손잡이 색상 변경', {
-		filename:'source.webp', contentType:'image/webp', mask:Uint8Array.from([2]),
-		maskFilename:'mask.png', maskContentType:'image/png'
+		filename:'source.webp', contentType:'image/webp'
 	});
 	assert.equal(requests[4].url,'https://api.example.test/rest/image-generation/edit');
 	assert.ok(requests[4].options.body instanceof FormData);
 	assert.equal(requests[4].options.body.get('image').name,'source.webp');
-	assert.equal(requests[4].options.body.get('mask').name,'mask.png');
+	assert.equal(requests[4].options.body.has('mask'),false);
 	await assert.rejects(client.editImages(Uint8Array.from([1]), '편집', {
-		filename:'source.png', contentType:'image/png', mask:Uint8Array.from([2]),
-		maskFilename:'mask.jpg', maskContentType:'image/jpeg'
-	}), /mask must be PNG or WebP/);
+		filename:'source.png', contentType:'image/png', mask:Uint8Array.from([2])
+	}), /mask is not a supported image option/);
 });
 
 test('normalizes business numbers and returns data with billing metadata', async () => {

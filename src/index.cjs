@@ -529,7 +529,7 @@ class ApickClient {
 
 	_imageOptions(prompt, options, maxCount) {
 		const config = options || {};
-		for (const key of ['model', 'quality', 'n', 'input_fidelity', 'moderation']) {
+		for (const key of ['model', 'quality', 'n', 'input_fidelity', 'moderation', 'mask', 'maskFilename', 'maskContentType']) {
 			if (Object.prototype.hasOwnProperty.call(config, key)) throw new TypeError(`${key} is not a supported image option.`);
 		}
 		const count = positiveInteger('count', config.count, 1);
@@ -557,11 +557,6 @@ class ApickClient {
 		const source = await normalizeImage(image, uploadOptions), form = new FormData();
 		Object.entries(payload).forEach(([key,value]) => form.append(key, String(value)));
 		form.append('image', source.blob, source.filename);
-		if (config.mask !== undefined) {
-			const mask = await normalizeImage(config.mask, Object.assign({}, uploadOptions, { filename:config.maskFilename || 'mask.png', contentType:config.maskContentType, allowedTypes:['image/png','image/webp'], typeError:'mask must be PNG or WebP.' }));
-			if (source.blob.size + mask.blob.size > MAX_IMAGE_AI_BYTES) throw new RangeError('image and mask together must not exceed 50 MB.');
-			form.append('mask', mask.blob, mask.filename);
-		}
 		return this._call('generateImages', null, form, { endpoint:'/rest/image-generation/edit' });
 	}
 
@@ -575,11 +570,6 @@ class ApickClient {
 		const source = await normalizeImage(image, uploadOptions), form = new FormData();
 		Object.entries(payload).forEach(([key,value]) => form.append(key, String(value)));
 		form.append('image', source.blob, source.filename);
-		if (config.mask !== undefined) {
-			const mask = await normalizeImage(config.mask, Object.assign({}, uploadOptions, { filename:config.maskFilename || 'mask.png', contentType:config.maskContentType, allowedTypes:['image/png','image/webp'], typeError:'mask must be PNG or WebP.' }));
-			if (source.blob.size + mask.blob.size > MAX_IMAGE_AI_BYTES) throw new RangeError('image and mask together must not exceed 50 MB.');
-			form.append('mask', mask.blob, mask.filename);
-		}
 		return this._call('generateImages', null, form, { endpoint:'/rest/image-generation/jobs/edit', timeoutMs:60_000 });
 	}
 

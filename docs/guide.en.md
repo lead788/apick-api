@@ -135,7 +135,7 @@ const job = await client.createImageGenerationJob('Landscape article cover conce
 const status = await client.getImageJob(job.data.job_id);
 ```
 
-Synchronous generation and editing support 1–4 images; job methods support 1–50. Editing accepts PNG, JPEG, or WebP sources and an optional alpha mask. Each stored successful image costs 25 points, while reservations for failed or cancelled items are released. Results remain available for 24 hours.
+Synchronous generation and editing support 1–4 images; job methods support 1–50. Editing accepts one PNG, JPEG, or WebP source up to 50 MB plus a prompt; mask files are not supported. Each stored successful image costs 25 points, while reservations for failed or cancelled items are released. Results remain available for 24 hours.
 
 Methods: `generateImages`, `editImages`, `createImageGenerationJob`, `createImageEditJob`, `getImageJob`, `cancelImageJob`, `downloadImageJobImage`, and `downloadImageJobArchive`.
 

@@ -19,8 +19,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 25 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 25);
+test('exports a focused catalog of 26 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 26);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -31,6 +31,39 @@ test('keeps the API key out of enumerable client state', () => {
 	const client = new ApickClient({ apiKey: 'private-test-key', fetch: async () => {} });
 	assert.deepEqual(Object.keys(client), []);
 	assert.doesNotMatch(JSON.stringify(client), /private-test-key/);
+});
+
+test('supports synchronous and batch image contracts without provider options', async () => {
+	const requests = [];
+	const client = new ApickClient({ apiKey:'key', baseUrl:'https://api.example.test', fetch:async (url, options) => {
+		requests.push({url,options});
+		if (url.endsWith('/images/0')) return new Response(new Uint8Array([1,2,3]), {status:200,headers:{'content-type':'image/png'}});
+		return jsonResponse({data:url.includes('/jobs/')?{job_id:'a'.repeat(32),status:'waiting',requested_count:20}:{request_id:'b'.repeat(32),count:1,images:[]},api:{success:true,cost:0}});
+	}});
+	await client.generateImages('제품 사진', { count:1, outputFormat:'webp', idempotencyKey:'image-test-0001' });
+	await client.createImageGenerationJob('커버 시안', { count:20 });
+	await client.getImageJob('a'.repeat(32));
+	const binary=await client.downloadImageJobImage('a'.repeat(32),0);
+	assert.equal(binary.contentType,'image/png');
+	assert.equal(requests[0].url,'https://api.example.test/rest/image-generation/generate');
+	assert.deepEqual(JSON.parse(requests[0].options.body),{prompt:'제품 사진',count:1,size:'1024x1024',output_format:'webp',background:'auto',idempotency_key:'image-test-0001'});
+	assert.equal(requests[1].url,'https://api.example.test/rest/image-generation/jobs/generate');
+	assert.equal(requests[2].options.method,'GET');
+	assert.throws(()=>client.generateImages('x',{count:5}),/count must not exceed 4/);
+	assert.throws(()=>client.generateImages('x',{model:'hidden'}),/not a supported image option/);
+	assert.throws(()=>client.generateImages('x',{idempotencyKey:'short'}),/8-128/);
+	await client.editImages(Uint8Array.from([1]), '손잡이 색상 변경', {
+		filename:'source.webp', contentType:'image/webp', mask:Uint8Array.from([2]),
+		maskFilename:'mask.png', maskContentType:'image/png'
+	});
+	assert.equal(requests[4].url,'https://api.example.test/rest/image-generation/edit');
+	assert.ok(requests[4].options.body instanceof FormData);
+	assert.equal(requests[4].options.body.get('image').name,'source.webp');
+	assert.equal(requests[4].options.body.get('mask').name,'mask.png');
+	await assert.rejects(client.editImages(Uint8Array.from([1]), '편집', {
+		filename:'source.png', contentType:'image/png', mask:Uint8Array.from([2]),
+		maskFilename:'mask.jpg', maskContentType:'image/jpeg'
+	}), /mask must be PNG or WebP/);
 });
 
 test('normalizes business numbers and returns data with billing metadata', async () => {

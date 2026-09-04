@@ -2,9 +2,9 @@
 
 # APICK API for Node.js
 
-**에이픽 주요 API 25개를 API 키 하나로 간편하게 호출하는 공식 Node.js SDK**
+**에이픽 데이터·AI·이미지 API를 API 키 하나로 호출하는 공식 Node.js SDK**
 
-**Official zero-dependency Node.js SDK for 25 popular APICK Korean data and AI APIs**
+**Official zero-dependency Node.js SDK for APICK data, AI, and image APIs**
 
 [![npm](https://img.shields.io/npm/v/apick-api?color=%230a7cff&label=npm%20apick-api)](https://www.npmjs.com/package/apick-api)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933)](https://nodejs.org/)
@@ -76,6 +76,13 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |
 | `polish(text)` | 텍스트 다듬기 / Text polishing | JSON |
+| `generateImages(prompt, options)` | 이미지 생성 / Image generation | JSON |
+| `editImages(image, prompt, options)` | 이미지 편집 / Image editing | JSON |
+| `createImageGenerationJob(prompt, options)` | 대량 이미지 생성 작업 / Batch generation job | JSON |
+| `createImageEditJob(image, prompt, options)` | 대량 이미지 편집 작업 / Batch edit job | JSON |
+| `getImageJob(jobId)` · `cancelImageJob(jobId)` | 이미지 작업 조회·취소 / Job status and cancellation | JSON |
+| `downloadImageJobImage(jobId, index)` | 개별 결과 / Individual result | Binary |
+| `downloadImageJobArchive(jobId)` | ZIP 결과 / ZIP archive | Binary |
 
 ## JSON 결과 / JSON results
 
@@ -91,6 +98,32 @@ console.log(result.meta);
 ```
 
 ## 파일 입력 / File input
+
+## 이미지 생성·편집 / Image generation and editing
+
+이미지는 장당 25포인트이며 동기는 1~4장, 작업형 API는 최대 50장까지 지원합니다. 성공적으로 저장된 이미지에 대해서만 과금되며 결과는 완료 후 24시간 동안 반복 다운로드할 수 있습니다.
+
+Images cost 25 points each. Synchronous calls support 1–4 images and job calls support up to 50. Only stored successful results are charged, and completed job results remain downloadable for 24 hours.
+
+```js
+const made = await apick.generateImages("따뜻한 조명의 미니멀 제품 사진", {
+  count: 2, size: "1024x1024", outputFormat: "webp",
+  idempotencyKey: "catalog-cover-20260905"
+});
+
+const edited = await apick.editImages("./source.png", "컵 색상을 파란색으로 변경", {
+  mask: "./mask.png", outputFormat: "png"
+});
+
+const queued = await apick.createImageGenerationJob("여행 포스터 시안", { count: 20 });
+const job = await apick.getImageJob(queued.data.job_id);
+const image = await apick.downloadImageJobImage(job.data.job_id, 0);
+await image.save("./result.png");
+```
+
+PNG·JPEG·WebP 출력, 투명 배경 미리보기(PNG/WebP), 표준 및 사용자 지정 크기를 지원합니다. 입력 프롬프트는 최대 6,000자입니다. 자동 재시도는 하지 않습니다.
+
+PNG, JPEG, and WebP outputs, transparent-background previews for PNG/WebP, and standard or custom sizes are supported. Prompts are limited to 6,000 characters. Requests are never retried automatically.
 
 OCR은 PNG/JPEG 파일 경로, `Blob`, `ArrayBuffer`, `Uint8Array`를 받습니다. 최대 크기는 50MB입니다.
 OCR accepts a PNG/JPEG file path, `Blob`, `ArrayBuffer`, or `Uint8Array`, up to 50MB.

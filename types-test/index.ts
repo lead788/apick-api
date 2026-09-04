@@ -6,6 +6,7 @@ import ApickClient, {
   TTS_VOICE_IDS
 } from '../src/index.js';
 import type { TtsJobData, TtsVoiceId } from '../src/index.js';
+import type { ImageAiJobData, ImageAiResultData } from '../src/index.js';
 
 const client = new ApickClient('test-key');
 
@@ -22,6 +23,9 @@ const newTtsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('새 목
 const ttsSubtitles: Promise<ApickBinaryResult> = client.downloadTtsSubtitles('a'.repeat(32));
 const voiceId: TtsVoiceId = TTS_VOICE_IDS[16];
 const endpoint: string = SERVICES.businessDetails.endpoint;
+const generated: Promise<ApickResult<ImageAiResultData>> = client.generateImages('product', { count: 2, outputFormat: 'webp' });
+const imageJob: Promise<ApickResult<ImageAiJobData>> = client.createImageGenerationJob('covers', { count: 20 });
+const imageFile: Promise<ApickBinaryResult> = client.downloadImageJobImage('a'.repeat(32), 0);
 let error!: ApickApiError;
 
 void business;
@@ -34,4 +38,7 @@ void newTtsJob;
 void ttsSubtitles;
 void voiceId;
 void endpoint;
+void generated;
+void imageJob;
+void imageFile;
 void error;

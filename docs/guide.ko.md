@@ -123,6 +123,24 @@ const polished = await client.polish(draftText);
 
 입력 텍스트는 최대 100,000자입니다.
 
+## 이미지 AI
+
+```js
+const result = await client.generateImages('흰 배경의 제품 사진', {
+  count: 4,
+  size: '1024x1024',
+  outputFormat: 'webp',
+  idempotencyKey: 'product-draft-001'
+});
+
+const job = await client.createImageGenerationJob('가로형 커버 시안', { count: 20, size: '1536x1024' });
+const status = await client.getImageJob(job.data.job_id);
+```
+
+동기 생성·편집은 1~4장, 작업형 생성·편집은 1~50장입니다. 편집은 PNG/JPEG/WebP 원본과 선택적 알파 채널 마스크를 받습니다. 성공 이미지 한 장당 25포인트가 확정되며 실패·취소 수량의 예약 포인트는 해제됩니다. 결과 보관 기간은 완료 후 24시간입니다.
+
+지원 메서드: `generateImages`, `editImages`, `createImageGenerationJob`, `createImageEditJob`, `getImageJob`, `cancelImageJob`, `downloadImageJobImage`, `downloadImageJobArchive`.
+
 ## 응답 구조
 
 JSON 메서드:

@@ -123,6 +123,22 @@ const polished = await client.polish(draftText);
 
 Text input is limited to 100,000 characters.
 
+## Image AI
+
+```js
+const result = await client.generateImages('A clean product photo on white', {
+  count: 4, size: '1024x1024', outputFormat: 'webp',
+  idempotencyKey: 'product-draft-001'
+});
+
+const job = await client.createImageGenerationJob('Landscape article cover concepts', { count: 20, size: '1536x1024' });
+const status = await client.getImageJob(job.data.job_id);
+```
+
+Synchronous generation and editing support 1–4 images; job methods support 1–50. Editing accepts PNG, JPEG, or WebP sources and an optional alpha mask. Each stored successful image costs 25 points, while reservations for failed or cancelled items are released. Results remain available for 24 hours.
+
+Methods: `generateImages`, `editImages`, `createImageGenerationJob`, `createImageEditJob`, `getImageJob`, `cancelImageJob`, `downloadImageJobImage`, and `downloadImageJobArchive`.
+
 ## Response shape
 
 JSON methods resolve to:

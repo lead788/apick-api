@@ -3,6 +3,7 @@
 const DEFAULT_BASE_URL = 'https://apick.app';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_OCR_BYTES = 50 * 1024 * 1024;
+const MAX_IMAGE_AI_BYTES = 50 * 1024 * 1024;
 const TTS_VOICE_IDS = Object.freeze([
 	'narrator_m_01', 'narrator_m_02', 'narrator_m_03', 'narrator_m_04', 'narrator_m_05',
 	'narrator_f_10s_01', 'narrator_f_10s_02', 'narrator_f_10s_03',
@@ -37,7 +38,8 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
 	jsonToExcel: { endpoint: '/rest/json_to_excel', timeoutMs: 45_000, output: 'binary', filename: 'data.xlsx' },
 	summarize: { endpoint: '/rest/llm/text_summary', timeoutMs: 75_000, output: 'json' },
-	polish: { endpoint: '/rest/llm/text_polish', timeoutMs: 105_000, output: 'json' }
+	polish: { endpoint: '/rest/llm/text_polish', timeoutMs: 105_000, output: 'json' },
+	generateImages: { endpoint: '/rest/image-generation/generate', timeoutMs: 190_000, output: 'json' }
 });
 
 const SERVICES = Object.freeze(Object.fromEntries(
@@ -151,6 +153,7 @@ function inferImageType(filename) {
 	const lower = String(filename || '').toLowerCase();
 	if (lower.endsWith('.png')) return 'image/png';
 	if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+	if (lower.endsWith('.webp')) return 'image/webp';
 	return '';
 }
 
@@ -182,10 +185,11 @@ async function normalizeImage(image, options) {
 	}
 
 	const contentType = config.contentType || blob.type || inferImageType(filename);
-	if (contentType !== 'image/png' && contentType !== 'image/jpeg') {
-		throw new TypeError('OCR supports PNG and JPEG images only.');
+	const allowedTypes = config.allowedTypes || ['image/png', 'image/jpeg'];
+	if (!allowedTypes.includes(contentType)) {
+		throw new TypeError(config.typeError || 'OCR supports PNG and JPEG images only.');
 	}
-	if (blob.size > MAX_OCR_BYTES) {
+	if (blob.size > (config.maxBytes || MAX_OCR_BYTES)) {
 		throw new RangeError('image must not exceed 50 MB.');
 	}
 	return { blob, filename, contentType };
@@ -521,6 +525,83 @@ class ApickClient {
 
 	polish(text) {
 		return this._call('polish', { text: requiredString('text', text, 100_000) });
+	}
+
+	_imageOptions(prompt, options, maxCount) {
+		const config = options || {};
+		for (const key of ['model', 'quality', 'n', 'input_fidelity', 'moderation']) {
+			if (Object.prototype.hasOwnProperty.call(config, key)) throw new TypeError(`${key} is not a supported image option.`);
+		}
+		const count = positiveInteger('count', config.count, 1);
+		if (count > maxCount) throw new RangeError(`count must not exceed ${maxCount}.`);
+		const payload = {
+			prompt: requiredString('prompt', prompt, 6_000), count,
+			size: config.size || '1024x1024', output_format: config.outputFormat || 'png',
+			background: config.background || 'auto'
+		};
+		if (config.outputCompression !== undefined) payload.output_compression = config.outputCompression;
+		if (config.idempotencyKey !== undefined) {
+			payload.idempotency_key = requiredString('idempotencyKey', config.idempotencyKey, 128);
+			if (!/^[A-Za-z0-9_-]{8,128}$/.test(payload.idempotency_key)) throw new TypeError('idempotencyKey must use 8-128 letters, numbers, underscores, or hyphens.');
+		}
+		return payload;
+	}
+
+	generateImages(prompt, options) {
+		return this._call('generateImages', this._imageOptions(prompt, options, 4));
+	}
+
+	async editImages(image, prompt, options) {
+		const config = options || {}, payload = this._imageOptions(prompt, config, 4);
+		const uploadOptions = Object.assign({}, config, { allowedTypes:['image/png','image/jpeg','image/webp'], maxBytes:MAX_IMAGE_AI_BYTES, typeError:'image must be PNG, JPEG, or WebP.' });
+		const source = await normalizeImage(image, uploadOptions), form = new FormData();
+		Object.entries(payload).forEach(([key,value]) => form.append(key, String(value)));
+		form.append('image', source.blob, source.filename);
+		if (config.mask !== undefined) {
+			const mask = await normalizeImage(config.mask, Object.assign({}, uploadOptions, { filename:config.maskFilename || 'mask.png', contentType:config.maskContentType, allowedTypes:['image/png','image/webp'], typeError:'mask must be PNG or WebP.' }));
+			if (source.blob.size + mask.blob.size > MAX_IMAGE_AI_BYTES) throw new RangeError('image and mask together must not exceed 50 MB.');
+			form.append('mask', mask.blob, mask.filename);
+		}
+		return this._call('generateImages', null, form, { endpoint:'/rest/image-generation/edit' });
+	}
+
+	createImageGenerationJob(prompt, options) {
+		return this._call('generateImages', this._imageOptions(prompt, options, 50), null, { endpoint:'/rest/image-generation/jobs/generate', timeoutMs:60_000 });
+	}
+
+	async createImageEditJob(image, prompt, options) {
+		const config = options || {}, payload = this._imageOptions(prompt, config, 50);
+		const uploadOptions = Object.assign({}, config, { allowedTypes:['image/png','image/jpeg','image/webp'], maxBytes:MAX_IMAGE_AI_BYTES, typeError:'image must be PNG, JPEG, or WebP.' });
+		const source = await normalizeImage(image, uploadOptions), form = new FormData();
+		Object.entries(payload).forEach(([key,value]) => form.append(key, String(value)));
+		form.append('image', source.blob, source.filename);
+		if (config.mask !== undefined) {
+			const mask = await normalizeImage(config.mask, Object.assign({}, uploadOptions, { filename:config.maskFilename || 'mask.png', contentType:config.maskContentType, allowedTypes:['image/png','image/webp'], typeError:'mask must be PNG or WebP.' }));
+			if (source.blob.size + mask.blob.size > MAX_IMAGE_AI_BYTES) throw new RangeError('image and mask together must not exceed 50 MB.');
+			form.append('mask', mask.blob, mask.filename);
+		}
+		return this._call('generateImages', null, form, { endpoint:'/rest/image-generation/jobs/edit', timeoutMs:60_000 });
+	}
+
+	getImageJob(jobId) {
+		const id = normalizeTtsJobId(jobId);
+		return this._call('generateImages', null, null, { endpoint:'/rest/image-generation/jobs/'+id, method:'GET', timeoutMs:30_000 });
+	}
+
+	cancelImageJob(jobId) {
+		const id = normalizeTtsJobId(jobId);
+		return this._call('generateImages', null, null, { endpoint:'/rest/image-generation/jobs/'+id+'/cancel', timeoutMs:30_000 });
+	}
+
+	downloadImageJobImage(jobId, index) {
+		const id=normalizeTtsJobId(jobId), value=Number(index);
+		if(!Number.isInteger(value)||value<0||value>49) throw new RangeError('index must be an integer from 0 through 49.');
+		return this._call('generateImages', null, null, { endpoint:'/rest/image-generation/jobs/'+id+'/images/'+value, method:'GET', output:'binary', filename:id+'-'+value+'.bin', timeoutMs:60_000 });
+	}
+
+	downloadImageJobArchive(jobId) {
+		const id=normalizeTtsJobId(jobId);
+		return this._call('generateImages', null, null, { endpoint:'/rest/image-generation/jobs/'+id+'/result', method:'GET', output:'binary', filename:id+'.zip', timeoutMs:60_000 });
 	}
 }
 

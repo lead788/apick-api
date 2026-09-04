@@ -141,11 +141,11 @@ const job = await client.createImageGenerationJob('Landscape article cover conce
 const status = await client.getImageJob(job.data.job_id);
 ```
 
-`imageCount` is the number of images to make and defaults to one. Synchronous generation and editing support 1–4 images; job methods support 1–50. Add `referenceImage` to generation when the prompt should build from an existing composition, palette, or product shape. Editing accepts one PNG, JPEG, or WebP source up to 50 MB plus a prompt; mask files are not supported. Choose one of five sizes: `1024x1024`, `1536x1024`, `1024x1536`, `1152x864`, or `864x1152`. Each stored successful image costs 25 points, while reservations for failed or cancelled items are released. Results remain available for 24 hours.
+`imageCount` is the number of images to make and defaults to one. Synchronous generation and editing support 1–4 images; job methods support 1–50. Add `referenceImage` to generation when the prompt should build from an existing composition, palette, or product shape. Editing accepts one PNG, JPEG, or WebP source up to 50 MB plus a prompt; mask files are not supported. Choose one of five sizes: `1024x1024`, `1536x1024`, `1024x1536`, `1152x864`, or `864x1152`; prompts may contain up to 28,000 characters. The full image count × 25 points is deducted when accepted, and 25 points are refunded immediately for every failed image. Accepted jobs cannot be cancelled. Results remain available for 24 hours.
 
 `idempotencyKey` is a safety identifier that prevents duplicate generation and billing if a network problem sends the same request twice. Use 8–128 letters, numbers, underscores, or hyphens. Reuse it only for the exact same request and create a new value when the prompt or options change.
 
-Methods: `generateImages`, `editImages`, `createImageGenerationJob`, `createImageEditJob`, `getImageJob`, `cancelImageJob`, `downloadImageJobImage`, and `downloadImageJobArchive`.
+Methods: `generateImages`, `editImages`, `createImageGenerationJob`, `createImageEditJob`, `getImageJob`, `downloadImageJobImage`, and `downloadImageJobArchive`.
 
 ## Response shape
 

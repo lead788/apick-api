@@ -80,7 +80,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `editImages(image, prompt, options)` | 이미지 편집 / Image editing | JSON |
 | `createImageGenerationJob(prompt, options)` | 대량 이미지 생성 작업 / Batch generation job | JSON |
 | `createImageEditJob(image, prompt, options)` | 대량 이미지 편집 작업 / Batch edit job | JSON |
-| `getImageJob(jobId)` · `cancelImageJob(jobId)` | 이미지 작업 조회·취소 / Job status and cancellation | JSON |
+| `getImageJob(jobId)` | 이미지 작업 상태 조회 / Job status | JSON |
 | `downloadImageJobImage(jobId, index)` | 개별 결과 / Individual result | Binary |
 | `downloadImageJobArchive(jobId)` | ZIP 결과 / ZIP archive | Binary |
 
@@ -101,9 +101,9 @@ console.log(result.meta);
 
 ## 이미지 생성·편집 / Image generation and editing
 
-이미지는 장당 25포인트이며 동기는 1~4장, 작업형 API는 최대 50장까지 지원합니다. 성공적으로 저장된 이미지에 대해서만 과금되며 결과는 완료 후 24시간 동안 반복 다운로드할 수 있습니다.
+이미지는 장당 25포인트이며 동기는 1~4장, 작업형 API는 최대 50장까지 지원합니다. 요청이 접수되면 전체 금액을 먼저 차감하고, 생성에 실패한 이미지가 있으면 해당 장수만큼 즉시 환급합니다. 접수된 작업은 취소할 수 없으며 결과는 완료 후 24시간 동안 반복 다운로드할 수 있습니다.
 
-Images cost 25 points each. Synchronous calls support 1–4 images and job calls support up to 50. Only stored successful results are charged, and completed job results remain downloadable for 24 hours.
+Images cost 25 points each. Synchronous calls support 1–4 images and job calls support up to 50. The full amount is deducted when a request is accepted, and failed images are refunded immediately. Accepted jobs cannot be cancelled. Completed results remain downloadable for 24 hours.
 
 ```js
 const made = await apick.generateImages("따뜻한 조명의 미니멀 제품 사진", {
@@ -127,9 +127,9 @@ const image = await apick.downloadImageJobImage(job.data.job_id, 0);
 await image.save("./result.png");
 ```
 
-PNG·JPEG·WebP 출력, 투명 배경 미리보기(PNG/WebP), 5개 표준 크기(`1024x1024`, `1536x1024`, `1024x1536`, `1152x864`, `864x1152`)를 지원합니다. 입력 프롬프트는 최대 6,000자입니다. `idempotencyKey`는 네트워크 재전송 때 중복 생성과 중복 과금을 막는 8~128자의 요청 식별자이며, 같은 작업을 다시 보낼 때 같은 값을 사용합니다. 자동 재시도는 하지 않습니다.
+PNG·JPEG·WebP 출력, 투명 배경 미리보기(PNG/WebP), 5개 표준 크기(`1024x1024`, `1536x1024`, `1024x1536`, `1152x864`, `864x1152`)를 지원합니다. 입력 프롬프트는 최대 28,000자입니다. `idempotencyKey`는 네트워크 재전송 때 중복 생성과 중복 과금을 막는 8~128자의 요청 식별자이며, 같은 작업을 다시 보낼 때 같은 값을 사용합니다. 자동 재시도는 하지 않습니다.
 
-PNG, JPEG, and WebP outputs, transparent-background previews for PNG/WebP, and five standard sizes are supported. Prompts are limited to 6,000 characters. `idempotencyKey` identifies the same request during network retransmission to prevent duplicate generation and billing. Requests are never retried automatically.
+PNG, JPEG, and WebP outputs, transparent-background previews for PNG/WebP, and five standard sizes are supported. Prompts are limited to 28,000 characters. `idempotencyKey` identifies the same request during network retransmission to prevent duplicate generation and billing. Requests are never retried automatically.
 
 OCR은 PNG/JPEG 파일 경로, `Blob`, `ArrayBuffer`, `Uint8Array`를 받습니다. 최대 크기는 50MB입니다.
 OCR accepts a PNG/JPEG file path, `Blob`, `ArrayBuffer`, or `Uint8Array`, up to 50MB.

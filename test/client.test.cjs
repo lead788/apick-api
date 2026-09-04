@@ -55,18 +55,21 @@ test('supports synchronous and batch image contracts without provider options', 
 	await assert.rejects(client.generateImages('x',{size:'2560x1440'}),/size must be one of/);
 	await assert.rejects(client.generateImages('x',{model:'hidden'}),/not a supported image option/);
 	await assert.rejects(client.generateImages('x',{idempotencyKey:'short'}),/8-128/);
+	await client.generateImages('가'.repeat(28_000));
+	await assert.rejects(client.generateImages('가'.repeat(28_001)),/28000/);
+	assert.equal(typeof client.cancelImageJob, 'undefined');
 	await client.editImages(Uint8Array.from([1]), '손잡이 색상 변경', {
 		filename:'source.webp', contentType:'image/webp'
 	});
-	assert.equal(requests[4].url,'https://api.example.test/rest/image-generation/edit');
-	assert.ok(requests[4].options.body instanceof FormData);
-	assert.equal(requests[4].options.body.get('image').name,'source.webp');
-	assert.equal(requests[4].options.body.has('mask'),false);
+	assert.equal(requests[5].url,'https://api.example.test/rest/image-generation/edit');
+	assert.ok(requests[5].options.body instanceof FormData);
+	assert.equal(requests[5].options.body.get('image').name,'source.webp');
+	assert.equal(requests[5].options.body.has('mask'),false);
 	await client.generateImages('구도를 유지하고 여름 분위기로', {
 		referenceImage:Uint8Array.from([1]), referenceFilename:'reference.png', referenceContentType:'image/png'
 	});
-	assert.ok(requests[5].options.body instanceof FormData);
-	assert.equal(requests[5].options.body.get('reference_image').name,'reference.png');
+	assert.ok(requests[6].options.body instanceof FormData);
+	assert.equal(requests[6].options.body.get('reference_image').name,'reference.png');
 	await assert.rejects(client.editImages(Uint8Array.from([1]), '편집', {
 		filename:'source.png', contentType:'image/png', mask:Uint8Array.from([2])
 	}), /mask is not a supported image option/);

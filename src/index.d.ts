@@ -30,14 +30,14 @@ export interface OcrOptions {
 export type ImageAiFormat = 'png' | 'jpeg' | 'webp';
 export type ImageAiBackground = 'auto' | 'opaque' | 'transparent';
 export type ImageAiSize = '1024x1024' | '1536x1024' | '1024x1536' | '1152x864' | '864x1152';
-export type ImageAiStatus = 'waiting' | 'processing' | 'completed' | 'completed_partial' | 'cancelled' | 'failed';
+export type ImageAiStatus = 'waiting' | 'processing' | 'completed' | 'completed_partial' | 'failed';
 export type ApickImageErrorCode = `APICK_IMAGE_${string}`;
 export interface ImageAiOptions { imageCount?: number; size?: ImageAiSize; outputFormat?: ImageAiFormat; background?: ImageAiBackground; idempotencyKey?: string; }
 export interface ImageAiGenerateOptions extends ImageAiOptions { referenceImage?: string|BinaryInput|ArrayBuffer|ArrayBufferView; referenceFilename?: string; referenceContentType?: 'image/png'|'image/jpeg'|'image/webp'; }
 export interface ImageAiEditOptions extends ImageAiOptions { filename?: string; contentType?: 'image/png'|'image/jpeg'|'image/webp'; }
 export interface ImageAiResultImage { index:number; b64_json:string; mime_type:'image/png'|'image/jpeg'|'image/webp'; width:number; height:number; }
 export interface ImageAiResultData { request_id:string; image_count:number; images:ImageAiResultImage[]; idempotent_replay?:boolean; }
-export interface ImageAiJobData { job_id:string; status:ImageAiStatus; requested_count:number; completed_count?:number; failed_count?:number; charged_point?:number; result_available?:boolean; expires_at?:string|null; error_code?:ApickImageErrorCode|null; }
+export interface ImageAiJobData { job_id:string; status:ImageAiStatus; requested_count:number; completed_count?:number; failed_count?:number; prepaid_point?:number; charged_point?:number; refunded_point?:number; result_available?:boolean; expires_at?:string|null; error_code?:ApickImageErrorCode|null; }
 
 export interface MaskResidentNumberOptions extends OcrOptions {
 	type: 1 | 2 | 3;
@@ -128,7 +128,6 @@ export class ApickClient {
 	createImageGenerationJob(prompt:string, options?:ImageAiGenerateOptions): Promise<ApickResult<ImageAiJobData>>;
 	createImageEditJob(image:string|BinaryInput|ArrayBuffer|ArrayBufferView, prompt:string, options?:ImageAiEditOptions): Promise<ApickResult<ImageAiJobData>>;
 	getImageJob(jobId:string): Promise<ApickResult<ImageAiJobData>>;
-	cancelImageJob(jobId:string): Promise<ApickResult<ImageAiJobData>>;
 	downloadImageJobImage(jobId:string,index:number): Promise<ApickBinaryResult>;
 	downloadImageJobArchive(jobId:string): Promise<ApickBinaryResult>;
 }

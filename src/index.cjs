@@ -539,7 +539,7 @@ class ApickClient {
 		const size = config.size || '1024x1024';
 		if (!IMAGE_AI_SIZE_SET.has(size)) throw new TypeError(`size must be one of: ${IMAGE_AI_SIZES.join(', ')}.`);
 		const payload = {
-			prompt: requiredString('prompt', prompt, 6_000), image_count: imageCount,
+			prompt: requiredString('prompt', prompt, 28_000), image_count: imageCount,
 			size, output_format: config.outputFormat || 'png',
 			background: config.background || 'auto'
 		};
@@ -599,11 +599,6 @@ class ApickClient {
 	getImageJob(jobId) {
 		const id = normalizeTtsJobId(jobId);
 		return this._call('generateImages', null, null, { endpoint:'/rest/image-generation/jobs/'+id, method:'GET', timeoutMs:30_000 });
-	}
-
-	cancelImageJob(jobId) {
-		const id = normalizeTtsJobId(jobId);
-		return this._call('generateImages', null, null, { endpoint:'/rest/image-generation/jobs/'+id+'/cancel', timeoutMs:30_000 });
 	}
 
 	downloadImageJobImage(jobId, index) {

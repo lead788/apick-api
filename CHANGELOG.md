@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0 - 2026-09-08
+
+- TTS 발화별 검수 이력, 후보 WAV 조회, 멱등 키를 사용하는 같은 작업 재개 메서드를 추가했습니다.
+- Added TTS quality history, candidate WAV downloads, and idempotent job recovery methods.
+
 ## 3.0.0 - 2026-09-05
 
 - 이미지 프롬프트 허용 길이를 최대 28,000자로 확대했습니다.

@@ -485,6 +485,30 @@ class ApickClient {
 		return this._call('createTtsJob', null, null, { endpoint: '/rest/tts/jobs/' + id + '/cancel' });
 	}
 
+	getTtsQuality(jobId) {
+		const id = normalizeTtsJobId(jobId);
+		return this._call('createTtsJob', null, null, { endpoint: '/rest/tts/jobs/' + id + '/quality', method: 'GET' });
+	}
+
+	retryTtsJob(jobId, utteranceIds, idempotencyKey) {
+		const id = normalizeTtsJobId(jobId);
+		if (!Array.isArray(utteranceIds) || utteranceIds.length > 100 || utteranceIds.some(value => typeof value !== 'string' || !/^u\d{3}$/.test(value))) {
+			throw new TypeError('utteranceIds must contain up to 100 uNNN identifiers.');
+		}
+		if (typeof idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(idempotencyKey)) {
+			throw new TypeError('idempotencyKey must contain 8 to 128 letters, digits, underscores or hyphens.');
+		}
+		return this._call('createTtsJob', { utterance_ids: [...new Set(utteranceIds)].sort(), idempotency_key: idempotencyKey }, null,
+			{ endpoint: '/rest/tts/jobs/' + id + '/retry' });
+	}
+
+	downloadTtsCandidate(jobId, candidateId) {
+		const id = normalizeTtsJobId(jobId);
+		if (typeof candidateId !== 'string' || !/^[a-f0-9]{32}$/.test(candidateId)) throw new TypeError('candidateId must be a 32-character hexadecimal identifier.');
+		return this._call('createTtsJob', null, null, { endpoint: '/rest/tts/jobs/' + id + '/candidates/' + candidateId + '/audio',
+			method: 'GET', output: 'binary', filename: candidateId + '.wav' });
+	}
+
 	downloadTtsResult(jobId) {
 		const id = normalizeTtsJobId(jobId);
 		return this._call('createTtsJob', null, null, {

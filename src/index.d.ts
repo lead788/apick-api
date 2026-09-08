@@ -59,6 +59,21 @@ export interface TtsJobData {
 	character_count?: number;
 	result_available?: boolean;
 	subtitles_available?: boolean;
+	resume_revision?: number;
+	operation_revision?: number;
+	quality?: TtsQualityData | null;
+}
+
+export interface TtsQualityData {
+	job_id?: string;
+	resume_revision?: number;
+	phase?: string;
+	accepted_utterances?: number;
+	failed_utterances?: number;
+	total_utterances?: number;
+	utterances?: Array<{ id: string; status: string; attempt?: number; reasons?: string[];
+		speech_rate?: { chars: number; duration_sec: number; cps: number; expected_sec: number; duration_ratio: number | null; status: string } }>;
+	candidates?: Array<{ candidate_id: string; utterance_id: string; status: string; attempt: number; audio_available?: boolean }>;
 }
 
 export class ApickApiError extends Error {
@@ -119,6 +134,9 @@ export class ApickClient {
 	cancelTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	downloadTtsResult(jobId: string): Promise<ApickBinaryResult>;
 	downloadTtsSubtitles(jobId: string): Promise<ApickBinaryResult>;
+	getTtsQuality(jobId: string): Promise<ApickResult<TtsQualityData>>;
+	retryTtsJob(jobId: string, utteranceIds: string[], idempotencyKey: string): Promise<ApickResult<TtsJobData>>;
+	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;
 	summarize(text: string): Promise<ApickResult>;

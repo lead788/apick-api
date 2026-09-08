@@ -72,6 +72,9 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |
 | `downloadTtsResult(jobId)` | TTS 결과 1회 다운로드 / One-time TTS result | MP3 |
 | `downloadTtsSubtitles(jobId)` | TTS 자막 1회 다운로드 / One-time TTS subtitles | ASS |
+| `getTtsQuality(jobId)` | 발화별 검수·후보 이력 / Utterance quality and candidates | JSON |
+| `retryTtsJob(jobId, utteranceIds, idempotencyKey)` | 같은 작업의 국소 복구 / Idempotent local recovery | JSON |
+| `downloadTtsCandidate(jobId, candidateId)` | 검수 후보 청취 / Candidate audio | WAV |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |

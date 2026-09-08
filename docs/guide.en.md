@@ -180,3 +180,8 @@ The document-specific methods are `maskResidenceCard`, `maskPassport`, `maskIdCa
 ## Errors and retries
 
 `ApickApiError` includes public error information: `code`, optional `serviceCode`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.
+# TTS quality and recovery
+
+Use `getTtsQuality(jobId)` to inspect utterance speed, rejection reasons, and candidate history. Candidates remain available for 72 hours after the job terminates. `downloadTtsCandidate(jobId, candidateId)` does not consume the final MP3 or ASS download.
+
+`retryTtsJob(jobId, ['u002'], idempotencyKey)` requests technical recovery within the same job without an additional charge. Reuse the same key and utterance list after a lost response. Check `resume_revision` to identify the current revision. Required quality checks must pass before a job completes.

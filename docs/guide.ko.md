@@ -182,3 +182,8 @@ console.log(result.data.result.fields);
 ## 오류와 재시도
 
 `ApickApiError`에는 공개 오류 정보인 `code`, `serviceCode`, `status`, `message`가 포함됩니다. SDK는 중복 호출과 중복 과금을 방지하기 위해 자동 재시도를 하지 않습니다. 재시도가 필요하면 작업의 멱등성과 오류 코드를 확인한 뒤 애플리케이션에서 명시적으로 결정하세요.
+# TTS 검수와 재개
+
+`getTtsQuality(jobId)`로 발화별 속도·실패 이유와 후보 목록을 조회합니다. 후보는 작업 종료 후 72시간 보존되며 `downloadTtsCandidate(jobId, candidateId)` 호출은 최종 MP3·ASS의 1회 다운로드를 소비하지 않습니다.
+
+`retryTtsJob(jobId, ['u002'], idempotencyKey)`는 해당 발화의 기술적 복구를 같은 작업에서 요청합니다. 응답이 끊겨도 같은 키와 발화 목록을 사용하세요. 기술적 복구는 추가 과금하지 않으며, 재개 회차는 `resume_revision`으로 확인합니다. 필수 검수를 통과하지 못한 작업은 완료되지 않습니다.

@@ -108,6 +108,9 @@ export const SERVICES: Readonly<Record<string, Readonly<{
 }>>>;
 
 export class ApickClient {
+	createVideoJob(model: VideoModel, prompt: string, options?: VideoJobOptions): Promise<ApickResult<VideoJobData>>;
+	getVideoJob(model: VideoModel, jobId: string): Promise<ApickResult<VideoJobData>>;
+	downloadVideoResult(model: VideoModel, jobId: string): Promise<ApickBinaryResult>;
 	constructor(apiKeyOrOptions: string | ApickClientOptions);
 	businessDetails(businessNumber: string): Promise<ApickResult>;
 	ventureBusiness(businessNumber: string): Promise<ApickResult>;
@@ -151,3 +154,23 @@ export class ApickClient {
 }
 
 export default ApickClient;
+
+export type VideoModel = 'seedance' | 'veo' | 'kling';
+export interface VideoJobOptions {
+	version?: string; tier?: string; mode?: 'text' | 'image' | 'reference'; duration?: number;
+	aspectRatio?: string; resolution?: string; audio?: boolean; negativePrompt?: string;
+	seed?: number; cfgScale?: number; idempotencyKey?: string;
+	image?: string | BinaryInput | ArrayBuffer | ArrayBufferView;
+	lastImage?: string | BinaryInput | ArrayBuffer | ArrayBufferView;
+	referenceImages?: Array<string | BinaryInput | ArrayBuffer | ArrayBufferView>;
+	referenceVideos?: Array<string | BinaryInput>;
+	referenceAudios?: Array<string | BinaryInput>;
+}
+export interface VideoJobData {
+	job_id: string; model: VideoModel; version: string; mode: string; tier: string;
+	status: 'waiting' | 'processing' | 'completed' | 'failed' | 'cancelled';
+	duration: number; resolution?: string; audio?: boolean; point_per_second?: number;
+	charged_point?: number; result_available?: boolean; result_url?: string;
+	result_expires_at?: string | null; idempotent_replay?: boolean;
+	error?: { code: string; message: string };
+}

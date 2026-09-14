@@ -187,3 +187,28 @@ console.log(result.data.result.fields);
 `getTtsQuality(jobId)`로 발화별 속도·실패 이유와 후보 목록을 조회합니다. 후보는 작업 종료 후 72시간 보존되며 `downloadTtsCandidate(jobId, candidateId)` 호출은 최종 MP3·ASS의 1회 다운로드를 소비하지 않습니다.
 
 `retryTtsJob(jobId, ['u002'], idempotencyKey)`는 해당 발화의 기술적 복구를 같은 작업에서 요청합니다. 응답이 끊겨도 같은 키와 발화 목록을 사용하세요. 기술적 복구는 추가 과금하지 않으며, 재개 회차는 `resume_revision`으로 확인합니다. 필수 검수를 통과하지 못한 작업은 완료되지 않습니다.
+
+## 영상 모델 버전 선택
+
+`version`을 생략하면 Seedance 2.5, Veo 3.1, Kling 3.0을 사용합니다. 버전과 등급을 명시하면 해당 조합으로 생성하며 다른 모델로 자동 대체하지 않습니다. 생성과 상태 응답의 `version`으로 확인할 수 있습니다.
+
+| 제품 | 제공 버전 | 제약과 요금 |
+|---|---|---|
+| Seedance | 2.5, 2.0(Standard·Fast·Mini), 1.5, 1.0 | [버전별 지원표](https://apick.app/dev_guide/seedancejobs) |
+| Veo | 3.1 (Standard, Fast, Lite) | [버전별 지원표](https://apick.app/dev_guide/veojobs) |
+| Kling | 3.0, O3, O1, 2.6, 2.5, 2.1, 2.0, 1.6 | [버전별 지원표](https://apick.app/dev_guide/klingjobs) |
+
+등급·해상도·길이·오디오·파일 개수와 초당 포인트는 선택 조합별로 다릅니다. Seedance 2.0은 Standard·Fast·Mini를 제공하며 Mini는 480p·720p와 4~15초를 지원합니다. 무음 전용 모델은 `audio=false`, 오디오 필수 모델은 `audio=true`만 허용합니다. Veo 3.0은 현재 제공하지 않습니다. 지원하지 않는 조합은 접수 전에 거절됩니다.
+
+Seedance 참조 소재 모드는 지원 버전에서 `referenceImages`, `referenceVideos`, `referenceAudios`(MP3·WAV)를 함께 사용할 수 있습니다.
+
+```js
+const job = await client.createVideoJob("kling", "A boat crossing the sea", {
+  version: "1.6", tier: "std", mode: "text", duration: 5, audio: false,
+  idempotencyKey: "boat-video-0001"
+});
+const status = await client.getVideoJob("kling", job.data.job_id);
+if (status.data.status === "completed") {
+  await (await client.downloadVideoResult("kling", job.data.job_id)).save("boat.mp4");
+}
+```

@@ -185,3 +185,22 @@ The document-specific methods are `maskResidenceCard`, `maskPassport`, `maskIdCa
 Use `getTtsQuality(jobId)` to inspect utterance speed, rejection reasons, and candidate history. Candidates remain available for 72 hours after the job terminates. `downloadTtsCandidate(jobId, candidateId)` does not consume the final MP3 or ASS download.
 
 `retryTtsJob(jobId, ['u002'], idempotencyKey)` requests technical recovery within the same job without an additional charge. Reuse the same key and utterance list after a lost response. Check `resume_revision` to identify the current revision. Required quality checks must pass before a job completes.
+
+## Video model versions
+
+Omitting `version` preserves Seedance 2.5, Veo 3.1 and Kling 3.0. Set `version` and `tier` explicitly to select a generation; jobs are never silently switched to another version. Submission and status responses include `version`.
+
+Available generations: Seedance 1.0/1.5/2.0/2.5, including Seedance 2.0 Standard/Fast/Mini; Veo 3.1 (Standard/Fast/Lite); Kling 1.6/2.0/2.1/2.5/2.6/3.0/O1/O3. Veo 3.0 is unavailable. Seedance 2.0 Mini supports 480p/720p and 4–15 seconds. Modes, tiers, resolutions, durations, audio, file limits and prices vary by combination. See the [Seedance](https://apick.app/dev_guide/seedancejobs), [Veo](https://apick.app/dev_guide/veojobs) and [Kling](https://apick.app/dev_guide/klingjobs) version tables. Unsupported combinations are rejected before submission.
+
+Seedance reference mode accepts `referenceImages`, `referenceVideos`, and `referenceAudios` (MP3/WAV) when supported by the selected version.
+
+```js
+const job = await client.createVideoJob("kling", "A boat crossing the sea", {
+  version: "1.6", tier: "std", mode: "text", duration: 5, audio: false,
+  idempotencyKey: "boat-video-0001"
+});
+const status = await client.getVideoJob("kling", job.data.job_id);
+if (status.data.status === "completed") {
+  await (await client.downloadVideoResult("kling", job.data.job_id)).save("boat.mp4");
+}
+```

@@ -264,3 +264,36 @@ Error codes are one of `APICK_AUTH_ERROR`, `APICK_TIMEOUT`, `APICK_NETWORK_ERROR
 ## License
 
 MIT — see [LICENSE](LICENSE). Use of the APICK service is governed by the [APICK terms](https://apick.app/terms).
+
+## Video model versions
+
+Omitting `version` preserves Seedance 2.5, Veo 3.1 and Kling 3.0. Set `version` and `tier` explicitly to select a generation; jobs are never silently switched to another version. Submission and status responses include `version`.
+
+Available generations: Seedance 1.0/1.5/2.0/2.5, including Seedance 2.0 Standard/Fast/Mini; Veo 3.1 (Standard/Fast/Lite); Kling 1.6/2.0/2.1/2.5/2.6/3.0/O1/O3. Veo 3.0 is unavailable. Modes, tiers, resolutions, durations, audio, file limits and prices vary by combination. See the [Seedance](https://apick.app/dev_guide/seedancejobs), [Veo](https://apick.app/dev_guide/veojobs) and [Kling](https://apick.app/dev_guide/klingjobs) version tables. Unsupported combinations are rejected before submission.
+
+Seedance reference mode accepts `referenceImages`, `referenceVideos`, and `referenceAudios` (MP3/WAV) when supported by the selected version.
+
+## 영상 모델 버전 선택
+
+`version`을 생략하면 Seedance 2.5, Veo 3.1, Kling 3.0을 사용합니다. 버전과 등급을 명시하면 해당 조합으로 생성하며 다른 모델로 자동 대체하지 않습니다. 생성과 상태 응답의 `version`으로 확인할 수 있습니다.
+
+| 제품 | 제공 버전 | 제약과 요금 |
+|---|---|---|
+| Seedance | 2.5, 2.0(Standard·Fast·Mini), 1.5, 1.0 | [버전별 지원표](https://apick.app/dev_guide/seedancejobs) |
+| Veo | 3.1 (Standard, Fast, Lite) | [버전별 지원표](https://apick.app/dev_guide/veojobs) |
+| Kling | 3.0, O3, O1, 2.6, 2.5, 2.1, 2.0, 1.6 | [버전별 지원표](https://apick.app/dev_guide/klingjobs) |
+
+등급·해상도·길이·오디오·파일 개수와 초당 포인트는 선택 조합별로 다릅니다. Seedance 2.0은 Standard·Fast·Mini를 제공하며 Mini는 480p·720p와 4~15초를 지원합니다. 무음 전용 모델은 `audio=false`, 오디오 필수 모델은 `audio=true`만 허용합니다. Veo 3.0은 현재 제공하지 않습니다. 지원하지 않는 조합은 접수 전에 거절됩니다.
+
+Seedance 참조 소재 모드는 지원 버전에서 `referenceImages`, `referenceVideos`, `referenceAudios`(MP3·WAV)를 함께 사용할 수 있습니다.
+
+```js
+const job = await client.createVideoJob("kling", "A boat crossing the sea", {
+  version: "1.6", tier: "std", mode: "text", duration: 5, audio: false,
+  idempotencyKey: "boat-video-0001"
+});
+const status = await client.getVideoJob("kling", job.data.job_id);
+if (status.data.status === "completed") {
+  await (await client.downloadVideoResult("kling", job.data.job_id)).save("boat.mp4");
+}
+```

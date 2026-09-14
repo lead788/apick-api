@@ -44,3 +44,12 @@ void referenced;
 void imageJob;
 void imageFile;
 void error;
+
+import type { VideoJobData, VideoJobOptions } from "../src/index.js";
+const videoOptions: VideoJobOptions = { version:"1.6", tier:"std", audio:false, duration:5 };
+const videoJob: Promise<ApickResult<VideoJobData>> = client.createVideoJob("kling", "a boat", videoOptions);
+const videoStatus: Promise<ApickResult<VideoJobData>> = client.getVideoJob("kling", "a".repeat(32));
+const videoResult: Promise<ApickBinaryResult> = client.downloadVideoResult("kling", "a".repeat(32));
+void videoJob; void videoStatus; void videoResult;
+// @ts-expect-error 지원하지 않는 제품
+client.createVideoJob("other", "a boat");

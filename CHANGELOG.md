@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.2.0 — 2026-09-14
+
+- Seedance 참조 영상 작업에 `referenceAudios`(MP3·WAV) 입력을 추가했습니다.
+- Add video generation version selection documentation and compatibility tests.
+- 영상 생성 버전 선택, 버전별 옵션·요금 안내와 호환 검증을 추가했습니다.
+- Add createVideoJob, getVideoJob, downloadVideoResult and public TypeScript types.
+- Document and verify Seedance 2.0 Fast and Mini tier pass-through.
+
 ## 3.1.0 - 2026-09-08
 
 - TTS 발화별 검수 이력, 후보 WAV 조회, 멱등 키를 사용하는 같은 작업 재개 메서드를 추가했습니다.

@@ -19,8 +19,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 26 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 26);
+test('exports a focused catalog of 27 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 27);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);

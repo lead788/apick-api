@@ -37,6 +37,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	googleImageSearch: { endpoint: '/rest/google_image_search', timeoutMs: 35_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	createTtsJob: { endpoint: '/rest/tts/jobs', timeoutMs: 35_000, output: 'json' },
+	createVideoJob: { endpoint: '/rest/seedance/jobs', timeoutMs: 60_000, output: 'json' },
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
 	jsonToExcel: { endpoint: '/rest/json_to_excel', timeoutMs: 45_000, output: 'binary', filename: 'data.xlsx' },
 	summarize: { endpoint: '/rest/llm/text_summary', timeoutMs: 75_000, output: 'json' },
@@ -465,6 +466,52 @@ class ApickClient {
 
 	screenshot(url) {
 		return this._call('screenshot', { url: normalizeUrl(url) });
+	}
+
+	async createVideoJob(model, prompt, options) {
+		if (!['seedance', 'veo', 'kling'].includes(model)) throw new RangeError('model must be seedance, veo or kling.');
+		const config = options || {};
+		const payload = { prompt: config.mode === 'reference' && prompt === '' ? '' : requiredString('prompt', prompt, 2000) };
+		for (const [key, field] of Object.entries({ version:'version', tier:'tier', mode:'mode', duration:'duration', aspectRatio:'aspect_ratio', resolution:'resolution', audio:'audio', negativePrompt:'negative_prompt', seed:'seed', cfgScale:'cfg_scale', idempotencyKey:'idempotency_key' })) {
+			if (config[key] !== undefined) payload[field] = config[key];
+		}
+		const files = [['image', config.image], ['last_image', config.lastImage]];
+		for (const input of config.referenceImages || []) files.push(['reference_image', input]);
+		for (const input of config.referenceVideos || []) files.push(['reference_video', input]);
+		for (const input of config.referenceAudios || []) files.push(['reference_audio', input]);
+		const present = files.filter(([, input]) => input !== undefined);
+		const request = { endpoint: '/rest/' + model + '/jobs' };
+		if (!present.length) return this._call('createVideoJob', payload, null, request);
+		const form = new FormData();
+		for (const [key, value] of Object.entries(payload)) form.append(key, String(value));
+		for (const [field, input] of present) {
+			if (field !== 'reference_video' && field !== 'reference_audio') {
+				const upload = await normalizeImage(input);
+				form.append(field, upload.blob, upload.filename);
+			} else {
+				let bytes, filename, contentType;
+				if (typeof input === 'string') {
+					bytes = await require('node:fs/promises').readFile(input);
+					filename = require('node:path').basename(input);
+					contentType = field === 'reference_audio' ? (/\.wav$/i.test(filename) ? 'audio/wav' : 'audio/mpeg') : /\.webm$/i.test(filename) ? 'video/webm' : /\.mov$/i.test(filename) ? 'video/quicktime' : 'video/mp4';
+				} else { bytes = await input.arrayBuffer(); filename = input.name || (field === 'reference_audio' ? 'reference.mp3' : 'reference.mp4'); contentType = input.type || (field === 'reference_audio' ? 'audio/mpeg' : 'video/mp4'); }
+				const allowed = field === 'reference_audio' ? ['audio/mpeg', 'audio/wav', 'audio/x-wav'] : ['video/mp4', 'video/quicktime', 'video/webm'];
+				const maxBytes = field === 'reference_audio' ? 15 * 1024 * 1024 : 100 * 1024 * 1024;
+				if (!allowed.includes(contentType) || bytes.byteLength < 1 || bytes.byteLength > maxBytes) throw new RangeError(field === 'reference_audio' ? 'Invalid reference audio.' : 'Invalid reference video.');
+				form.append(field, new Blob([bytes], { type: contentType }), filename);
+			}
+		}
+		return this._call('createVideoJob', null, form, request);
+	}
+
+	getVideoJob(model, jobId) {
+		if (!['seedance', 'veo', 'kling'].includes(model) || !/^[a-f0-9]{32}$/.test(jobId)) throw new RangeError('Invalid video model or job ID.');
+		return this._call('createVideoJob', null, null, { endpoint:'/rest/'+model+'/jobs/'+jobId, method:'GET', timeoutMs:30_000 });
+	}
+
+	downloadVideoResult(model, jobId) {
+		if (!['seedance', 'veo', 'kling'].includes(model) || !/^[a-f0-9]{32}$/.test(jobId)) throw new RangeError('Invalid video model or job ID.');
+		return this._call('createVideoJob', null, null, { endpoint:'/rest/'+model+'/jobs/'+jobId+'/result', method:'GET', output:'binary', filename:jobId+'.mp4', timeoutMs:60_000 });
 	}
 
 	createTtsJob(text, options) {

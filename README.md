@@ -16,6 +16,10 @@
 
 ## 빠른 시작 / Quick start
 
+본문이 있는 요청은 `multipart/form-data`로 전송됩니다. 배열·객체도 개별 폼 항목으로 전달하고 SDK가 boundary를 자동 설정합니다. 기존 메서드와 JSON·파일 응답 형식은 유지됩니다.
+
+Requests with a body use `multipart/form-data`, including indexed fields for nested values. The SDK sets the boundary automatically; method signatures and JSON/file results remain unchanged.
+
 ```bash
 npm install apick-api
 ```
@@ -182,13 +186,13 @@ await excel.save('./scores.xlsx');
 
 The legacy synchronous TTS API has retired. Create a Korean narration job, poll every 2–5 seconds until it is `completed`, then download the MP3 result once.
 
-17 neutral narration voices are supported: the five original `narrator_m_01`–`narrator_m_05` voices plus `narrator_f_10s_01`–`03`, `narrator_m_20s_01`, `narrator_f_20s_01`–`04`, `narrator_m_30s_01`–`02`, `narrator_m_40s_01`, and `narrator_m_80s_01`. Import `TTS_VOICE_IDS` for the exact list.
+TTS supports 16 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the current list.
 
-표시 이름 / voice labels: `narrator_m_01` 태준, `narrator_m_02` 민석, `narrator_m_03` 도현, `narrator_m_04` 강우, `narrator_m_05` 성훈, `narrator_f_10s_01` 서아, `narrator_f_10s_02` 하린, `narrator_f_10s_03` 예린, `narrator_m_20s_01` 도윤, `narrator_f_20s_01` 지안, `narrator_f_20s_02` 서윤, `narrator_f_20s_03` 소연, `narrator_f_20s_04` 유나, `narrator_m_30s_01` 현우, `narrator_m_30s_02` 준혁, `narrator_m_40s_01` 정우, `narrator_m_80s_01` 영수.
+`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_01`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_teen_01`, `v2_f_young_01`, `v2_f_senior_01`
 
 ```js
 const created = await apick.createTtsJob('오늘의 이야기를 시작합니다.', {
-  voiceId: 'narrator_m_03'
+  voiceId: 'v2_ann_m_30s_01'
 });
 const jobId = created.data.job_id;
 
@@ -220,8 +224,8 @@ const passport = await apick.maskPassport('./passport.jpg');
 console.log(passport.data.result.fields);
 ```
 
-`maskResidenceCard`, `maskPassport`, `maskIdCard`, `maskDriverLicense`는 JSON 결과를 반환합니다. `maskResidentNumber`는 PNG 바이너리를 반환하며 `type`은 `1`, `2`, `3` 중 하나입니다.
-The four document-specific methods return JSON. `maskResidentNumber` returns PNG bytes and requires `type` 1, 2, or 3.
+`maskResidenceCard`, `maskPassport`, `maskIdCard`, `maskDriverLicense`는 JSON 결과를 반환합니다. `maskResidentNumber`는 PNG 바이너리를 반환하며 `type`은 `1`, `2`, `3`, `4` 중 하나이며 4는 주민등록번호와 주소를 함께 가립니다.
+The four document-specific methods return JSON. `maskResidentNumber` returns PNG bytes and requires `type` 1, 2, 3, or 4 (number and address).
 
 `maskResidenceCard`는 외국인등록증·영주증·외국국적동포 국내거소신고증의 앞면 한 장을 지원합니다. 영주증과 외국국적동포 국내거소신고증 지원은 개인정보 마스킹에만 적용되며 외국인등록증 진위확인 범위는 변경되지 않습니다.
 `maskResidenceCard` accepts one front-side image of a residence card, permanent resident card, or overseas Korean resident card. Permanent and overseas Korean card support is limited to PII masking and does not expand the alien registration card authenticity-check scope.

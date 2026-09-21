@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.3.0 — 2026-09-21
+
+- 모든 REST 요청의 인증 헤더를 `CL_AUTH_KEY` 에서 표준 `Authorization: Bearer <API 키>` 로 전환했습니다. 서버가 전환 기간 동안 두 헤더를 모두 받으므로 기존 호출도 계속 동작합니다.
+- Send REST requests with the standard `Authorization: Bearer <API key>` header instead of `CL_AUTH_KEY`. Both headers are accepted during the migration window.
+- Mask bearer tokens in error output alongside the legacy header.
+- Synchronize all 16 current TTS voice IDs and masking type 4 with the public REST contract.
+
+- Send all REST request bodies as multipart/form-data, including flattened nested arrays and objects. Keep existing method signatures and JSON/file responses.
+- REST 요청을 multipart/form-data로 통일하고 중첩 입력·파일·불리언의 호환 테스트를 추가했습니다. 기존 메서드와 응답 타입은 유지합니다.
+- Document OpenAPI/Postman downloads and compatibility with older JSON callers.
+
 ## 3.2.0 — 2026-09-14
 
 - Seedance 참조 영상 작업에 `referenceAudios`(MP3·WAV) 입력을 추가했습니다.

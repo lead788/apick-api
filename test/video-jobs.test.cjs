@@ -10,14 +10,14 @@ function setup() {
     } });
     return {calls,client};
 }
-test('video JSON forwards version, tier, audio and idempotency key', async () => {
+test('video multipart forwards version, tier, audio and idempotency key', async () => {
     const {calls,client}=setup();
     const result=await client.createVideoJob('kling','a boat',{version:'1.6',tier:'std',duration:5,audio:false,idempotencyKey:'version-test-1'});
     assert.equal(calls[0].url,'https://apick.app/rest/kling/jobs');
-    assert.deepEqual(JSON.parse(calls[0].init.body),{prompt:'a boat',version:'1.6',tier:'std',duration:5,audio:false,idempotency_key:'version-test-1'});
+    assert.deepEqual(Object.fromEntries(calls[0].init.body),{prompt:'a boat',version:'1.6',tier:'std',duration:'5',audio:'false',idempotency_key:'version-test-1'});
     assert.equal(result.data.version,'1.6');
     await client.createVideoJob('veo','a boat');
-    assert.ok(!Object.hasOwn(JSON.parse(calls[1].init.body),'version'));
+    assert.equal(calls[1].init.body.has('version'), false);
 });
 test('video image input is multipart and preserves the requested version', async () => {
     const {calls,client}=setup();
@@ -40,9 +40,9 @@ test('Seedance 2.0 Fast and Mini tiers pass through unchanged', async () => {
     const {calls,client}=setup();
     await client.createVideoJob('seedance','a fast car',{version:'2.0',tier:'fast',duration:4,resolution:'480p'});
     await client.createVideoJob('seedance','a fast car',{version:'2.0',tier:'mini',duration:4,resolution:'720p'});
-    assert.deepEqual(calls.map(({init})=>{const body=JSON.parse(init.body);return {version:body.version,tier:body.tier,duration:body.duration,resolution:body.resolution};}),[
-        {version:'2.0',tier:'fast',duration:4,resolution:'480p'},
-        {version:'2.0',tier:'mini',duration:4,resolution:'720p'},
+    assert.deepEqual(calls.map(({init})=>{const body=Object.fromEntries(init.body);return {version:body.version,tier:body.tier,duration:body.duration,resolution:body.resolution};}),[
+        {version:'2.0',tier:'fast',duration:'4',resolution:'480p'},
+        {version:'2.0',tier:'mini',duration:'4',resolution:'720p'},
     ]);
 });
 test('video status/result paths and invalid routing', async () => {

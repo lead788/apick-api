@@ -15,7 +15,7 @@ test('quality and candidate requests preserve final downloads and retry identity
   await client.retryTtsJob(job, ['u002', 'u001', 'u002'], 'recovery-key-1');
   assert.equal(requests[0].options.method, 'GET');
   assert.ok(requests[0].url.endsWith('/quality'));
-  assert.deepEqual(JSON.parse(requests[1].options.body), { utterance_ids: ['u001', 'u002'], idempotency_key: 'recovery-key-1' });
+  assert.deepEqual(Object.fromEntries(requests[1].options.body), { 'utterance_ids[0]': 'u001', 'utterance_ids[1]': 'u002', idempotency_key: 'recovery-key-1' });
   assert.ok(await client.downloadTtsCandidate(job, candidate) instanceof ApickBinaryResult);
   assert.ok(requests[2].url.endsWith('/candidates/' + candidate + '/audio'));
   assert.throws(() => client.downloadTtsCandidate(job, '../private'), /candidateId/);

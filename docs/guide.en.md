@@ -1,5 +1,11 @@
 # apick-api English guide
 
+## Request and response formats
+
+All SDK requests with a body use `multipart/form-data`. Arrays use separate indexed fields such as `utterance_ids[0]`; let the SDK set the Content-Type boundary. GET requests have no body. The server continues accepting older JSON requests for compatibility.
+
+Responses remain service-specific JSON or direct files. A failed download may return JSON, which the SDK exposes as `ApickApiError`. Individual REST guides provide OpenAPI and Postman downloads. External MCP connections retain JSON-RPC.
+
 `apick-api` is the official zero-dependency Node.js SDK for a focused set of popular APICK REST APIs. It supports ESM, CommonJS, and TypeScript.
 
 ## Install and authenticate
@@ -78,15 +84,15 @@ await client.ocr(bytes, {
 
 ## Generated files
 
-TTS supports 17 neutral narration `voice_id` values: five original narrators and twelve new voices. Import `TTS_VOICE_IDS` for the exact list.
+TTS supports 16 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the current list.
 
-Voice labels: `narrator_m_01` 태준, `narrator_m_02` 민석, `narrator_m_03` 도현, `narrator_m_04` 강우, `narrator_m_05` 성훈, `narrator_f_10s_01` 서아, `narrator_f_10s_02` 하린, `narrator_f_10s_03` 예린, `narrator_m_20s_01` 도윤, `narrator_f_20s_01` 지안, `narrator_f_20s_02` 서윤, `narrator_f_20s_03` 소연, `narrator_f_20s_04` 유나, `narrator_m_30s_01` 현우, `narrator_m_30s_02` 준혁, `narrator_m_40s_01` 정우, `narrator_m_80s_01` 영수.
+`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_01`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_teen_01`, `v2_f_young_01`, `v2_f_senior_01`
 
 ```js
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
 
-const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
+const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
 const jobId = created.data.job_id;
 let job = await client.getTtsJob(jobId);
 while (job.data.status === 'waiting' || job.data.status === 'processing') {

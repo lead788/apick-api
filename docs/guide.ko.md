@@ -1,5 +1,11 @@
 # apick-api 한국어 가이드
 
+## 요청과 응답 형식
+
+SDK의 본문 요청은 모두 `multipart/form-data`입니다. `utterance_ids[0]`처럼 배열을 개별 필드로 전송하며 `Content-Type` 헤더를 직접 지정할 필요가 없습니다. GET 조회는 본문을 보내지 않습니다. 기존 JSON 요청도 서버에서 호환용으로 계속 처리합니다.
+
+응답은 서비스별 JSON 또는 파일입니다. 파일 다운로드 실패 시 JSON 오류가 반환될 수 있으며 SDK는 이를 `ApickApiError`로 전달합니다. 직접 REST를 연동할 때는 개발가이드의 OpenAPI 명세와 Postman 컬렉션을 내려받을 수 있습니다. MCP 외부 연결은 기존 JSON-RPC를 사용합니다.
+
 `apick-api`는 에이픽의 주요 REST API를 Node.js에서 간단히 호출하기 위한 공식 SDK입니다. 런타임 의존성이 없으며 ESM, CommonJS, TypeScript를 지원합니다.
 
 ## 설치와 인증
@@ -78,15 +84,15 @@ await client.ocr(bytes, {
 
 ## 파일 생성
 
-TTS는 기존 남성 내레이터 5개와 신규 중립 내레이션 12개를 합쳐 17개 `voice_id`를 지원합니다. 정확한 목록은 `TTS_VOICE_IDS` 상수로 확인할 수 있습니다.
+TTS는 16개 목소리 ID를 지원합니다. 정확한 목록은 `TTS_VOICE_IDS` 상수와 개발가이드에서 확인합니다.
 
-표시 이름: `narrator_m_01` 태준, `narrator_m_02` 민석, `narrator_m_03` 도현, `narrator_m_04` 강우, `narrator_m_05` 성훈, `narrator_f_10s_01` 서아, `narrator_f_10s_02` 하린, `narrator_f_10s_03` 예린, `narrator_m_20s_01` 도윤, `narrator_f_20s_01` 지안, `narrator_f_20s_02` 서윤, `narrator_f_20s_03` 소연, `narrator_f_20s_04` 유나, `narrator_m_30s_01` 현우, `narrator_m_30s_02` 준혁, `narrator_m_40s_01` 정우, `narrator_m_80s_01` 영수.
+`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_01`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_teen_01`, `v2_f_young_01`, `v2_f_senior_01`
 
 ```js
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
 
-const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
+const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
 const jobId = created.data.job_id;
 let job = await client.getTtsJob(jobId);
 while (job.data.status === 'waiting' || job.data.status === 'processing') {

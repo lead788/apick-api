@@ -2,6 +2,7 @@ export interface ApickClientOptions {
 	apiKey: string;
 	baseUrl?: string;
 	timeoutMs?: number;
+	/** Requests with a body use native FormData; GET requests have no body. */
 	fetch?: typeof fetch;
 }
 
@@ -40,15 +41,11 @@ export interface ImageAiResultData { request_id:string; image_count:number; imag
 export interface ImageAiJobData { job_id:string; status:ImageAiStatus; requested_count:number; completed_count?:number; failed_count?:number; prepaid_point?:number; charged_point?:number; refunded_point?:number; result_available?:boolean; expires_at?:string|null; error_code?:ApickImageErrorCode|null; }
 
 export interface MaskResidentNumberOptions extends OcrOptions {
-	type: 1 | 2 | 3;
+	type: 1 | 2 | 3 | 4;
 }
 
 export const TTS_VOICE_IDS: readonly [
-	'narrator_m_01', 'narrator_m_02', 'narrator_m_03', 'narrator_m_04', 'narrator_m_05',
-	'narrator_f_10s_01', 'narrator_f_10s_02', 'narrator_f_10s_03',
-	'narrator_m_20s_01', 'narrator_f_20s_01', 'narrator_f_20s_02',
-	'narrator_f_20s_03', 'narrator_f_20s_04', 'narrator_m_30s_01',
-	'narrator_m_30s_02', 'narrator_m_40s_01', 'narrator_m_80s_01'
+	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_01', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_teen_01', 'v2_f_young_01', 'v2_f_senior_01'
 ];
 export type TtsVoiceId = typeof TTS_VOICE_IDS[number];
 

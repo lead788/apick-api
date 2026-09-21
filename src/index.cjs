@@ -7,11 +7,7 @@ const MAX_IMAGE_AI_BYTES = 50 * 1024 * 1024;
 const IMAGE_AI_SIZES = Object.freeze(['1024x1024', '1536x1024', '1024x1536', '1152x864', '864x1152']);
 const IMAGE_AI_SIZE_SET = new Set(IMAGE_AI_SIZES);
 const TTS_VOICE_IDS = Object.freeze([
-	'narrator_m_01', 'narrator_m_02', 'narrator_m_03', 'narrator_m_04', 'narrator_m_05',
-	'narrator_f_10s_01', 'narrator_f_10s_02', 'narrator_f_10s_03',
-	'narrator_m_20s_01', 'narrator_f_20s_01', 'narrator_f_20s_02',
-	'narrator_f_20s_03', 'narrator_f_20s_04', 'narrator_m_30s_01',
-	'narrator_m_30s_02', 'narrator_m_40s_01', 'narrator_m_80s_01'
+	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_01', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_teen_01', 'v2_f_young_01', 'v2_f_senior_01'
 ]);
 const TTS_VOICE_ID_SET = new Set(TTS_VOICE_IDS);
 
@@ -55,7 +51,7 @@ const SERVICES = Object.freeze(Object.fromEntries(
 function redact(value, apiKey) {
 	let text = String(value || '');
 	if (apiKey) text = text.split(apiKey).join('***');
-	return text.replace(/(CL_AUTH_KEY\s*[:=]\s*)\S+/gi, '$1***');
+	return text.replace(/(Authorization\s*:\s*Bearer\s*)\S+/gi, '$1***').replace(/(CL_AUTH_KEY\s*[:=]\s*)\S+/gi, '$1***');
 }
 
 function requiredString(name, value, maxLength) {
@@ -289,7 +285,7 @@ class ApickClient {
 		const timer = setTimeout(() => controller.abort(), timeoutMs);
 		const headers = {
 			Accept: definition.output === 'binary' ? '*/*' : 'application/json',
-			CL_AUTH_KEY: this.#apiKey
+			Authorization: `Bearer ${this.#apiKey}`
 		};
 		const method = definition.method || 'POST';
 		const request = {
@@ -299,8 +295,7 @@ class ApickClient {
 			redirect: 'error'
 		};
 		if (method !== 'GET') {
-			request.body = formData || JSON.stringify(payload || {});
-			if (!formData) headers['Content-Type'] = 'application/json';
+			request.body = formData || require('./form.cjs').createForm(payload || {}, definition.endpoint);
 		}
 
 		let response;
@@ -427,7 +422,7 @@ class ApickClient {
 	maskResidentNumber(image, options) {
 		const config = options || {};
 		const type = Number(config.type);
-		if (![1, 2, 3].includes(type)) throw new RangeError('type must be one of: 1, 2, 3.');
+		if (![1, 2, 3, 4].includes(type)) throw new RangeError('type must be one of: 1, 2, 3, 4.');
 		return this._maskImage('maskResidentNumber', image, config, type);
 	}
 
@@ -517,7 +512,7 @@ class ApickClient {
 	createTtsJob(text, options) {
 		const config = options || {};
 		return this._call('createTtsJob', {
-			voice_id: normalizeTtsVoice(config.voiceId || 'narrator_m_03'),
+			voice_id: normalizeTtsVoice(config.voiceId || 'v2_ann_m_30s_01'),
 			text: requiredString('text', text, 800)
 		});
 	}

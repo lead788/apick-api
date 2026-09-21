@@ -46,7 +46,8 @@ test('supports synchronous and batch image contracts without provider options', 
 	const binary=await client.downloadImageJobImage('a'.repeat(32),0);
 	assert.equal(binary.contentType,'image/png');
 	assert.equal(requests[0].url,'https://api.example.test/rest/image-generation/generate');
-	assert.deepEqual(JSON.parse(requests[0].options.body),{prompt:'제품 사진',image_count:1,size:'1024x1024',output_format:'webp',background:'auto',idempotency_key:'image-test-0001'});
+	assert.deepEqual(Object.fromEntries(requests[0].options.body),{prompt:'제품 사진',image_count:'1',size:'1024x1024',output_format:'webp',background:'auto',idempotency_key:'image-test-0001'});
+	assert.equal(requests[0].options.headers['Content-Type'], undefined);
 	assert.equal(requests[1].url,'https://api.example.test/rest/image-generation/jobs/generate');
 	assert.equal(requests[2].options.method,'GET');
 	await assert.rejects(client.generateImages('x',{imageCount:5}),/imageCount must not exceed 4/);
@@ -91,8 +92,8 @@ test('normalizes business numbers and returns data with billing metadata', async
 
 	const result = await client.businessDetails('439-87-00761');
 	assert.equal(request.url, 'https://api.example.test/rest/biz_detail');
-	assert.equal(request.options.headers.CL_AUTH_KEY, 'private-test-key');
-	assert.deepEqual(JSON.parse(request.options.body), { biz_no: '4398700761' });
+	assert.equal(request.options.headers.Authorization, 'Bearer private-test-key');
+	assert.deepEqual(Object.fromEntries(request.options.body), { biz_no: '4398700761' });
 	assert.deepEqual(result.data, { company: 'APICK', success: 1 });
 	assert.deepEqual(result.meta, { cost: 30, durationMs: 42 });
 });
@@ -163,9 +164,9 @@ test('returns binary results with headers and bytes', async () => {
 });
 
 test('implements processing cancellation and the one-time MP3 TTS Jobs contract', async () => {
-	assert.equal(TTS_VOICE_IDS.length, 17);
-	assert.ok(TTS_VOICE_IDS.includes('narrator_f_10s_01'));
-	assert.ok(TTS_VOICE_IDS.includes('narrator_m_80s_01'));
+	assert.equal(TTS_VOICE_IDS.length, 16);
+	assert.ok(TTS_VOICE_IDS.includes('v2_f_teen_01'));
+	assert.ok(TTS_VOICE_IDS.includes('v2_m_senior_01'));
 	const requests = [];
 	const jobId = 'a'.repeat(32);
 	const client = new ApickClient({
@@ -182,13 +183,13 @@ test('implements processing cancellation and the one-time MP3 TTS Jobs contract'
 			});
 			if (url.endsWith('/cancel')) return jsonResponse({ data: { job_id: jobId, status: 'cancelled' }, api: { success: true, cost: 0 } });
 			if (url.endsWith('/' + jobId)) return jsonResponse({ data: { job_id: jobId, status: 'processing', result_available: false }, api: { success: true, cost: 0 } });
-			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'narrator_m_03', character_count: 14 }, api: { success: true, cost: 10 } }, { status: 202 });
+			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'v2_ann_m_30s_01', character_count: 14 }, api: { success: true, cost: 10 } }, { status: 202 });
 		}
 	});
-	const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'narrator_m_03' });
+	const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
 	assert.equal(created.data.status, 'waiting');
 	assert.equal(created.meta.cost, 10);
-	assert.deepEqual(JSON.parse(requests[0].options.body), { voice_id: 'narrator_m_03', text: '오늘의 이야기를 시작합니다.' });
+	assert.deepEqual(Object.fromEntries(requests[0].options.body), { voice_id: 'v2_ann_m_30s_01', text: '오늘의 이야기를 시작합니다.' });
 	assert.equal((await client.getTtsJob(jobId)).data.status, 'processing');
 	assert.equal(requests[1].options.method, 'GET');
 	assert.equal(requests[1].options.body, undefined);
@@ -246,7 +247,10 @@ test('uploads five identity masking services with the documented output contract
 		const result = await client[method](input, { filename: 'id.png', contentType: 'image/png' });
 		assert.equal(result.data.success, 1);
 	}
-	assert.throws(() => client.maskResidentNumber(input, { type: 4, filename: 'id.png', contentType: 'image/png' }), /1, 2, 3/);
+	const addressMasked = await client.maskResidentNumber(input, { type: 4, filename: 'id.png', contentType: 'image/png' });
+	assert.ok(addressMasked instanceof ApickBinaryResult);
+	assert.equal(requests.at(-1).options.body.get('type'), '4');
+	assert.throws(() => client.maskResidentNumber(input, { type: 5, filename: 'id.png', contentType: 'image/png' }), /1, 2, 3, 4/);
 });
 
 test('documents three residence-card forms as masking-only without changing the endpoint', () => {
@@ -292,7 +296,7 @@ test('validates inputs before making a request', async () => {
 	const client = new ApickClient({ apiKey: 'key', fetch: async () => { calls += 1; } });
 	assert.throws(() => client.businessDetails('1234'), /10 digits/);
 	assert.throws(() => client.holidays(1800, 1), /1900/);
-	assert.throws(() => client.createTtsJob('', { voiceId: 'narrator_m_03' }), /text/);
+	assert.throws(() => client.createTtsJob('', { voiceId: 'v2_ann_m_30s_01' }), /text/);
 	assert.throws(() => client.jsonToExcel({ value: 1 }), /array/);
 	assert.equal(calls, 0);
 });

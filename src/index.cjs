@@ -10,6 +10,10 @@ const TTS_VOICE_IDS = Object.freeze([
 	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_01', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_teen_01', 'v2_f_young_01', 'v2_f_senior_01'
 ]);
 const TTS_VOICE_ID_SET = new Set(TTS_VOICE_IDS);
+const AUTH_PROVIDERS = Object.freeze([
+	'kakao', 'naver', 'toss', 'pass', 'samsung', 'kb', 'shinhan', 'hana', 'woori', 'ibk', 'nh', 'kakaobank', 'banksalad'
+]);
+const AUTH_PROVIDER_SET = new Set(AUTH_PROVIDERS);
 
 const SERVICE_DEFINITIONS = Object.freeze({
 	businessDetails: { endpoint: '/rest/biz_detail', timeoutMs: 50_000, output: 'json' },
@@ -38,7 +42,12 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	jsonToExcel: { endpoint: '/rest/json_to_excel', timeoutMs: 45_000, output: 'binary', filename: 'data.xlsx' },
 	summarize: { endpoint: '/rest/llm/text_summary', timeoutMs: 75_000, output: 'json' },
 	polish: { endpoint: '/rest/llm/text_polish', timeoutMs: 105_000, output: 'json' },
-	generateImages: { endpoint: '/rest/image-generation/generate', timeoutMs: 190_000, output: 'json' }
+	generateImages: { endpoint: '/rest/image-generation/generate', timeoutMs: 190_000, output: 'json' },
+	requestEmployment: { endpoint: '/rest/req_employment', timeoutMs: 35_000, output: 'json' },
+	requestPersonalIncome: { endpoint: '/rest/req_personal_income', timeoutMs: 35_000, output: 'json' },
+	requestNpsJoinHistory: { endpoint: '/rest/req_nps_join_history', timeoutMs: 35_000, output: 'json' },
+	requestDrivingLicense: { endpoint: '/rest/req_driving_license', timeoutMs: 35_000, output: 'json' },
+	requestHealthCheckup: { endpoint: '/rest/req_health_checkup', timeoutMs: 35_000, output: 'json' }
 });
 
 const SERVICES = Object.freeze(Object.fromEntries(
@@ -106,6 +115,58 @@ function normalizeTtsVoice(value) {
 	const voiceId = requiredString('voiceId', value);
 	if (!TTS_VOICE_ID_SET.has(voiceId)) throw new RangeError('voiceId must be one of the supported TTS voice IDs.');
 	return voiceId;
+}
+
+function normalizeAuthProvider(value) {
+	const provider = requiredString('authProvider', value).toLowerCase();
+	if (!AUTH_PROVIDER_SET.has(provider)) throw new RangeError('authProvider must be one of the supported simple-auth providers.');
+	return provider;
+}
+
+function normalizeBirthDate(value) {
+	const birthDate = requiredString('birthDate', value);
+	if (!/^(18|19|20)\d{6}$/.test(birthDate)) throw new TypeError('birthDate must be 8 digits (YYYYMMDD).');
+	return birthDate;
+}
+
+function normalizeKoreanMobile(value) {
+	const phone = requiredString('phone', value).replace(/[^0-9]/g, '');
+	if (!/^01[0-9]{8,9}$/.test(phone)) throw new TypeError('phone must be a Korean mobile number (digits only).');
+	return phone;
+}
+
+function normalizeTransactionId(value) {
+	const transactionId = requiredString('transactionId', value);
+	if (!/^[a-f0-9]{32}$/.test(transactionId)) throw new TypeError('transactionId must be a 32-character lowercase hexadecimal string.');
+	return transactionId;
+}
+
+function normalizeYearMonth(name, value) {
+	if (value === undefined || value === null || value === '') return undefined;
+	const text = requiredString(name, value);
+	if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(text)) throw new TypeError(`${name} must be in YYYY-MM format.`);
+	return text;
+}
+
+function optionalRangeInteger(name, value, min, max) {
+	if (value === undefined || value === null || value === '') return undefined;
+	const number = Number(value);
+	if (!Number.isInteger(number) || number < min || number > max) {
+		throw new RangeError(`${name} must be an integer between ${min} and ${max}.`);
+	}
+	return number;
+}
+
+// 재직·소득·연금·면허·건강검진 등 간편인증 기반 조회 상품의 공통 입력.
+// 서버는 최상위 평면 필드명을 그대로 받으므로 여기서 만든 객체가 폼 필드 이름이 된다.
+function dataRequestInput(input) {
+	const config = input || {};
+	return {
+		name: requiredString('name', config.name),
+		birthDate: normalizeBirthDate(config.birthDate),
+		phone: normalizeKoreanMobile(config.phone),
+		authProvider: normalizeAuthProvider(config.authProvider)
+	};
 }
 
 function numberOrNull(value) {
@@ -677,6 +738,60 @@ class ApickClient {
 		const id=normalizeTtsJobId(jobId);
 		return this._call('generateImages', null, null, { endpoint:'/rest/image-generation/jobs/'+id+'/result', method:'GET', output:'binary', filename:id+'.zip', timeoutMs:60_000 });
 	}
+
+	// 간편인증 기반 조회 상품: 인증 요청(request*) 뒤 결과 조회(get*)로 폴링한다.
+	// 각 상품은 접수 시 정액, 최초 결과 반환 시 항목 단가가 과금되고 재조회는 무과금이다.
+	requestEmployment(input) {
+		const payload = dataRequestInput(input);
+		const insuranceYears = optionalRangeInteger('insuranceYears', (input || {}).insuranceYears, 1, 3);
+		if (insuranceYears !== undefined) payload.insuranceYears = insuranceYears;
+		return this._call('requestEmployment', payload);
+	}
+
+	getEmployment(transactionId) {
+		return this._call('requestEmployment', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_employment' });
+	}
+
+	requestPersonalIncome(input) {
+		const payload = dataRequestInput(input);
+		const incomeYears = optionalRangeInteger('incomeYears', (input || {}).incomeYears, 1, 5);
+		if (incomeYears !== undefined) payload.incomeYears = incomeYears;
+		return this._call('requestPersonalIncome', payload);
+	}
+
+	getPersonalIncome(transactionId) {
+		return this._call('requestPersonalIncome', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_personal_income' });
+	}
+
+	requestNpsJoinHistory(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		const from = normalizeYearMonth('from', config.from);
+		const to = normalizeYearMonth('to', config.to);
+		if (from !== undefined) payload.from = from;
+		if (to !== undefined) payload.to = to;
+		return this._call('requestNpsJoinHistory', payload);
+	}
+
+	getNpsJoinHistory(transactionId) {
+		return this._call('requestNpsJoinHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_join_history' });
+	}
+
+	requestDrivingLicense(input) {
+		return this._call('requestDrivingLicense', dataRequestInput(input));
+	}
+
+	getDrivingLicense(transactionId) {
+		return this._call('requestDrivingLicense', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_driving_license' });
+	}
+
+	requestHealthCheckup(input) {
+		return this._call('requestHealthCheckup', dataRequestInput(input));
+	}
+
+	getHealthCheckup(transactionId) {
+		return this._call('requestHealthCheckup', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_health_checkup' });
+	}
 }
 
 module.exports = {
@@ -685,5 +800,6 @@ module.exports = {
 	ApickBinaryResult,
 	SERVICES,
 	TTS_VOICE_IDS,
+	AUTH_PROVIDERS,
 	DEFAULT_BASE_URL
 };

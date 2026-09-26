@@ -4,6 +4,8 @@
 
 All SDK requests with a body use `multipart/form-data`. Arrays use separate indexed fields such as `utterance_ids[0]`; let the SDK set the Content-Type boundary. GET requests have no body. The server continues accepting older JSON requests for compatibility.
 
+The SDK preserves original LF/CR characters using UTF-8 Base64 and a `__apick_encoding[field]=base64-utf8` form metadata field. Excel cells also carry type metadata; dates become ISO strings and sparse array cells become null.
+
 Responses remain service-specific JSON or direct files. A failed download may return JSON, which the SDK exposes as `ApickApiError`. Individual REST guides provide OpenAPI and Postman downloads. External MCP connections retain JSON-RPC.
 
 `apick-api` is the official zero-dependency Node.js SDK for a focused set of popular APICK REST APIs. It supports ESM, CommonJS, and TypeScript.
@@ -182,6 +184,27 @@ console.log(result.data.result.fields);
 The document-specific methods are `maskResidenceCard`, `maskPassport`, `maskIdCard`, and `maskDriverLicense`. Identity errors are exposed as `IDENTITY_TEXT_UNREADABLE`, `IDENTITY_DOCUMENT_MISMATCH`, or `IDENTITY_PROCESSING_FAILED` through `ApickApiError.serviceCode`.
 
 `maskResidenceCard` accepts one front-side image of a residence card, permanent resident card, or overseas Korean resident card. Permanent and overseas Korean card support is limited to PII masking and does not expand the alien registration card authenticity-check scope.
+
+## Simple-auth data lookups
+
+Employment, income, pension, driver's license, and health checkup lookups require the user's own simple-auth verification, so the call is split into acceptance (`request*`) and result polling (`get*`).
+
+```js
+const accepted = await client.requestDrivingLicense({
+  name: 'Hong Gildong',
+  birthDate: '19900101',
+  phone: '01011112222',
+  authProvider: 'kakao'
+});
+
+let result;
+do {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  result = await client.getDrivingLicense(accepted.data.transactionId);
+} while (result.data.status === 'AUTH_WAITING' || result.data.status === 'COLLECTING');
+```
+
+`authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
 
 ## Errors and retries
 

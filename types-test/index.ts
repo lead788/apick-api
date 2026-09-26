@@ -53,3 +53,34 @@ const videoResult: Promise<ApickBinaryResult> = client.downloadVideoResult("klin
 void videoJob; void videoStatus; void videoResult;
 // @ts-expect-error 지원하지 않는 제품
 client.createVideoJob("other", "a boat");
+
+import type {
+  AuthProvider, DataRequestAcceptedData, DataRequestResult,
+  EmploymentResultPayload, PersonalIncomeResultPayload, NpsJoinHistoryResultPayload,
+  DrivingLicenseResultPayload, HealthCheckupResultPayload
+} from "../src/index.js";
+const provider: AuthProvider = "kakao";
+const employmentRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestEmployment({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: provider, insuranceYears: 3
+});
+const employmentResult: Promise<ApickResult<DataRequestResult<EmploymentResultPayload>>> = client.getEmployment("a".repeat(32));
+const incomeRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestPersonalIncome({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "naver", incomeYears: 5
+});
+const incomeResult: Promise<ApickResult<DataRequestResult<PersonalIncomeResultPayload>>> = client.getPersonalIncome("a".repeat(32));
+const npsRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsJoinHistory({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", from: "1988-01", to: "2026-09"
+});
+const npsResult: Promise<ApickResult<DataRequestResult<NpsJoinHistoryResultPayload>>> = client.getNpsJoinHistory("a".repeat(32));
+const licenseRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestDrivingLicense({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "pass"
+});
+const licenseResult: Promise<ApickResult<DataRequestResult<DrivingLicenseResultPayload>>> = client.getDrivingLicense("a".repeat(32));
+const checkupRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestHealthCheckup({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "kb"
+});
+const checkupResult: Promise<ApickResult<DataRequestResult<HealthCheckupResultPayload>>> = client.getHealthCheckup("a".repeat(32));
+void employmentRequest; void employmentResult; void incomeRequest; void incomeResult;
+void npsRequest; void npsResult; void licenseRequest; void licenseResult; void checkupRequest; void checkupResult;
+// @ts-expect-error 지원하지 않는 간편인증 방식
+client.requestDrivingLicense({ name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "payco" });

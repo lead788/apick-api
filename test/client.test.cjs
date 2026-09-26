@@ -9,7 +9,8 @@ const {
 	ApickApiError,
 	ApickBinaryResult,
 	SERVICES,
-	TTS_VOICE_IDS
+	TTS_VOICE_IDS,
+	AUTH_PROVIDERS
 } = require('../src/index.cjs');
 
 function jsonResponse(body, options) {
@@ -19,8 +20,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 27 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 27);
+test('exports a focused catalog of 32 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 32);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -289,6 +290,104 @@ test('aborts requests at the configured timeout', async () => {
 		assert.equal(error.code, 'APICK_TIMEOUT');
 		return true;
 	});
+});
+
+test('implements the request/get simple-auth data product contract (employment)', async () => {
+	assert.equal(AUTH_PROVIDERS.length, 13);
+	assert.ok(AUTH_PROVIDERS.includes('kakao'));
+	assert.ok(!AUTH_PROVIDERS.includes('payco'));
+	const txId = 'b'.repeat(32);
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, options });
+			if (url.endsWith('/rest/get_employment')) {
+				return jsonResponse({
+					data: {
+						schemaVersion: '1.0', transactionId: txId, product: 'employment', status: 'SUCCESS',
+						resultAvailable: true, charged: true, sources: [{ source: '국민건강보험공단', type: 'employment', status: 'SUCCESS' }],
+						message: '조회가 완료됐습니다.', success: 1, checkedAt: '2026-09-20T05:24:07+09:00',
+						resultExpiresAt: '2026-09-21T05:24:07+09:00',
+						result: { employment: { 재직상태: 'EMPLOYED', 현재사업장: '에이픽', 취득일: '20200101', 이력: [], 보험료연도: [], 보험료: [] } }
+					},
+					api: { success: true, cost: 120 }
+				});
+			}
+			return jsonResponse({
+				data: { schemaVersion: '1.0', transactionId: txId, product: 'employment', status: 'AUTH_REQUESTED',
+					resultAvailable: false, charged: true, sources: [], message: '인증 대기중입니다.',
+					expiresAt: '2026-09-20T05:24:07+09:00', success: 1, approvals: 1 },
+				api: { success: true, cost: 20 }
+			});
+		}
+	});
+	const accepted = await client.requestEmployment({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao', insuranceYears: 3 });
+	assert.equal(accepted.data.status, 'AUTH_REQUESTED');
+	assert.equal(accepted.meta.cost, 20);
+	assert.deepEqual(Object.fromEntries(requests[0].options.body), {
+		name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao', insuranceYears: '3'
+	});
+	assert.ok(requests[0].url.endsWith('/rest/req_employment'));
+	const result = await client.getEmployment(txId);
+	assert.equal(result.data.status, 'SUCCESS');
+	assert.equal(result.data.result.employment.재직상태, 'EMPLOYED');
+	assert.equal(result.meta.cost, 120);
+	assert.deepEqual(Object.fromEntries(requests[1].options.body), { transactionId: txId });
+	assert.ok(requests[1].url.endsWith('/rest/get_employment'));
+	assert.throws(() => client.requestEmployment({ name: '홍길동', birthDate: '1990-01-01', phone: '01011112222', authProvider: 'kakao' }), /birthDate/);
+	assert.throws(() => client.requestEmployment({ name: '홍길동', birthDate: '19900101', phone: '021234567', authProvider: 'kakao' }), /phone/);
+	assert.throws(() => client.requestEmployment({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'payco' }), /authProvider/);
+	assert.throws(() => client.requestEmployment({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao', insuranceYears: 4 }), /insuranceYears/);
+	assert.throws(() => client.getEmployment('not-a-transaction-id'), /transactionId/);
+});
+
+test('implements the remaining four simple-auth data products with product-specific options', async () => {
+	const txId = 'c'.repeat(32);
+	function fetchStub(assertBody) {
+		const requests = [];
+		return {
+			requests,
+			fetch: async (url, options) => {
+				requests.push({ url, options });
+				assertBody && assertBody(Object.fromEntries(options.body), url);
+				return jsonResponse({ data: { transactionId: txId, product: 'x', status: 'AUTH_REQUESTED', resultAvailable: false, charged: true, sources: [], message: '', success: 1 }, api: { success: true, cost: 20 } });
+			}
+		};
+	}
+
+	const income = fetchStub();
+	const incomeClient = new ApickClient({ apiKey: 'key', fetch: income.fetch });
+	await incomeClient.requestPersonalIncome({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'naver', incomeYears: 5 });
+	assert.ok(income.requests[0].url.endsWith('/rest/req_personal_income'));
+	assert.equal(income.requests[0].options.body.get('incomeYears'), '5');
+	await incomeClient.getPersonalIncome(txId);
+	assert.ok(income.requests[1].url.endsWith('/rest/get_personal_income'));
+	assert.throws(() => incomeClient.requestPersonalIncome({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'naver', incomeYears: 6 }), /incomeYears/);
+
+	const nps = fetchStub();
+	const npsClient = new ApickClient({ apiKey: 'key', fetch: nps.fetch });
+	await npsClient.requestNpsJoinHistory({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss', from: '1988-01', to: '2026-09' });
+	assert.ok(nps.requests[0].url.endsWith('/rest/req_nps_join_history'));
+	assert.equal(nps.requests[0].options.body.get('from'), '1988-01');
+	assert.equal(nps.requests[0].options.body.get('to'), '2026-09');
+	await npsClient.getNpsJoinHistory(txId);
+	assert.ok(nps.requests[1].url.endsWith('/rest/get_nps_join_history'));
+	assert.throws(() => npsClient.requestNpsJoinHistory({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss', from: '1988-1' }), /from/);
+
+	const license = fetchStub();
+	const licenseClient = new ApickClient({ apiKey: 'key', fetch: license.fetch });
+	await licenseClient.requestDrivingLicense({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'pass' });
+	assert.ok(license.requests[0].url.endsWith('/rest/req_driving_license'));
+	await licenseClient.getDrivingLicense(txId);
+	assert.ok(license.requests[1].url.endsWith('/rest/get_driving_license'));
+
+	const checkup = fetchStub();
+	const checkupClient = new ApickClient({ apiKey: 'key', fetch: checkup.fetch });
+	await checkupClient.requestHealthCheckup({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kb' });
+	assert.ok(checkup.requests[0].url.endsWith('/rest/req_health_checkup'));
+	await checkupClient.getHealthCheckup(txId);
+	assert.ok(checkup.requests[1].url.endsWith('/rest/get_health_checkup'));
 });
 
 test('validates inputs before making a request', async () => {

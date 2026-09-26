@@ -6,6 +6,7 @@ export const {
 	ApickBinaryResult,
 	SERVICES,
 	TTS_VOICE_IDS,
+	AUTH_PROVIDERS,
 	DEFAULT_BASE_URL
 } = sdk;
 

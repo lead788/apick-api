@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.4.0 — 2026-09-27
+
+- 간편인증 기반 조회 상품 5종(재직·보험료 확인, 금융소득 조회, 국민연금 가입내역, 운전면허 조회, 국가 건강검진 결과)을 추가했습니다. 각 상품은 `request*()`로 본인 간편인증을 접수하고 `get*()`로 상태·결과를 폴링합니다.
+- Add five simple-auth-based data lookup products (employment/insurance premium check, financial income, National Pension join history, driver's license, national health checkup). Each product accepts a `request*()` call for identity verification and polls status/result with `get*()`.
+- `AUTH_PROVIDERS`(13종 간편인증 수단)와 `AuthProvider`, `DataRequestAcceptedData`, `DataRequestResult<T>` 타입, 상품별 결과 타입(`EmploymentResultPayload` 등)을 공개했습니다.
+- Export `AUTH_PROVIDERS` (13 supported simple-auth providers), the `AuthProvider` type, `DataRequestAcceptedData`/`DataRequestResult<T>` envelopes, and per-product result payload types (e.g. `EmploymentResultPayload`).
+- 재조회 만료(`RESULT_EXPIRED`)·인증 만료·거절·수집 실패는 `data.errorCode`로 구분됩니다.
+- `RESULT_EXPIRED`, `AUTH_EXPIRED`, `AUTH_REJECTED`, and `COLLECT_FAILED` are surfaced through `data.errorCode`.
+
 ## 3.3.0 — 2026-09-21
 
 - 모든 REST 요청의 인증 헤더를 `CL_AUTH_KEY` 에서 표준 `Authorization: Bearer <API 키>` 로 전환했습니다. 서버가 전환 기간 동안 두 헤더를 모두 받으므로 기존 호출도 계속 동작합니다.

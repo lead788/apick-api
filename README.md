@@ -90,6 +90,11 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `getImageJob(jobId)` | 이미지 작업 상태 조회 / Job status | JSON |
 | `downloadImageJobImage(jobId, index)` | 개별 결과 / Individual result | Binary |
 | `downloadImageJobArchive(jobId)` | ZIP 결과 / ZIP archive | Binary |
+| `requestEmployment(input)` / `getEmployment(transactionId)` | 재직·보험료 확인 / Employment & insurance premium check | JSON |
+| `requestPersonalIncome(input)` / `getPersonalIncome(transactionId)` | 금융소득(이자·배당) 조회 / Financial income (interest/dividend) | JSON |
+| `requestNpsJoinHistory(input)` / `getNpsJoinHistory(transactionId)` | 국민연금 가입내역조회 / National Pension join history | JSON |
+| `requestDrivingLicense(input)` / `getDrivingLicense(transactionId)` | 운전면허 조회 / Driver's license check | JSON |
+| `requestHealthCheckup(input)` / `getHealthCheckup(transactionId)` | 국가 건강검진 결과 조회 / National health checkup results | JSON |
 
 ## JSON 결과 / JSON results
 
@@ -229,6 +234,49 @@ The four document-specific methods return JSON. `maskResidentNumber` returns PNG
 
 `maskResidenceCard`는 외국인등록증·영주증·외국국적동포 국내거소신고증의 앞면 한 장을 지원합니다. 영주증과 외국국적동포 국내거소신고증 지원은 개인정보 마스킹에만 적용되며 외국인등록증 진위확인 범위는 변경되지 않습니다.
 `maskResidenceCard` accepts one front-side image of a residence card, permanent resident card, or overseas Korean resident card. Permanent and overseas Korean card support is limited to PII masking and does not expand the alien registration card authenticity-check scope.
+
+## 간편인증 기반 데이터 조회 / Simple-auth data lookups
+
+본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
+
+Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
+
+```js
+const accepted = await apick.requestEmployment({
+  name: '홍길동',
+  birthDate: '19900101',
+  phone: '01011112222',
+  authProvider: 'kakao', // AUTH_PROVIDERS 참고 / see AUTH_PROVIDERS
+  insuranceYears: 3
+});
+const transactionId = accepted.data.transactionId;
+
+let result;
+do {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  result = await apick.getEmployment(transactionId);
+} while (result.data.status === 'AUTH_WAITING' || result.data.status === 'COLLECTING');
+
+if (result.data.status === 'SUCCESS' || result.data.status === 'PARTIAL_SUCCESS') {
+  console.log(result.data.result.employment);
+} else {
+  console.log(result.data.errorCode); // AUTH_EXPIRED | AUTH_REJECTED | COLLECT_FAILED
+}
+```
+
+지원 간편인증 방식(`authProvider`) 13종은 `AUTH_PROVIDERS`로 제공됩니다: `kakao`, `naver`, `toss`, `pass`, `samsung`, `kb`, `shinhan`, `hana`, `woori`, `ibk`, `nh`, `kakaobank`, `banksalad`.
+The 13 supported `authProvider` values are exported as `AUTH_PROVIDERS`: `kakao`, `naver`, `toss`, `pass`, `samsung`, `kb`, `shinhan`, `hana`, `woori`, `ibk`, `nh`, `kakaobank`, `banksalad`.
+
+접수 시 정액 과금되고, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. 결과는 `resultExpiresAt`까지만 재조회할 수 있고, 그 이후에는 `errorCode: 'RESULT_EXPIRED'`가 오며 접수부터 다시 시작해야 합니다.
+Acceptance is billed at a flat rate; the result is billed only on its first successful return and free to re-poll afterward. The result can be re-fetched until `resultExpiresAt`; after that `errorCode` is `'RESULT_EXPIRED'` and you must request again from the start.
+
+| 상품 / Product | Request / Get | 선택 입력 / Optional input |
+| --- | --- | --- |
+| 재직·보험료 확인 / Employment & insurance premium | `requestEmployment` / `getEmployment` | `insuranceYears` (1–3) |
+| 금융소득 조회 / Financial income | `requestPersonalIncome` / `getPersonalIncome` | `incomeYears` (1–5) |
+| 국민연금 가입내역 / NPS join history | `requestNpsJoinHistory` / `getNpsJoinHistory` | `from`, `to` (`YYYY-MM`) |
+| 운전면허 조회 / Driver's license | `requestDrivingLicense` / `getDrivingLicense` | — |
+| 국가 건강검진 결과 / Health checkup | `requestHealthCheckup` / `getHealthCheckup` | — |
 
 ## 오류 처리 / Error handling
 

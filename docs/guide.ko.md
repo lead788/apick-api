@@ -4,6 +4,8 @@
 
 SDK의 본문 요청은 모두 `multipart/form-data`입니다. `utterance_ids[0]`처럼 배열을 개별 필드로 전송하며 `Content-Type` 헤더를 직접 지정할 필요가 없습니다. GET 조회는 본문을 보내지 않습니다. 기존 JSON 요청도 서버에서 호환용으로 계속 처리합니다.
 
+SDK는 줄바꿈 문자열을 `__apick_encoding[필드]=base64-utf8` 메타 항목과 함께 보내 원문의 LF·CR을 보존합니다. Excel 셀은 타입 메타 항목을 함께 사용하며 Date는 ISO 문자열, 배열의 빈 칸은 null로 전달합니다.
+
 응답은 서비스별 JSON 또는 파일입니다. 파일 다운로드 실패 시 JSON 오류가 반환될 수 있으며 SDK는 이를 `ApickApiError`로 전달합니다. 직접 REST를 연동할 때는 개발가이드의 OpenAPI 명세와 Postman 컬렉션을 내려받을 수 있습니다. MCP 외부 연결은 기존 JSON-RPC를 사용합니다.
 
 `apick-api`는 에이픽의 주요 REST API를 Node.js에서 간단히 호출하기 위한 공식 SDK입니다. 런타임 의존성이 없으며 ESM, CommonJS, TypeScript를 지원합니다.
@@ -184,6 +186,27 @@ console.log(result.data.result.fields);
 문서별 메서드는 `maskResidenceCard`, `maskPassport`, `maskIdCard`, `maskDriverLicense`입니다. 글자 판독 불가, 문서 불일치, 처리 실패는 각각 `IDENTITY_TEXT_UNREADABLE`, `IDENTITY_DOCUMENT_MISMATCH`, `IDENTITY_PROCESSING_FAILED`로 `ApickApiError.serviceCode`에 제공됩니다.
 
 `maskResidenceCard`는 외국인등록증·영주증·외국국적동포 국내거소신고증의 앞면 한 장을 지원합니다. 영주증과 외국국적동포 국내거소신고증은 개인정보 마스킹만 지원하며 외국인등록증 진위확인 범위에는 포함되지 않습니다.
+
+## 간편인증 데이터 조회
+
+재직·소득·연금·면허·건강검진 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
+
+```js
+const accepted = await client.requestDrivingLicense({
+  name: '홍길동',
+  birthDate: '19900101',
+  phone: '01011112222',
+  authProvider: 'kakao'
+});
+
+let result;
+do {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  result = await client.getDrivingLicense(accepted.data.transactionId);
+} while (result.data.status === 'AUTH_WAITING' || result.data.status === 'COLLECTING');
+```
+
+`authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
 
 ## 오류와 재시도
 

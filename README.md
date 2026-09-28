@@ -241,28 +241,82 @@ The four document-specific methods return JSON. `maskResidentNumber` returns PNG
 
 Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
 
+아래 함수는 5종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
+
+Use this helper for all five products. Poll sequentially with the same `transactionId`, waiting 5→10→20→30 seconds and then keeping the 30-second interval. Return the result immediately when `resultAvailable === true`. `SUCCESS` means full success; `PARTIAL_SUCCESS` means partial success, so inspect `sources` for missing or failed items. `AUTH_REJECTED`, `AUTH_EXPIRED`, and `FAILED` are terminal failures; `errorCode: 'RESULT_EXPIRED'` means the retained result has expired. Never resubmit automatically after failure or expiry.
+
+<!-- simple-auth-polling:start -->
+```js
+async function pollDataResult(getResult, accepted, { timeoutMs = 600_000 } = {}) {
+  const pending = new Set([
+    'AUTH_REQUESTED', 'AUTH_WAITING', 'AUTH_COMPLETED', 'COLLECTING', 'COLLECTED'
+  ]);
+  const failed = new Set(['AUTH_REJECTED', 'AUTH_EXPIRED', 'FAILED']);
+  const completed = new Set(['SUCCESS', 'PARTIAL_SUCCESS']);
+  const delays = [5_000, 10_000, 20_000, 30_000];
+  const deadline = Date.now() + timeoutMs;
+  const transactionId = accepted.data.transactionId;
+  const stop = code => { throw Object.assign(new Error(code), { code }); };
+  let response = accepted;
+  let attempt = 0;
+
+  for (;;) {
+    const data = response.data;
+    if (data.errorCode === 'RESULT_EXPIRED') stop('RESULT_EXPIRED');
+    if (failed.has(data.status)) stop(data.errorCode || data.status);
+    if (data.resultAvailable === true) {
+      if (data.result == null) stop('INVALID_RESULT');
+      return response;
+    }
+    if (completed.has(data.status)) stop('RESULT_NOT_AVAILABLE');
+    if (!pending.has(data.status)) stop('UNKNOWN_STATUS');
+
+    const awaitingApproval = ['AUTH_REQUESTED', 'AUTH_WAITING'].includes(data.status);
+    const authDeadline = Date.parse(data.expiresAt || accepted.data.expiresAt);
+    const limit = awaitingApproval && Number.isFinite(authDeadline)
+      ? Math.min(deadline, authDeadline) : deadline;
+    const timeoutCode = awaitingApproval && limit === authDeadline
+      ? 'AUTH_WAIT_TIMEOUT' : 'CLIENT_POLL_TIMEOUT';
+    const remaining = limit - Date.now();
+    if (remaining <= 0) stop(timeoutCode);
+    await new Promise(resolve => setTimeout(resolve,
+      Math.min(delays[Math.min(attempt++, delays.length - 1)], remaining)));
+    if (Date.now() >= limit) stop(timeoutCode);
+    response = await getResult(transactionId);
+  }
+}
+```
+<!-- simple-auth-polling:end -->
+
+`AUTH_REQUESTED`·`AUTH_WAITING`은 사용자 승인을 기다리고, `AUTH_COMPLETED`·`COLLECTING`·`COLLECTED`는 결과가 준비될 때까지 계속 조회합니다. 과금 여부(`charged`, `success`)는 완료 기준이 아닙니다. 인증 대기에만 `expiresAt`을 적용하고 승인 후에는 전체 대기 한도를 적용합니다. 예제의 10분 한도는 클라이언트 정책이며, 진행 중인 호출의 제한 시간은 SDK의 `timeoutMs`로 별도 설정하세요. `AUTH_WAIT_TIMEOUT`·`CLIENT_POLL_TIMEOUT`·`RESULT_NOT_AVAILABLE`·`INVALID_RESULT`·`UNKNOWN_STATUS`는 예제에서 만드는 로컬 오류로, 응답 모순이나 알 수 없는 상태에서 무한 반복하지 않습니다. 통신 오류도 재시도 없이 호출자에게 전달합니다.
+
+`AUTH_REQUESTED` and `AUTH_WAITING` wait for the user's approval; `AUTH_COMPLETED`, `COLLECTING`, and `COLLECTED` keep polling until a result is available. Billing fields (`charged`, `success`) do not indicate completion. Apply `expiresAt` only while awaiting approval, then use the overall waiting limit. The example's 10-minute limit is a client policy; configure the SDK's `timeoutMs` separately to bound each in-flight call. `AUTH_WAIT_TIMEOUT`, `CLIENT_POLL_TIMEOUT`, `RESULT_NOT_AVAILABLE`, `INVALID_RESULT`, and `UNKNOWN_STATUS` are local example errors that prevent endless polling on inconsistent responses or unknown states. Transport errors propagate without retries.
+
+<!-- simple-auth-usage:start -->
 ```js
 const accepted = await apick.requestEmployment({
   name: '홍길동',
   birthDate: '19900101',
   phone: '01011112222',
-  authProvider: 'kakao', // AUTH_PROVIDERS 참고 / see AUTH_PROVIDERS
+  authProvider: 'kakao',
   insuranceYears: 3
 });
-const transactionId = accepted.data.transactionId;
 
-let result;
-do {
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  result = await apick.getEmployment(transactionId);
-} while (result.data.status === 'AUTH_WAITING' || result.data.status === 'COLLECTING');
-
-if (result.data.status === 'SUCCESS' || result.data.status === 'PARTIAL_SUCCESS') {
-  console.log(result.data.result.employment);
-} else {
-  console.log(result.data.errorCode); // AUTH_EXPIRED | AUTH_REJECTED | COLLECT_FAILED
+try {
+  const result = await pollDataResult(id => apick.getEmployment(id), accepted);
+  if (result.data.status === 'PARTIAL_SUCCESS') console.warn(result.data.sources);
+  console.log(result.data.result);
+} catch (error) {
+  if ((error.serviceCode || error.code) === 'RESULT_EXPIRED') {
+    console.error('결과 보관 기간 만료: 사용자 확인 후 새 인증을 요청하세요.');
+  } else {
+    throw error;
+  }
 }
 ```
+<!-- simple-auth-usage:end -->
+
+근거: [APICK 개발가이드](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 상태 계약](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
 지원 간편인증 방식(`authProvider`) 13종은 `AUTH_PROVIDERS`로 제공됩니다: `kakao`, `naver`, `toss`, `pass`, `samsung`, `kb`, `shinhan`, `hana`, `woori`, `ibk`, `nh`, `kakaobank`, `banksalad`.
 The 13 supported `authProvider` values are exported as `AUTH_PROVIDERS`: `kakao`, `naver`, `toss`, `pass`, `samsung`, `kb`, `shinhan`, `hana`, `woori`, `ibk`, `nh`, `kakaobank`, `banksalad`.

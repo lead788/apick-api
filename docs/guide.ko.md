@@ -191,6 +191,54 @@ console.log(result.data.result.fields);
 
 재직·소득·연금·면허·건강검진 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
 
+아래 함수는 5종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
+
+<!-- simple-auth-polling:start -->
+```js
+async function pollDataResult(getResult, accepted, { timeoutMs = 600_000 } = {}) {
+  const pending = new Set([
+    'AUTH_REQUESTED', 'AUTH_WAITING', 'AUTH_COMPLETED', 'COLLECTING', 'COLLECTED'
+  ]);
+  const failed = new Set(['AUTH_REJECTED', 'AUTH_EXPIRED', 'FAILED']);
+  const completed = new Set(['SUCCESS', 'PARTIAL_SUCCESS']);
+  const delays = [5_000, 10_000, 20_000, 30_000];
+  const deadline = Date.now() + timeoutMs;
+  const transactionId = accepted.data.transactionId;
+  const stop = code => { throw Object.assign(new Error(code), { code }); };
+  let response = accepted;
+  let attempt = 0;
+
+  for (;;) {
+    const data = response.data;
+    if (data.errorCode === 'RESULT_EXPIRED') stop('RESULT_EXPIRED');
+    if (failed.has(data.status)) stop(data.errorCode || data.status);
+    if (data.resultAvailable === true) {
+      if (data.result == null) stop('INVALID_RESULT');
+      return response;
+    }
+    if (completed.has(data.status)) stop('RESULT_NOT_AVAILABLE');
+    if (!pending.has(data.status)) stop('UNKNOWN_STATUS');
+
+    const awaitingApproval = ['AUTH_REQUESTED', 'AUTH_WAITING'].includes(data.status);
+    const authDeadline = Date.parse(data.expiresAt || accepted.data.expiresAt);
+    const limit = awaitingApproval && Number.isFinite(authDeadline)
+      ? Math.min(deadline, authDeadline) : deadline;
+    const timeoutCode = awaitingApproval && limit === authDeadline
+      ? 'AUTH_WAIT_TIMEOUT' : 'CLIENT_POLL_TIMEOUT';
+    const remaining = limit - Date.now();
+    if (remaining <= 0) stop(timeoutCode);
+    await new Promise(resolve => setTimeout(resolve,
+      Math.min(delays[Math.min(attempt++, delays.length - 1)], remaining)));
+    if (Date.now() >= limit) stop(timeoutCode);
+    response = await getResult(transactionId);
+  }
+}
+```
+<!-- simple-auth-polling:end -->
+
+`AUTH_REQUESTED`·`AUTH_WAITING`은 사용자 승인을 기다리고, `AUTH_COMPLETED`·`COLLECTING`·`COLLECTED`는 결과가 준비될 때까지 계속 조회합니다. 과금 여부(`charged`, `success`)는 완료 기준이 아닙니다. 인증 대기에만 `expiresAt`을 적용하고 승인 후에는 전체 대기 한도를 적용합니다. 예제의 10분 한도는 클라이언트 정책이며, 진행 중인 호출의 제한 시간은 SDK의 `timeoutMs`로 별도 설정하세요. `AUTH_WAIT_TIMEOUT`·`CLIENT_POLL_TIMEOUT`·`RESULT_NOT_AVAILABLE`·`INVALID_RESULT`·`UNKNOWN_STATUS`는 예제에서 만드는 로컬 오류로, 응답 모순이나 알 수 없는 상태에서 무한 반복하지 않습니다. 통신 오류도 재시도 없이 호출자에게 전달합니다.
+
+<!-- simple-auth-usage:start -->
 ```js
 const accepted = await client.requestDrivingLicense({
   name: '홍길동',
@@ -199,12 +247,21 @@ const accepted = await client.requestDrivingLicense({
   authProvider: 'kakao'
 });
 
-let result;
-do {
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  result = await client.getDrivingLicense(accepted.data.transactionId);
-} while (result.data.status === 'AUTH_WAITING' || result.data.status === 'COLLECTING');
+try {
+  const result = await pollDataResult(id => client.getDrivingLicense(id), accepted);
+  if (result.data.status === 'PARTIAL_SUCCESS') console.warn(result.data.sources);
+  console.log(result.data.result);
+} catch (error) {
+  if ((error.serviceCode || error.code) === 'RESULT_EXPIRED') {
+    console.error('결과 보관 기간 만료: 사용자 확인 후 새 인증을 요청하세요.');
+  } else {
+    throw error;
+  }
+}
 ```
+<!-- simple-auth-usage:end -->
+
+근거: [APICK 개발가이드](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 상태 계약](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
 `authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
 

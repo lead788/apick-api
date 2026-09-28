@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.4.1 — 2026-09-28
+
+- README와 한국어·영어 가이드의 간편인증 5종 예제에 모든 진행 상태와 `resultAvailable` 종료 기준을 적용했습니다. 전체·부분 성공, 인증 거부·만료·실패와 `RESULT_EXPIRED`를 구분합니다.
+- Align all five simple-auth polling examples in the README and Korean/English guides with every progress state and the `resultAvailable` completion criterion. Distinguish full/partial success, rejected/expired authentication, failure, and `RESULT_EXPIRED`.
+- 순차 폴링 간격을 5→10→20→30초로 늘린 뒤 30초를 유지하며, 인증·전체 대기시간 제한과 자동 재접수 방지를 안내합니다. 문서 코드를 직접 실행하는 회귀 테스트를 추가했습니다.
+- Document sequential polling at 5→10→20→30 seconds, capped at 30 seconds, with authentication/overall waiting limits and no automatic resubmission. Add regression tests that execute the documentation examples.
+
 ## 3.4.0 — 2026-09-27
 
 - 간편인증 기반 조회 상품 5종(재직·보험료 확인, 금융소득 조회, 국민연금 가입내역, 운전면허 조회, 국가 건강검진 결과)을 추가했습니다. 각 상품은 `request*()`로 본인 간편인증을 접수하고 `get*()`로 상태·결과를 폴링합니다.

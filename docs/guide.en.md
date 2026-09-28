@@ -189,6 +189,54 @@ The document-specific methods are `maskResidenceCard`, `maskPassport`, `maskIdCa
 
 Employment, income, pension, driver's license, and health checkup lookups require the user's own simple-auth verification, so the call is split into acceptance (`request*`) and result polling (`get*`).
 
+Use this helper for all five products. Poll sequentially with the same `transactionId`, waiting 5→10→20→30 seconds and then keeping the 30-second interval. Return the result immediately when `resultAvailable === true`. `SUCCESS` means full success; `PARTIAL_SUCCESS` means partial success, so inspect `sources` for missing or failed items. `AUTH_REJECTED`, `AUTH_EXPIRED`, and `FAILED` are terminal failures; `errorCode: 'RESULT_EXPIRED'` means the retained result has expired. Never resubmit automatically after failure or expiry.
+
+<!-- simple-auth-polling:start -->
+```js
+async function pollDataResult(getResult, accepted, { timeoutMs = 600_000 } = {}) {
+  const pending = new Set([
+    'AUTH_REQUESTED', 'AUTH_WAITING', 'AUTH_COMPLETED', 'COLLECTING', 'COLLECTED'
+  ]);
+  const failed = new Set(['AUTH_REJECTED', 'AUTH_EXPIRED', 'FAILED']);
+  const completed = new Set(['SUCCESS', 'PARTIAL_SUCCESS']);
+  const delays = [5_000, 10_000, 20_000, 30_000];
+  const deadline = Date.now() + timeoutMs;
+  const transactionId = accepted.data.transactionId;
+  const stop = code => { throw Object.assign(new Error(code), { code }); };
+  let response = accepted;
+  let attempt = 0;
+
+  for (;;) {
+    const data = response.data;
+    if (data.errorCode === 'RESULT_EXPIRED') stop('RESULT_EXPIRED');
+    if (failed.has(data.status)) stop(data.errorCode || data.status);
+    if (data.resultAvailable === true) {
+      if (data.result == null) stop('INVALID_RESULT');
+      return response;
+    }
+    if (completed.has(data.status)) stop('RESULT_NOT_AVAILABLE');
+    if (!pending.has(data.status)) stop('UNKNOWN_STATUS');
+
+    const awaitingApproval = ['AUTH_REQUESTED', 'AUTH_WAITING'].includes(data.status);
+    const authDeadline = Date.parse(data.expiresAt || accepted.data.expiresAt);
+    const limit = awaitingApproval && Number.isFinite(authDeadline)
+      ? Math.min(deadline, authDeadline) : deadline;
+    const timeoutCode = awaitingApproval && limit === authDeadline
+      ? 'AUTH_WAIT_TIMEOUT' : 'CLIENT_POLL_TIMEOUT';
+    const remaining = limit - Date.now();
+    if (remaining <= 0) stop(timeoutCode);
+    await new Promise(resolve => setTimeout(resolve,
+      Math.min(delays[Math.min(attempt++, delays.length - 1)], remaining)));
+    if (Date.now() >= limit) stop(timeoutCode);
+    response = await getResult(transactionId);
+  }
+}
+```
+<!-- simple-auth-polling:end -->
+
+`AUTH_REQUESTED` and `AUTH_WAITING` wait for the user's approval; `AUTH_COMPLETED`, `COLLECTING`, and `COLLECTED` keep polling until a result is available. Billing fields (`charged`, `success`) do not indicate completion. Apply `expiresAt` only while awaiting approval, then use the overall waiting limit. The example's 10-minute limit is a client policy; configure the SDK's `timeoutMs` separately to bound each in-flight call. `AUTH_WAIT_TIMEOUT`, `CLIENT_POLL_TIMEOUT`, `RESULT_NOT_AVAILABLE`, `INVALID_RESULT`, and `UNKNOWN_STATUS` are local example errors that prevent endless polling on inconsistent responses or unknown states. Transport errors propagate without retries.
+
+<!-- simple-auth-usage:start -->
 ```js
 const accepted = await client.requestDrivingLicense({
   name: 'Hong Gildong',
@@ -197,12 +245,21 @@ const accepted = await client.requestDrivingLicense({
   authProvider: 'kakao'
 });
 
-let result;
-do {
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  result = await client.getDrivingLicense(accepted.data.transactionId);
-} while (result.data.status === 'AUTH_WAITING' || result.data.status === 'COLLECTING');
+try {
+  const result = await pollDataResult(id => client.getDrivingLicense(id), accepted);
+  if (result.data.status === 'PARTIAL_SUCCESS') console.warn(result.data.sources);
+  console.log(result.data.result);
+} catch (error) {
+  if ((error.serviceCode || error.code) === 'RESULT_EXPIRED') {
+    console.error('Result expired. Ask the user before starting a new authentication request.');
+  } else {
+    throw error;
+  }
+}
 ```
+<!-- simple-auth-usage:end -->
+
+Sources: [APICK development guide](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 status contract](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
 `authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
 

@@ -20,8 +20,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 32 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 32);
+test('exports a focused catalog of 38 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 38);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -388,6 +388,92 @@ test('implements the remaining four simple-auth data products with product-speci
 	assert.ok(checkup.requests[0].url.endsWith('/rest/req_health_checkup'));
 	await checkupClient.getHealthCheckup(txId);
 	assert.ok(checkup.requests[1].url.endsWith('/rest/get_health_checkup'));
+});
+
+test('implements cash-receipt deduction and tax-return history with their year options', async () => {
+	const txId = 'd'.repeat(32);
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { transactionId: txId, product: 'x', status: 'AUTH_REQUESTED', resultAvailable: false, charged: true, sources: [], message: '', success: 1 }, api: { success: true, cost: 20 } });
+		}
+	});
+	const input = { name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao' };
+
+	await client.requestCashReceiptDeduction({ ...input, incomeYears: 3 });
+	assert.ok(requests[0].url.endsWith('/rest/req_cash_receipt_deduction'));
+	assert.equal(requests[0].body.get('incomeYears'), '3');
+	await client.requestCashReceiptDeduction(input);
+	assert.equal(requests[1].body.get('incomeYears'), null);
+	await client.getCashReceiptDeduction(txId);
+	assert.ok(requests[2].url.endsWith('/rest/get_cash_receipt_deduction'));
+	assert.equal(requests[2].body.get('transactionId'), txId);
+
+	await client.requestTaxReturnHistory({ ...input, years: 10 });
+	assert.ok(requests[3].url.endsWith('/rest/req_tax_return_history'));
+	assert.equal(requests[3].body.get('years'), '10');
+	await client.getTaxReturnHistory(txId);
+	assert.ok(requests[4].url.endsWith('/rest/get_tax_return_history'));
+
+	for (const value of [0, 4, 1.5]) assert.throws(() => client.requestCashReceiptDeduction({ ...input, incomeYears: value }), /incomeYears/);
+	for (const value of [0, 11, 2.5]) assert.throws(() => client.requestTaxReturnHistory({ ...input, years: value }), /years/);
+	assert.throws(() => client.getTaxReturnHistory('D'.repeat(32)), /transactionId/);
+	assert.equal(requests.length, 5);
+});
+
+test('implements the YouTube metadata, thumbnail and subtitle contracts', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			if (url.endsWith('/rest/youtube_metadata') || url.endsWith('/rest/youtube_subtitle_list')) {
+				return jsonResponse({ data: { video_id: 'dQw4w9WgXcQ', title: 'Video' }, api: { success: true, cost: 20 } });
+			}
+			const isSubtitle = url.endsWith('/rest/youtube_subtitle');
+			return new Response(Uint8Array.from([7, 8, 9]), {
+				status: 200,
+				headers: {
+					'content-type': isSubtitle ? 'text/plain; charset=utf-8' : 'image/jpeg',
+					'content-disposition': 'attachment; filename=' + (isSubtitle ? 'dQw4w9WgXcQ.en.txt' : 'dQw4w9WgXcQ.jpg'),
+					cost: isSubtitle ? '30' : '20'
+				}
+			});
+		}
+	});
+
+	const metadata = await client.youtubeMetadata('https://youtu.be/dQw4w9WgXcQ');
+	assert.ok(requests[0].url.endsWith('/rest/youtube_metadata'));
+	assert.equal(requests[0].body.get('url'), 'https://youtu.be/dQw4w9WgXcQ');
+	assert.equal(metadata.data.video_id, 'dQw4w9WgXcQ');
+
+	await client.youtubeSubtitleList('dQw4w9WgXcQ');
+	assert.ok(requests[1].url.endsWith('/rest/youtube_subtitle_list'));
+
+	const thumbnail = await client.youtubeThumbnail('dQw4w9WgXcQ');
+	assert.ok(thumbnail instanceof ApickBinaryResult);
+	assert.equal(thumbnail.filename, 'dQw4w9WgXcQ.jpg');
+	assert.equal(thumbnail.contentType, 'image/jpeg');
+
+	const subtitle = await client.youtubeSubtitle('dQw4w9WgXcQ', 'en', { format: 'txt', type: 'manual' });
+	assert.ok(requests[3].url.endsWith('/rest/youtube_subtitle'));
+	assert.equal(requests[3].body.get('lang'), 'en');
+	assert.equal(requests[3].body.get('format'), 'txt');
+	assert.equal(requests[3].body.get('type'), 'manual');
+	assert.equal(subtitle.filename, 'dQw4w9WgXcQ.en.txt');
+	assert.deepEqual(subtitle.meta, { cost: 30, durationMs: null });
+
+	await client.youtubeSubtitle('dQw4w9WgXcQ', 'ko');
+	assert.equal(requests[4].body.get('format'), null);
+	assert.equal(requests[4].body.get('type'), null);
+
+	assert.throws(() => client.youtubeMetadata(''), /url/);
+	assert.throws(() => client.youtubeSubtitle('dQw4w9WgXcQ', ''), /lang/);
+	assert.throws(() => client.youtubeSubtitle('dQw4w9WgXcQ', 'en', { format: 'ass' }), /format/);
+	assert.throws(() => client.youtubeSubtitle('dQw4w9WgXcQ', 'en', { type: 'translated' }), /type/);
+	assert.equal(requests.length, 5);
 });
 
 test('validates inputs before making a request', async () => {

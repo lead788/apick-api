@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.5.0 — 2026-09-30
+
+- 간편인증 조회 상품 2종을 추가했습니다. `requestCashReceiptDeduction()`/`getCashReceiptDeduction()`은 현금영수증 소득공제 내역을 `incomeYears`(1~3)로, `requestTaxReturnHistory()`/`getTaxReturnHistory()`는 국세 신고내역을 `years`(1~10)로 조회합니다.
+- Add two simple-auth data products: cash receipt income deductions (`incomeYears` 1-3) and national tax return history (`years` 1-10), each with a `request*()`/`get*()` pair and result payload types.
+- 유튜브 공개 영상 API 4종을 추가했습니다: `youtubeMetadata()`, `youtubeThumbnail()`(JPG), `youtubeSubtitleList()`, `youtubeSubtitle()`(VTT·SRT·TXT).
+- Add four public YouTube video methods: metadata, thumbnail (JPG), subtitle language list, and subtitle download (VTT/SRT/TXT).
+
 ## 3.4.1 — 2026-09-28
 
 - README와 한국어·영어 가이드의 간편인증 5종 예제에 모든 진행 상태와 `resultAvailable` 종료 기준을 적용했습니다. 전체·부분 성공, 인증 거부·만료·실패와 `RESULT_EXPIRED`를 구분합니다.

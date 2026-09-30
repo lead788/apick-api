@@ -71,6 +71,10 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `googleSearch(keyword, options)` | 웹 검색 / Web search | JSON |
 | `googleImageSearch(keyword, options)` | 이미지 검색 / Image search | JSON |
 | `screenshot(url)` | 웹페이지 화면캡처 / Web screenshot | Binary |
+| `youtubeMetadata(url)` | 유튜브 영상 정보 / YouTube video metadata | JSON |
+| `youtubeThumbnail(url)` | 유튜브 썸네일 / YouTube thumbnail | JPG |
+| `youtubeSubtitleList(url)` | 유튜브 자막 언어 목록 / YouTube subtitle languages | JSON |
+| `youtubeSubtitle(url, lang, options)` | 유튜브 자막 다운로드 / YouTube subtitles | VTT·SRT·TXT |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |
@@ -95,6 +99,8 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestNpsJoinHistory(input)` / `getNpsJoinHistory(transactionId)` | 국민연금 가입내역조회 / National Pension join history | JSON |
 | `requestDrivingLicense(input)` / `getDrivingLicense(transactionId)` | 운전면허 조회 / Driver's license check | JSON |
 | `requestHealthCheckup(input)` / `getHealthCheckup(transactionId)` | 국가 건강검진 결과 조회 / National health checkup results | JSON |
+| `requestCashReceiptDeduction(input)` / `getCashReceiptDeduction(transactionId)` | 현금영수증 소득공제 내역 / Cash receipt income deductions | JSON |
+| `requestTaxReturnHistory(input)` / `getTaxReturnHistory(transactionId)` | 국세 신고내역 조회 / National tax return history | JSON |
 
 ## JSON 결과 / JSON results
 
@@ -237,13 +243,13 @@ The four document-specific methods return JSON. `maskResidentNumber` returns PNG
 
 ## 간편인증 기반 데이터 조회 / Simple-auth data lookups
 
-본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
+본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
 
-Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
+Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup, cash receipts, tax returns) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
 
-아래 함수는 5종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
+아래 함수는 7종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
 
-Use this helper for all five products. Poll sequentially with the same `transactionId`, waiting 5→10→20→30 seconds and then keeping the 30-second interval. Return the result immediately when `resultAvailable === true`. `SUCCESS` means full success; `PARTIAL_SUCCESS` means partial success, so inspect `sources` for missing or failed items. `AUTH_REJECTED`, `AUTH_EXPIRED`, and `FAILED` are terminal failures; `errorCode: 'RESULT_EXPIRED'` means the retained result has expired. Never resubmit automatically after failure or expiry.
+Use this helper for all seven products. Poll sequentially with the same `transactionId`, waiting 5→10→20→30 seconds and then keeping the 30-second interval. Return the result immediately when `resultAvailable === true`. `SUCCESS` means full success; `PARTIAL_SUCCESS` means partial success, so inspect `sources` for missing or failed items. `AUTH_REJECTED`, `AUTH_EXPIRED`, and `FAILED` are terminal failures; `errorCode: 'RESULT_EXPIRED'` means the retained result has expired. Never resubmit automatically after failure or expiry.
 
 <!-- simple-auth-polling:start -->
 ```js
@@ -331,6 +337,8 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 국민연금 가입내역 / NPS join history | `requestNpsJoinHistory` / `getNpsJoinHistory` | `from`, `to` (`YYYY-MM`) |
 | 운전면허 조회 / Driver's license | `requestDrivingLicense` / `getDrivingLicense` | — |
 | 국가 건강검진 결과 / Health checkup | `requestHealthCheckup` / `getHealthCheckup` | — |
+| 현금영수증 소득공제 내역 / Cash receipt deductions | `requestCashReceiptDeduction` / `getCashReceiptDeduction` | `incomeYears` (1–3) |
+| 국세 신고내역 조회 / Tax return history | `requestTaxReturnHistory` / `getTaxReturnHistory` | `years` (1–10) |
 
 ## 오류 처리 / Error handling
 

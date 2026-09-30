@@ -36,6 +36,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	googleSearch: { endpoint: '/rest/google_search', timeoutMs: 35_000, output: 'json' },
 	googleImageSearch: { endpoint: '/rest/google_image_search', timeoutMs: 35_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
+	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
+	youtubeThumbnail: { endpoint: '/rest/youtube_thumbnail', timeoutMs: 60_000, output: 'binary', filename: 'thumbnail.jpg' },
+	youtubeSubtitleList: { endpoint: '/rest/youtube_subtitle_list', timeoutMs: 60_000, output: 'json' },
+	youtubeSubtitle: { endpoint: '/rest/youtube_subtitle', timeoutMs: 60_000, output: 'binary', filename: 'subtitle.vtt' },
 	createTtsJob: { endpoint: '/rest/tts/jobs', timeoutMs: 35_000, output: 'json' },
 	createVideoJob: { endpoint: '/rest/seedance/jobs', timeoutMs: 60_000, output: 'json' },
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
@@ -47,7 +51,9 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestPersonalIncome: { endpoint: '/rest/req_personal_income', timeoutMs: 35_000, output: 'json' },
 	requestNpsJoinHistory: { endpoint: '/rest/req_nps_join_history', timeoutMs: 35_000, output: 'json' },
 	requestDrivingLicense: { endpoint: '/rest/req_driving_license', timeoutMs: 35_000, output: 'json' },
-	requestHealthCheckup: { endpoint: '/rest/req_health_checkup', timeoutMs: 35_000, output: 'json' }
+	requestHealthCheckup: { endpoint: '/rest/req_health_checkup', timeoutMs: 35_000, output: 'json' },
+	requestCashReceiptDeduction: { endpoint: '/rest/req_cash_receipt_deduction', timeoutMs: 35_000, output: 'json' },
+	requestTaxReturnHistory: { endpoint: '/rest/req_tax_return_history', timeoutMs: 35_000, output: 'json' }
 });
 
 const SERVICES = Object.freeze(Object.fromEntries(
@@ -524,6 +530,33 @@ class ApickClient {
 		return this._call('screenshot', { url: normalizeUrl(url) });
 	}
 
+	// 유튜브 공개 영상. url 은 영상 주소(watch·youtu.be·shorts) 또는 11자리 영상 ID를 받는다.
+	youtubeMetadata(url) {
+		return this._call('youtubeMetadata', { url: requiredString('url', url, 2048) });
+	}
+
+	youtubeThumbnail(url) {
+		return this._call('youtubeThumbnail', { url: requiredString('url', url, 2048) });
+	}
+
+	youtubeSubtitleList(url) {
+		return this._call('youtubeSubtitleList', { url: requiredString('url', url, 2048) });
+	}
+
+	youtubeSubtitle(url, lang, options) {
+		const config = options || {};
+		const payload = { url: requiredString('url', url, 2048), lang: requiredString('lang', lang, 32) };
+		if (config.format !== undefined) {
+			if (!['vtt', 'srt', 'txt'].includes(config.format)) throw new RangeError('format must be vtt, srt or txt.');
+			payload.format = config.format;
+		}
+		if (config.type !== undefined) {
+			if (!['any', 'manual', 'auto'].includes(config.type)) throw new RangeError('type must be any, manual or auto.');
+			payload.type = config.type;
+		}
+		return this._call('youtubeSubtitle', payload, null, { filename: 'subtitle.' + (payload.format || 'vtt') });
+	}
+
 	async createVideoJob(model, prompt, options) {
 		if (!['seedance', 'veo', 'kling'].includes(model)) throw new RangeError('model must be seedance, veo or kling.');
 		const config = options || {};
@@ -791,6 +824,28 @@ class ApickClient {
 
 	getHealthCheckup(transactionId) {
 		return this._call('requestHealthCheckup', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_health_checkup' });
+	}
+
+	requestCashReceiptDeduction(input) {
+		const payload = dataRequestInput(input);
+		const incomeYears = optionalRangeInteger('incomeYears', (input || {}).incomeYears, 1, 3);
+		if (incomeYears !== undefined) payload.incomeYears = incomeYears;
+		return this._call('requestCashReceiptDeduction', payload);
+	}
+
+	getCashReceiptDeduction(transactionId) {
+		return this._call('requestCashReceiptDeduction', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_cash_receipt_deduction' });
+	}
+
+	requestTaxReturnHistory(input) {
+		const payload = dataRequestInput(input);
+		const years = optionalRangeInteger('years', (input || {}).years, 1, 10);
+		if (years !== undefined) payload.years = years;
+		return this._call('requestTaxReturnHistory', payload);
+	}
+
+	getTaxReturnHistory(transactionId) {
+		return this._call('requestTaxReturnHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tax_return_history' });
 	}
 }
 

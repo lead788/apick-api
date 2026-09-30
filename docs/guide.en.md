@@ -94,6 +94,13 @@ TTS supports 16 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the c
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
 
+// Public YouTube videos: a video URL or the 11-character video ID
+const video = await client.youtubeMetadata('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+const tracks = await client.youtubeSubtitleList(video.data.video_id);
+const subtitle = await client.youtubeSubtitle(video.data.video_id, 'en', { format: 'srt' });
+await subtitle.save('./' + subtitle.filename);
+await (await client.youtubeThumbnail(video.data.video_id)).save('./thumbnail.jpg');
+
 const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
 const jobId = created.data.job_id;
 let job = await client.getTtsJob(jobId);
@@ -187,9 +194,9 @@ The document-specific methods are `maskResidenceCard`, `maskPassport`, `maskIdCa
 
 ## Simple-auth data lookups
 
-Employment, income, pension, driver's license, and health checkup lookups require the user's own simple-auth verification, so the call is split into acceptance (`request*`) and result polling (`get*`).
+Employment, income, pension, driver's license, health checkup, cash receipt deduction, and tax return history lookups require the user's own simple-auth verification, so the call is split into acceptance (`request*`) and result polling (`get*`).
 
-Use this helper for all five products. Poll sequentially with the same `transactionId`, waiting 5→10→20→30 seconds and then keeping the 30-second interval. Return the result immediately when `resultAvailable === true`. `SUCCESS` means full success; `PARTIAL_SUCCESS` means partial success, so inspect `sources` for missing or failed items. `AUTH_REJECTED`, `AUTH_EXPIRED`, and `FAILED` are terminal failures; `errorCode: 'RESULT_EXPIRED'` means the retained result has expired. Never resubmit automatically after failure or expiry.
+Use this helper for all seven products. Poll sequentially with the same `transactionId`, waiting 5→10→20→30 seconds and then keeping the 30-second interval. Return the result immediately when `resultAvailable === true`. `SUCCESS` means full success; `PARTIAL_SUCCESS` means partial success, so inspect `sources` for missing or failed items. `AUTH_REJECTED`, `AUTH_EXPIRED`, and `FAILED` are terminal failures; `errorCode: 'RESULT_EXPIRED'` means the retained result has expired. Never resubmit automatically after failure or expiry.
 
 <!-- simple-auth-polling:start -->
 ```js
@@ -261,7 +268,7 @@ try {
 
 Sources: [APICK development guide](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 status contract](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
-`authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
+`authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). `requestCashReceiptDeduction` takes optional `incomeYears` (1-3) and `requestTaxReturnHistory` takes optional `years` (1-10). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
 
 ## Errors and retries
 

@@ -61,6 +61,8 @@ export interface RequestPersonalIncomeInput extends DataRequestInput { incomeYea
 export interface RequestNpsJoinHistoryInput extends DataRequestInput { from?: string; to?: string; }
 export interface RequestDrivingLicenseInput extends DataRequestInput {}
 export interface RequestHealthCheckupInput extends DataRequestInput {}
+export interface RequestCashReceiptDeductionInput extends DataRequestInput { incomeYears?: number; }
+export interface RequestTaxReturnHistoryInput extends DataRequestInput { years?: number; }
 
 export type DataRequestStatus =
 	| 'AUTH_REQUESTED' | 'AUTH_WAITING' | 'AUTH_COMPLETED' | 'AUTH_REJECTED' | 'AUTH_EXPIRED'
@@ -159,6 +161,44 @@ export interface HealthCheckupEntry { 검진연도: string; 검진종류: string
 export interface HealthCheckupInfo { 이름: string; 건수: number; 검진내역: HealthCheckupEntry[]; }
 export interface HealthCheckupResultPayload { healthCheckup: HealthCheckupInfo; }
 
+export interface CashReceiptTotals { 건수: number; 사용금액: number; 소득공제건수: number; 소득공제금액: number; }
+export interface CashReceiptEntry {
+	거래일시: string; 가맹점: string; 금액: number; 승인번호: string;
+	거래구분: string; 거래상태: string; 소득공제대상: boolean; 소득공제반영: boolean;
+}
+export interface CashReceiptYear { 귀속연도: string; 합계: CashReceiptTotals; 사용내역: CashReceiptEntry[]; }
+export interface CashReceiptDeductionInfo { 조회연도: string[]; 전체합계: CashReceiptTotals; 연도별: CashReceiptYear[]; }
+export interface CashReceiptDeductionResultPayload { cashReceiptDeduction: CashReceiptDeductionInfo; }
+
+export interface TaxReturnEntry {
+	신고일: string; 과세기간: string; 신고서: string; 신고구분: string; 신고상세: string;
+	세목: string; 작성방법: string; 납부년월: string; 납부금액: number; 고지금액: number;
+}
+export interface TaxReturnHistoryInfo {
+	조회기간: { 시작: string; 끝: string };
+	합계: { 건수: number; 납부금액: number; 고지금액: number };
+	신고내역: TaxReturnEntry[];
+}
+export interface TaxReturnHistoryResultPayload { taxReturnHistory: TaxReturnHistoryInfo; }
+
+export interface YoutubeThumbnail { url: string; width: number; height: number; }
+export interface YoutubeChapter { title: string; start_time: number | null; end_time: number | null; }
+export interface YoutubeMetadata {
+	video_id: string; url: string; title: string | null; description: string;
+	channel: { id: string | null; name: string | null; url: string | null; handle: string | null; follower_count: number | null; is_verified: boolean };
+	upload_date: string | null; duration: number | null; view_count: number | null; like_count: number | null; comment_count: number | null;
+	categories: string[]; tags: string[]; language: string | null; live_status: string | null; availability: string | null;
+	age_limit: number | null; chapters: YoutubeChapter[]; thumbnail: string | null; thumbnails: YoutubeThumbnail[];
+	subtitle_languages: string[]; automatic_caption_count: number;
+}
+export interface YoutubeSubtitleTrack { lang: string; name: string | null; auto: boolean; formats: string[]; translated?: boolean; }
+export interface YoutubeSubtitleList {
+	video_id: string; title: string | null; original_language: string | null;
+	subtitle_count: number; automatic_caption_count: number;
+	subtitles: YoutubeSubtitleTrack[]; automatic_captions: YoutubeSubtitleTrack[];
+}
+export interface YoutubeSubtitleOptions { format?: 'vtt' | 'srt' | 'txt'; type?: 'any' | 'manual' | 'auto'; }
+
 export const TTS_VOICE_IDS: readonly [
 	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_01', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_teen_01', 'v2_f_young_01', 'v2_f_senior_01'
 ];
@@ -244,6 +284,10 @@ export class ApickClient {
 	googleSearch(keyword: string, options?: { page?: number }): Promise<ApickResult>;
 	googleImageSearch(keyword: string, options?: { page?: number }): Promise<ApickResult>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
+	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
+	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;
+	youtubeSubtitleList(url: string): Promise<ApickResult<YoutubeSubtitleList>>;
+	youtubeSubtitle(url: string, lang: string, options?: YoutubeSubtitleOptions): Promise<ApickBinaryResult>;
 	createTtsJob(text: string, options?: { voiceId?: TtsVoiceId }): Promise<ApickResult<TtsJobData>>;
 	getTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	cancelTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
@@ -273,6 +317,10 @@ export class ApickClient {
 	getDrivingLicense(transactionId: string): Promise<ApickResult<DataRequestResult<DrivingLicenseResultPayload>>>;
 	requestHealthCheckup(input: RequestHealthCheckupInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getHealthCheckup(transactionId: string): Promise<ApickResult<DataRequestResult<HealthCheckupResultPayload>>>;
+	requestCashReceiptDeduction(input: RequestCashReceiptDeductionInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getCashReceiptDeduction(transactionId: string): Promise<ApickResult<DataRequestResult<CashReceiptDeductionResultPayload>>>;
+	requestTaxReturnHistory(input: RequestTaxReturnHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getTaxReturnHistory(transactionId: string): Promise<ApickResult<DataRequestResult<TaxReturnHistoryResultPayload>>>;
 }
 
 export default ApickClient;

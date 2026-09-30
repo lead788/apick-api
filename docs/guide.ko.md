@@ -94,6 +94,13 @@ TTS는 16개 목소리 ID를 지원합니다. 정확한 목록은 `TTS_VOICE_IDS
 const screenshot = await client.screenshot('https://example.com');
 await screenshot.save('./example.jpeg');
 
+// 유튜브 공개 영상: 영상 주소 또는 11자리 영상 ID
+const video = await client.youtubeMetadata('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+const tracks = await client.youtubeSubtitleList(video.data.video_id);
+const subtitle = await client.youtubeSubtitle(video.data.video_id, 'en', { format: 'srt' });
+await subtitle.save('./' + subtitle.filename);
+await (await client.youtubeThumbnail(video.data.video_id)).save('./thumbnail.jpg');
+
 const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
 const jobId = created.data.job_id;
 let job = await client.getTtsJob(jobId);
@@ -189,9 +196,9 @@ console.log(result.data.result.fields);
 
 ## 간편인증 데이터 조회
 
-재직·소득·연금·면허·건강검진 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
+재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
 
-아래 함수는 5종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
+아래 함수는 7종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
 
 <!-- simple-auth-polling:start -->
 ```js
@@ -263,7 +270,7 @@ try {
 
 근거: [APICK 개발가이드](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 상태 계약](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
-`authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
+`authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestCashReceiptDeduction`은 `incomeYears`(1~3), `requestTaxReturnHistory`는 `years`(1~10) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
 
 ## 오류와 재시도
 

@@ -57,7 +57,9 @@ client.createVideoJob("other", "a boat");
 import type {
   AuthProvider, DataRequestAcceptedData, DataRequestResult,
   EmploymentResultPayload, PersonalIncomeResultPayload, NpsJoinHistoryResultPayload,
-  DrivingLicenseResultPayload, HealthCheckupResultPayload
+  DrivingLicenseResultPayload, HealthCheckupResultPayload,
+  CashReceiptDeductionResultPayload, TaxReturnHistoryResultPayload,
+  YoutubeMetadata, YoutubeSubtitleList
 } from "../src/index.js";
 const provider: AuthProvider = "kakao";
 const employmentRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestEmployment({
@@ -82,5 +84,21 @@ const checkupRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.req
 const checkupResult: Promise<ApickResult<DataRequestResult<HealthCheckupResultPayload>>> = client.getHealthCheckup("a".repeat(32));
 void employmentRequest; void employmentResult; void incomeRequest; void incomeResult;
 void npsRequest; void npsResult; void licenseRequest; void licenseResult; void checkupRequest; void checkupResult;
+const receiptRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestCashReceiptDeduction({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "kakao", incomeYears: 3
+});
+const receiptResult: Promise<ApickResult<DataRequestResult<CashReceiptDeductionResultPayload>>> = client.getCashReceiptDeduction("a".repeat(32));
+const taxRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestTaxReturnHistory({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", years: 10
+});
+const taxResult: Promise<ApickResult<DataRequestResult<TaxReturnHistoryResultPayload>>> = client.getTaxReturnHistory("a".repeat(32));
+const youtubeMeta: Promise<ApickResult<YoutubeMetadata>> = client.youtubeMetadata("dQw4w9WgXcQ");
+const youtubeTracks: Promise<ApickResult<YoutubeSubtitleList>> = client.youtubeSubtitleList("dQw4w9WgXcQ");
+const youtubeThumb: Promise<ApickBinaryResult> = client.youtubeThumbnail("dQw4w9WgXcQ");
+const youtubeText: Promise<ApickBinaryResult> = client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "srt", type: "auto" });
+void receiptRequest; void receiptResult; void taxRequest; void taxResult;
+void youtubeMeta; void youtubeTracks; void youtubeThumb; void youtubeText;
+// @ts-expect-error 지원하지 않는 자막 형식
+client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "ass" });
 // @ts-expect-error 지원하지 않는 간편인증 방식
 client.requestDrivingLicense({ name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "payco" });

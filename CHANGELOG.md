@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.6.2 — 2026-10-02
+
+- 모든 TTS 요청에 한국어 읽기 전처리가 자동 적용되어 추가 옵션이나 별도 Skill 호출이 필요하지 않음을 README와 한국어·영어 가이드에 명시했습니다. 원문 기준 요금과 ASS 자막 표기는 유지되며, 정규화에 실패하면 원문으로 합성합니다. 공개 메서드와 요청·응답 형식은 변경하지 않았습니다.
+- Clarify in the README and Korean/English guides that every TTS request automatically applies Korean reading normalization, with no extra option or separate Skill call. Billing and ASS subtitle spelling remain based on the original text; failed normalization falls back to synthesis from that text. No public method or request/response format changes.
+
 ## 3.6.1 — 2026-10-02
 
 - `createTtsJob()`으로 접수한 문장의 숫자·단위·기호·영문 약어를 문맥에 맞는 한글 읽기로 자동 변환해 합성한다는 안내를 README와 한국어·영어 가이드에 추가했습니다. 과금 글자 수와 요금은 보낸 원문 기준이고 요청·응답 형식은 그대로이며, ASS 자막은 보낸 원문 표기로 제공됩니다. 문서만 바뀌었습니다.

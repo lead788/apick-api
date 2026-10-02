@@ -102,3 +102,20 @@ void youtubeMeta; void youtubeTracks; void youtubeThumb; void youtubeText;
 client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "ass" });
 // @ts-expect-error 지원하지 않는 간편인증 방식
 client.requestDrivingLicense({ name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "payco" });
+
+import type { SkillDetail, SkillPage, SkillQuote, SkillRun, SkillRunResult, SkillSummary } from '../src/index.js';
+const skillPage: Promise<ApickResult<SkillPage<SkillSummary>>> = client.searchSkills({ query: "상품명", category: "marketing", limit: 5 });
+const skillDetail: Promise<ApickResult<SkillDetail>> = client.getSkill("sk_example");
+const skillQuote: Promise<ApickResult<SkillQuote>> = client.quoteSkill("sk_example", { product_name: "우산" });
+skillQuote.then(quote => { const range: number[] = [quote.data.price_points, quote.data.estimated_points, quote.data.max_points]; const varies: boolean = quote.data.usage_priced; return [range, varies]; });
+skillPage.then(page => page.data.items.map(item => item.usage_priced ? item.estimated_points : item.price_points));
+const skillRun: Promise<ApickResult<SkillRun<{ passed: boolean }>>> = client.runSkill<{ passed: boolean }>("sk_example", { product_name: "우산" }, { idempotencyKey: "order-0001", maxCostPoints: 50 });
+const skillRunRead: Promise<ApickResult<SkillRun>> = client.getSkillRun("run_example");
+const skillRunResult: Promise<ApickResult<SkillRunResult>> = client.getSkillRunResult("run_example");
+const skillCancel: Promise<ApickResult<SkillRun>> = client.cancelSkillRun("run_example");
+const skillUsage: Promise<ApickResult<SkillPage<SkillRun>>> = client.skillUsage({ limit: 20 });
+void skillPage; void skillDetail; void skillQuote; void skillRun; void skillRunRead; void skillRunResult; void skillCancel; void skillUsage;
+// @ts-expect-error 실행에는 idempotencyKey 가 필요하다
+client.runSkill("sk_example", { product_name: "우산" }, { maxCostPoints: 50 });
+// @ts-expect-error 지원하지 않는 분류
+client.searchSkills({ category: "unknown" });

@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.6.0 — 2026-10-02
+
+- Skills 메서드 8종을 추가했습니다: `searchSkills()`, `getSkill()`, `quoteSkill()`, `runSkill()`, `getSkillRun()`, `getSkillRunResult()`, `cancelSkillRun()`, `skillUsage()`. 요청·응답이 JSON 이며 응답은 봉투 없이 `data` 에 담깁니다.
+- Add eight Skills methods to search, inspect, quote, run, read, fetch the result of, cancel and list Skill runs. Requests and responses are JSON; responses are returned as-is in `data`.
+- `runSkill()` 은 `idempotencyKey` 가 필수이며 `Idempotency-Key` 헤더로 보냅니다. 결과가 약속한 형식으로 반환된 실행만 차감됩니다.
+- 생성형 AI 를 쓰는 Skill 은 실행마다 실제 사용량만큼 금액이 달라집니다. `quoteSkill()` 이 예상 금액(`estimated_points`)과 최대 금액(`max_points`)을 돌려주며, `maxCostPoints` 에는 `max_points` 를 넘기세요.
+- For Skills that use generative AI the charge varies per run with actual usage. `quoteSkill()` returns `estimated_points` and `max_points`; pass `max_points` as `maxCostPoints`.
+- `runSkill()` requires `idempotencyKey`, sent as the `Idempotency-Key` header. Only runs that return a result in the promised format are charged.
+- `ApickApiError` 에 선택적 `details` 를 추가했습니다. Skills 오류 코드는 `serviceCode` 로 전달됩니다. `SKILL_CATEGORIES` 상수와 Skills 타입(`SkillSummary`, `SkillDetail`, `SkillQuote`, `SkillRun` 등)을 공개했습니다.
+- Add optional `details` to `ApickApiError`; Skills error codes are surfaced through `serviceCode`. Export `SKILL_CATEGORIES` and the Skills types.
+
 ## 3.5.0 — 2026-09-30
 
 - 간편인증 조회 상품 2종을 추가했습니다. `requestCashReceiptDeduction()`/`getCashReceiptDeduction()`은 현금영수증 소득공제 내역을 `incomeYears`(1~3)로, `requestTaxReturnHistory()`/`getTaxReturnHistory()`는 국세 신고내역을 `years`(1~10)로 조회합니다.

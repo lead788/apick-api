@@ -232,6 +232,8 @@ export class ApickApiError extends Error {
 	readonly status: number;
 	readonly code: string;
 	readonly serviceCode?: string;
+	/** Skills 오류의 부가 정보. 예: INVALID_INPUT 의 `errors` 목록 */
+	readonly details?: Record<string, unknown>;
 	toJSON(): {
 		name: string;
 		message: string;
@@ -321,6 +323,78 @@ export class ApickClient {
 	getCashReceiptDeduction(transactionId: string): Promise<ApickResult<DataRequestResult<CashReceiptDeductionResultPayload>>>;
 	requestTaxReturnHistory(input: RequestTaxReturnHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getTaxReturnHistory(transactionId: string): Promise<ApickResult<DataRequestResult<TaxReturnHistoryResultPayload>>>;
+	searchSkills(options?: SkillSearchOptions): Promise<ApickResult<SkillPage<SkillSummary>>>;
+	getSkill(skillId: string): Promise<ApickResult<SkillDetail>>;
+	quoteSkill(skillId: string, input: Record<string, unknown>, options?: { version?: string }): Promise<ApickResult<SkillQuote>>;
+	runSkill<T = Record<string, unknown>>(skillId: string, input: Record<string, unknown>, options: SkillRunOptions): Promise<ApickResult<SkillRun<T>>>;
+	getSkillRun<T = Record<string, unknown>>(runId: string): Promise<ApickResult<SkillRun<T>>>;
+	getSkillRunResult<T = Record<string, unknown>>(runId: string): Promise<ApickResult<SkillRunResult<T>>>;
+	cancelSkillRun(runId: string): Promise<ApickResult<SkillRun>>;
+	skillUsage(options?: { cursor?: string; limit?: number }): Promise<ApickResult<SkillPage<SkillRun>>>;
+}
+
+export const SKILL_CATEGORIES: readonly ['data', 'ai', 'dev', 'document', 'marketing', 'finance', 'productivity', 'video', 'etc'];
+export type SkillCategory = typeof SKILL_CATEGORIES[number];
+export type SkillRunStatus = 'queued' | 'running' | 'completing' | 'succeeded' | 'failed' | 'timed_out' | 'cancelled';
+export type SkillBillingStatus = 'reserved' | 'captured' | 'released' | 'partially_refunded' | 'refunded';
+export type SkillFailureCode = 'EXECUTION_FAILED' | 'OUTPUT_INVALID' | 'TIMED_OUT' | 'CANCELLED' | 'UPSTREAM_UNAVAILABLE';
+/** `ApickApiError.serviceCode` 로 돌아오는 Skills 오류 코드 */
+export type SkillErrorCode =
+	| 'INVALID_INPUT' | 'AUTH_REQUIRED' | 'NOT_ALLOWED' | 'PAYMENT_REQUIRED' | 'SKILL_OR_RUN_NOT_FOUND'
+	| 'IDEMPOTENCY_KEY_REQUIRED' | 'IDEMPOTENCY_CONFLICT' | 'QUOTE_EXPIRED' | 'VERSION_UNAVAILABLE'
+	| 'PRICE_EXCEEDS_LIMIT' | 'RUN_NOT_CANCELLABLE' | 'RESULT_NOT_READY' | 'RESULT_EXPIRED'
+	| 'INSUFFICIENT_POINTS' | 'RATE_LIMITED' | 'BUDGET_EXCEEDED' | 'TEMPORARILY_UNAVAILABLE';
+export interface SkillSearchOptions { query?: string; category?: SkillCategory; cursor?: string; limit?: number; }
+export interface SkillRunOptions {
+	/** 이 실행을 구분하는 고유 값. 재시도할 때 같은 값을 씁니다. 영문·숫자와 `. _ : -` 1~128자 */
+	idempotencyKey: string;
+	version?: string;
+	quoteId?: string;
+	/** 가격이 이 값보다 높으면 실행하지 않습니다 */
+	maxCostPoints?: number;
+	/** 결과를 기다릴 시간(0~20초, 기본 20) */
+	waitSeconds?: number;
+}
+export interface SkillPage<T> { items: T[]; next_cursor: string | null; }
+export interface SkillLimits { max_input_chars: number; timeout_seconds: number; }
+export interface SkillSummary {
+	skill_id: string; slug: string; title: string; summary: string;
+	category: SkillCategory; category_label: string; version: string;
+	/** 실행마다 같은 기본 금액 / base amount charged on every run */
+	price_points: number;
+	/** 사용량까지 더한 예상 금액 / estimated amount including usage */
+	estimated_points: number;
+	/** true 면 실행마다 실제 사용량만큼 금액이 달라집니다 / amount varies per run with actual usage */
+	usage_priced: boolean;
+	seller: { name: string }; uses_generative_ai: boolean;
+}
+export interface SkillDetail extends SkillSummary {
+	description: string; billing_rule: 'validated_result'; limits: SkillLimits;
+	input_schema: Record<string, unknown>; output_schema: Record<string, unknown>;
+	examples: unknown[]; stats: Record<string, unknown> | null; published_at: string | null;
+}
+export interface SkillQuote {
+	quote_id: string; skill_id: string; version: string; price_points: number;
+	/** 이 입력의 예상 금액 / estimated amount for this input */
+	estimated_points: number;
+	/** 예약되는 최대 금액. 실제 차감액은 이 값을 넘지 않습니다 / maximum amount reserved; the charge never exceeds it */
+	max_points: number;
+	usage_priced: boolean;
+	expires_at: string; limits: SkillLimits; billing_rule: 'validated_result';
+}
+export interface SkillBilling { status: SkillBillingStatus; reserved_points: number; charged_points: number; refunded_points: number; }
+export interface SkillRun<T = Record<string, unknown>> {
+	run_id: string; status: SkillRunStatus;
+	skill: { id: string; version: string; title?: string };
+	billing: SkillBilling; created_at: string | null; completed_at: string | null;
+	links: { self: string; result?: string };
+	failure_code?: SkillFailureCode; result_expires_at?: string | null;
+	/** status 가 succeeded 일 때만 */
+	result?: T;
+}
+export interface SkillRunResult<T = Record<string, unknown>> {
+	run_id: string; skill: { id: string; version: string; title?: string };
+	result: T; result_expires_at: string | null;
 }
 
 export default ApickClient;

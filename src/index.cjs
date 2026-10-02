@@ -175,6 +175,27 @@ function dataRequestInput(input) {
 	};
 }
 
+const SKILL_CATEGORIES = Object.freeze(['data', 'ai', 'dev', 'document', 'marketing', 'finance', 'productivity', 'video', 'etc']);
+const SKILL_CATEGORY_SET = new Set(SKILL_CATEGORIES);
+
+function normalizeSkillId(value) {
+	return encodeURIComponent(requiredString('skillId', value, 80));
+}
+
+function normalizeSkillRunId(value) {
+	return encodeURIComponent(requiredString('runId', value, 64));
+}
+
+function skillInput(value) {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('input must be a plain object matching the Skill input_schema.');
+	return value;
+}
+
+function optionalSkillText(name, value, maxLength) {
+	if (value === undefined || value === null || value === '') return undefined;
+	return requiredString(name, String(value), maxLength);
+}
+
 function numberOrNull(value) {
 	if (value === undefined || value === null || value === '') return null;
 	const number = Number(value);
@@ -268,6 +289,7 @@ class ApickApiError extends Error {
 		this.status = options && options.status || 0;
 		this.code = options && options.code || 'APICK_API_ERROR';
 		this.serviceCode = options && options.serviceCode || undefined;
+		if (options && options.details !== undefined) this.details = options.details;
 	}
 
 	toJSON() {
@@ -847,6 +869,128 @@ class ApickClient {
 	getTaxReturnHistory(transactionId) {
 		return this._call('requestTaxReturnHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tax_return_history' });
 	}
+
+	// Skills: 요청·응답이 모두 JSON 이고 data·api 봉투 없이 응답 항목이 최상위에 온다.
+	// 오류는 { error: { code, message, details } } 형식이며 code 를 serviceCode 로 돌려준다.
+	async _skills(method, path, options) {
+		const config = options || {};
+		const controller = new AbortController();
+		const timeoutMs = this.#timeoutMs || config.timeoutMs || DEFAULT_TIMEOUT_MS;
+		const timer = setTimeout(() => controller.abort(), timeoutMs);
+		const headers = { Accept: 'application/json', Authorization: `Bearer ${this.#apiKey}` };
+		const request = { method, headers, signal: controller.signal, redirect: 'error' };
+		if (config.idempotencyKey) headers['Idempotency-Key'] = config.idempotencyKey;
+		if (method !== 'GET') {
+			headers['Content-Type'] = 'application/json';
+			request.body = JSON.stringify(config.body || {});
+		}
+		let url = this.#baseUrl + path;
+		const query = new URLSearchParams(config.query || {}).toString();
+		if (query) url += '?' + query;
+
+		let response;
+		try {
+			response = await this.#fetch(url, request);
+		} catch (error) {
+			const timedOut = controller.signal.aborted || error && error.name === 'AbortError';
+			throw new ApickApiError(
+				timedOut ? `APICK request timed out after ${timeoutMs} ms.` : redact(error && error.message || 'APICK network request failed.', this.#apiKey),
+				{ code: timedOut ? 'APICK_TIMEOUT' : 'APICK_NETWORK_ERROR' }
+			);
+		} finally {
+			clearTimeout(timer);
+		}
+
+		const raw = await response.text();
+		let body;
+		try {
+			body = raw ? JSON.parse(raw) : null;
+		} catch {
+			body = undefined;
+		}
+		const failure = body && typeof body === 'object' && body.error && typeof body.error === 'object' ? body.error : null;
+		if (!response.ok || failure) {
+			throw new ApickApiError(failure && typeof failure.message === 'string' && failure.message || publicErrorMessage(body, 'APICK request failed.'), {
+				status: response.status,
+				code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR',
+				serviceCode: failure && typeof failure.code === 'string' ? failure.code : undefined,
+				details: failure && failure.details && typeof failure.details === 'object' ? failure.details : undefined
+			});
+		}
+		if (!body || typeof body !== 'object') {
+			throw new ApickApiError(`APICK returned an unexpected response (HTTP ${response.status}).`, {
+				status: response.status,
+				code: 'APICK_INVALID_RESPONSE'
+			});
+		}
+		return Object.freeze({ data: body, meta: responseMeta(null, response.headers) });
+	}
+
+	searchSkills(options) {
+		const config = options || {};
+		const query = {};
+		if (config.query !== undefined && config.query !== null && config.query !== '') query.query = requiredString('query', config.query, 60);
+		if (config.category !== undefined && config.category !== null && config.category !== '') {
+			const category = requiredString('category', config.category);
+			if (!SKILL_CATEGORY_SET.has(category)) throw new RangeError('category must be one of the supported Skill categories.');
+			query.category = category;
+		}
+		if (config.cursor !== undefined && config.cursor !== null && config.cursor !== '') query.cursor = requiredString('cursor', String(config.cursor), 20);
+		const limit = optionalRangeInteger('limit', config.limit, 1, 20);
+		if (limit !== undefined) query.limit = String(limit);
+		return this._skills('GET', '/rest/skills', { query });
+	}
+
+	getSkill(skillId) {
+		return this._skills('GET', '/rest/skills/' + normalizeSkillId(skillId));
+	}
+
+	quoteSkill(skillId, input, options) {
+		const body = { input: skillInput(input) };
+		const version = optionalSkillText('version', (options || {}).version, 16);
+		if (version !== undefined) body.version = version;
+		return this._skills('POST', '/rest/skills/' + normalizeSkillId(skillId) + '/quotes', { body });
+	}
+
+	// 같은 idempotencyKey 로 다시 보내면 새로 실행하지 않고 처음 실행을 돌려준다. 응답을 못 받았을 때는 같은 키로 재시도한다.
+	runSkill(skillId, input, options) {
+		const config = options || {};
+		const idempotencyKey = requiredString('idempotencyKey', config.idempotencyKey);
+		if (!/^[A-Za-z0-9._:-]{1,128}$/.test(idempotencyKey)) {
+			throw new TypeError('idempotencyKey must be 1-128 characters of letters, digits, and . _ : -');
+		}
+		const body = { input: skillInput(input) };
+		const version = optionalSkillText('version', config.version, 16);
+		const quoteId = optionalSkillText('quoteId', config.quoteId, 40);
+		const maxCostPoints = config.maxCostPoints === undefined || config.maxCostPoints === null ? undefined : positiveInteger('maxCostPoints', config.maxCostPoints);
+		const waitSeconds = optionalRangeInteger('waitSeconds', config.waitSeconds, 0, 20);
+		if (version !== undefined) body.version = version;
+		if (quoteId !== undefined) body.quote_id = quoteId;
+		if (maxCostPoints !== undefined) body.max_cost_points = maxCostPoints;
+		if (waitSeconds !== undefined) body.wait_seconds = waitSeconds;
+		return this._skills('POST', '/rest/skills/' + normalizeSkillId(skillId) + '/runs', { body, idempotencyKey, timeoutMs: 40_000 });
+	}
+
+	getSkillRun(runId) {
+		return this._skills('GET', '/rest/skills/runs/' + normalizeSkillRunId(runId));
+	}
+
+	getSkillRunResult(runId) {
+		return this._skills('GET', '/rest/skills/runs/' + normalizeSkillRunId(runId) + '/result');
+	}
+
+	cancelSkillRun(runId) {
+		return this._skills('POST', '/rest/skills/runs/' + normalizeSkillRunId(runId) + '/cancel', { body: {} });
+	}
+
+	skillUsage(options) {
+		const config = options || {};
+		const query = {};
+		if (config.cursor !== undefined && config.cursor !== null && config.cursor !== '') query.cursor = requiredString('cursor', String(config.cursor), 20);
+		const limit = optionalRangeInteger('limit', config.limit, 1, 50);
+		if (limit !== undefined) query.limit = String(limit);
+		return this._skills('GET', '/rest/skills/usage', { query });
+	}
 }
 
 module.exports = {
@@ -856,5 +1000,6 @@ module.exports = {
 	SERVICES,
 	TTS_VOICE_IDS,
 	AUTH_PROVIDERS,
+	SKILL_CATEGORIES,
 	DEFAULT_BASE_URL
 };

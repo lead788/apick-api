@@ -270,6 +270,48 @@ Sources: [APICK development guide](https://apick.app/dev_guide/data_health_check
 
 `authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). `requestCashReceiptDeduction` takes optional `incomeYears` (1-3) and `requestTaxReturnHistory` takes optional `years` (1-10). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
 
+## Skills
+
+Search and run reviewed Skills. Each Skill fixes its input format (`input_schema`), output format (`output_schema`) and base amount (`price_points`). A run is charged only when a result in the promised format is returned.
+
+For Skills that use generative AI (`usage_priced: true`) the actual usage of each run is added to the base amount, so the charge varies per run. `quoteSkill()` returns the estimated amount (`estimated_points`) and the maximum amount (`max_points`). The maximum is reserved when the run is accepted; when it finishes only the actual amount is charged and the rest is returned. Read the actual charge from `run.billing.charged_points`.
+
+```js
+import { randomUUID } from 'node:crypto';
+
+const found = await client.searchSkills({ query: 'product name', limit: 5 });
+const skillId = found.data.items[0].skill_id;
+const detail = await client.getSkill(skillId);
+const input = { product_name: 'Sturdy folding umbrella' };
+
+const quote = await client.quoteSkill(skillId, input);   // free, valid for 5 minutes
+const idempotencyKey = randomUUID();                      // reuse the same value when retrying
+let run = (await client.runSkill(skillId, input, {
+  idempotencyKey, quoteId: quote.data.quote_id, maxCostPoints: quote.data.max_points
+})).data;
+while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  run = (await client.getSkillRun(run.run_id)).data;
+}
+console.log(run.status, run.billing, run.result);
+```
+
+| Method | Description |
+| --- | --- |
+| `searchSkills({ query, category, cursor, limit })` | Search. `limit` 1-20; `category` is one of `SKILL_CATEGORIES` |
+| `getSkill(skillId)` | Input and output formats, price, limits, examples |
+| `quoteSkill(skillId, input, { version })` | Validates the input and reports the points to be charged. Does not run |
+| `runSkill(skillId, input, { idempotencyKey, quoteId, maxCostPoints, version, waitSeconds })` | Run. `idempotencyKey` is required; `waitSeconds` 0-20 (default 20) |
+| `getSkillRun(runId)` / `getSkillRunResult(runId)` | Run status (with the result once succeeded) / result only. Results are kept for 7 days |
+| `cancelSkillRun(runId)` | Cancel an unfinished run. Cancelled runs are not charged |
+| `skillUsage({ cursor, limit })` | Your runs. `limit` 1-50 |
+
+- Skills responses are returned as-is in `data`. Read the charge from `data.billing.status` (`reserved`, `captured`, `released`, `partially_refunded`, `refunded`); `meta.cost` is not populated.
+- If a run does not finish within 20 seconds it comes back as `queued` or `running`; poll `getSkillRun`.
+- If a response is lost, call again with the same `idempotencyKey`. Points are charged once. The same key with a different input is rejected with `IDEMPOTENCY_CONFLICT`.
+- Rejections before acceptance throw `ApickApiError` (`serviceCode` such as `INVALID_INPUT`, `INSUFFICIENT_POINTS`, `PAYMENT_REQUIRED`, `PRICE_EXCEEDS_LIMIT`, `RATE_LIMITED`; extra information in `details`). Failures after acceptance are reported through `status` and `failure_code` (`EXECUTION_FAILED`, `OUTPUT_INVALID`, `TIMED_OUT`, `CANCELLED`, `UPSTREAM_UNAVAILABLE`).
+- Skills with `uses_generative_ai: true` produce results with generative AI. Verify them before relying on them.
+
 ## Errors and retries
 
 `ApickApiError` includes public error information: `code`, optional `serviceCode`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.

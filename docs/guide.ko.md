@@ -272,6 +272,48 @@ try {
 
 `authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestCashReceiptDeduction`은 `incomeYears`(1~3), `requestTaxReturnHistory`는 `years`(1~10) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
 
+## Skills
+
+검수를 거친 Skill 을 검색하고 실행합니다. Skill 마다 입력 형식(`input_schema`)·결과 형식(`output_schema`)·기본 금액(`price_points`)이 정해져 있으며, 결과가 약속한 형식으로 반환된 실행만 차감됩니다.
+
+생성형 AI 를 쓰는 Skill(`usage_priced: true`)은 기본 금액에 그 실행의 실제 사용량이 더해져 실행마다 금액이 달라집니다. `quoteSkill()` 은 예상 금액(`estimated_points`)과 최대 금액(`max_points`)을 돌려줍니다. 실행을 접수할 때 최대 금액을 예약하고, 끝나면 실제 금액만 차감한 뒤 나머지를 돌려줍니다. 실제 차감액은 `run.billing.charged_points` 에서 확인합니다.
+
+```js
+import { randomUUID } from 'node:crypto';
+
+const found = await client.searchSkills({ query: '상품명', limit: 5 });
+const skillId = found.data.items[0].skill_id;
+const detail = await client.getSkill(skillId);
+const input = { product_name: '튼튼한 접이식 우산' };
+
+const quote = await client.quoteSkill(skillId, input);   // 무료. 5분 동안 유효
+const idempotencyKey = randomUUID();                      // 재시도할 때 같은 값을 다시 씁니다
+let run = (await client.runSkill(skillId, input, {
+  idempotencyKey, quoteId: quote.data.quote_id, maxCostPoints: quote.data.max_points
+})).data;
+while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  run = (await client.getSkillRun(run.run_id)).data;
+}
+console.log(run.status, run.billing, run.result);
+```
+
+| 메서드 | 설명 |
+| --- | --- |
+| `searchSkills({ query, category, cursor, limit })` | 검색. `limit` 1~20, `category` 는 `SKILL_CATEGORIES` 중 하나 |
+| `getSkill(skillId)` | 입력·결과 형식, 가격, 처리 상한, 예제 |
+| `quoteSkill(skillId, input, { version })` | 입력 검사와 차감될 포인트 확인. 실행하지 않습니다 |
+| `runSkill(skillId, input, { idempotencyKey, quoteId, maxCostPoints, version, waitSeconds })` | 실행. `idempotencyKey` 필수, `waitSeconds` 0~20(기본 20) |
+| `getSkillRun(runId)` / `getSkillRunResult(runId)` | 실행 상태(성공하면 결과 포함) / 결과만 조회. 결과는 7일 동안 보관 |
+| `cancelSkillRun(runId)` | 끝나지 않은 실행 취소. 취소된 실행은 차감되지 않습니다 |
+| `skillUsage({ cursor, limit })` | 내 실행 내역. `limit` 1~50 |
+
+- Skills 응답은 봉투 없이 `data` 에 그대로 담기며, 과금 상태는 `data.billing.status`(`reserved`·`captured`·`released`·`partially_refunded`·`refunded`)로 확인합니다. `meta.cost` 는 채워지지 않습니다.
+- 20초 안에 끝나지 않으면 `status` 가 `queued`·`running` 인 채로 돌아오므로 `getSkillRun` 으로 확인하세요.
+- 응답을 받지 못했을 때는 같은 `idempotencyKey` 로 다시 호출하세요. 포인트는 한 번만 차감됩니다. 같은 키에 다른 입력을 보내면 `IDEMPOTENCY_CONFLICT` 입니다.
+- 접수 전 거절은 `ApickApiError`(`serviceCode`: `INVALID_INPUT`·`INSUFFICIENT_POINTS`·`PAYMENT_REQUIRED`·`PRICE_EXCEEDS_LIMIT`·`RATE_LIMITED` 등, `details` 에 부가 정보)로, 접수 뒤 실패는 `status` 와 `failure_code`(`EXECUTION_FAILED`·`OUTPUT_INVALID`·`TIMED_OUT`·`CANCELLED`·`UPSTREAM_UNAVAILABLE`)로 확인합니다.
+- `uses_generative_ai` 가 true 인 Skill 은 생성형 AI 로 결과를 만듭니다. 중요한 판단에 쓰기 전에 확인하세요.
+
 ## 오류와 재시도
 
 `ApickApiError`에는 공개 오류 정보인 `code`, `serviceCode`, `status`, `message`가 포함됩니다. SDK는 중복 호출과 중복 과금을 방지하기 위해 자동 재시도를 하지 않습니다. 재시도가 필요하면 작업의 멱등성과 오류 코드를 확인한 뒤 애플리케이션에서 명시적으로 결정하세요.

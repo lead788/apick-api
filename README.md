@@ -101,6 +101,40 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestHealthCheckup(input)` / `getHealthCheckup(transactionId)` | 국가 건강검진 결과 조회 / National health checkup results | JSON |
 | `requestCashReceiptDeduction(input)` / `getCashReceiptDeduction(transactionId)` | 현금영수증 소득공제 내역 / Cash receipt income deductions | JSON |
 | `requestTaxReturnHistory(input)` / `getTaxReturnHistory(transactionId)` | 국세 신고내역 조회 / National tax return history | JSON |
+| `searchSkills(options)` / `getSkill(skillId)` | Skill 검색·상세 / Search and inspect Skills | JSON |
+| `quoteSkill(skillId, input, options)` | Skill 견적(무료) / Quote a run (free) | JSON |
+| `runSkill(skillId, input, options)` | Skill 실행 / Run a Skill | JSON |
+| `getSkillRun(runId)` / `getSkillRunResult(runId)` / `cancelSkillRun(runId)` | 실행 조회·결과·취소 / Read, fetch result, cancel | JSON |
+| `skillUsage(options)` | 내 Skill 실행 내역 / My Skill runs | JSON |
+
+## Skills
+
+검수를 거친 Skill 을 검색하고 실행합니다. 결과가 약속한 형식으로 반환된 실행만 포인트가 차감되고, 실패·시간초과·취소는 차감되지 않습니다. 생성형 AI 를 쓰는 Skill 은 실행마다 실제 사용량만큼 금액이 달라지므로, 실행 전에 `quoteSkill()` 로 예상 금액(`estimated_points`)과 최대 금액(`max_points`)을 확인하세요. 1회 이상 결제한 계정에서 실행할 수 있습니다.
+Search and run reviewed Skills. Points are charged only when a result in the promised format is returned; failures, timeouts and cancellations are not charged. For Skills that use generative AI the amount varies per run with actual usage, so call `quoteSkill()` first to get the estimated (`estimated_points`) and maximum (`max_points`) amount. Running requires an account with at least one payment.
+
+```js
+import { randomUUID } from 'node:crypto';
+
+const found = await apick.searchSkills({ query: '상품명', limit: 5 });
+const skillId = found.data.items[0].skill_id;
+const detail = await apick.getSkill(skillId);          // input_schema, output_schema, price_points, estimated_points
+const input = { product_name: '튼튼한 접이식 우산' };
+const quote = (await apick.quoteSkill(skillId, input)).data; // 무료 / free: estimated_points, max_points
+
+const idempotencyKey = randomUUID();                    // 재시도할 때 같은 값을 다시 씁니다 / reuse on retry
+let run = (await apick.runSkill(skillId, input, { idempotencyKey, quoteId: quote.quote_id, maxCostPoints: quote.max_points })).data;
+while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  run = (await apick.getSkillRun(run.run_id)).data;
+}
+console.log(run.status, run.billing, run.result);
+```
+
+Skills 응답은 다른 API 와 달리 봉투 없이 그대로 `data` 에 담깁니다. 과금 상태는 `data.billing`(`reserved`·`captured`·`released`…)에서 확인하며 `meta.cost` 는 채워지지 않습니다. 응답을 받지 못했을 때는 **같은 `idempotencyKey`** 로 다시 호출하세요. 포인트는 한 번만 차감됩니다. 같은 키에 다른 입력을 보내면 `IDEMPOTENCY_CONFLICT` 로 거부됩니다.
+Skills responses are returned as-is in `data`. Read the charge from `data.billing`; `meta.cost` is not populated. If a response is lost, call again with the **same `idempotencyKey`** — points are charged once. The same key with a different input is rejected with `IDEMPOTENCY_CONFLICT`.
+
+접수 전에 거절된 요청은 `ApickApiError` 로 던져지며 `serviceCode` 에 `INVALID_INPUT`·`INSUFFICIENT_POINTS`·`PRICE_EXCEEDS_LIMIT`·`RATE_LIMITED` 같은 코드가, `details` 에 부가 정보가 담깁니다. 접수된 뒤 실패한 실행은 예외가 아니라 `status` 와 `failure_code` 로 확인합니다.
+Requests rejected before acceptance throw `ApickApiError` with the code in `serviceCode` and extra information in `details`. A run that fails after acceptance is reported through `status` and `failure_code`, not an exception.
 
 ## JSON 결과 / JSON results
 

@@ -114,6 +114,13 @@ const skillRunRead: Promise<ApickResult<SkillRun>> = client.getSkillRun("run_exa
 const skillRunResult: Promise<ApickResult<SkillRunResult>> = client.getSkillRunResult("run_example");
 const skillCancel: Promise<ApickResult<SkillRun>> = client.cancelSkillRun("run_example");
 const skillUsage: Promise<ApickResult<SkillPage<SkillRun>>> = client.skillUsage({ limit: 20 });
+import type { SkillSort } from '../src/index.js';
+const skillSorted: Promise<ApickResult<SkillPage<SkillSummary>>> = client.searchSkills({ sort: "popular", limit: 5 });
+skillSorted.then(page => page.data.items.map(item => { const label: string = item.usage_label; const rating: number | null = item.rating_average; return [label, rating, item.like_count + item.review_count]; }));
+const skillSort: SkillSort = "recommended";
+// @ts-expect-error 지원하지 않는 순서는 타입에서 거른다
+client.searchSkills({ sort: "bogus" });
+void skillSorted; void skillSort;
 void skillPage; void skillDetail; void skillQuote; void skillRun; void skillRunRead; void skillRunResult; void skillCancel; void skillUsage;
 // @ts-expect-error 실행에는 idempotencyKey 가 필요하다
 client.runSkill("sk_example", { product_name: "우산" }, { maxCostPoints: 50 });

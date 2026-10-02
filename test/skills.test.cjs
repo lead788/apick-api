@@ -2,7 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { ApickClient, ApickApiError, SKILL_CATEGORIES, SERVICES } = require('../src/index.cjs');
+const { ApickClient, ApickApiError, SKILL_CATEGORIES, SKILL_SORTS, SERVICES } = require('../src/index.cjs');
 
 function jsonResponse(body, status) {
 	return new Response(JSON.stringify(body), { status: status || 200, headers: { 'content-type': 'application/json' } });
@@ -101,4 +101,20 @@ test('잘못된 Skills 인자는 요청을 보내기 전에 거부한다', () =>
 	assert.throws(() => client.searchSkills({ category: 'unknown' }), /category/);
 	assert.throws(() => client.searchSkills({ limit: 21 }), /limit/);
 	assert.throws(() => client.skillUsage({ limit: 51 }), /limit/);
+});
+
+test('검색 순서(sort)는 정해진 값만 보내고 응답의 참고 항목을 그대로 돌려준다', async () => {
+	const page = { items: [{ skill_id: 'sk_1', title: '상품명 규칙 검사', usage_label: '1만+', like_count: 34, review_count: 12, rating_average: 4.3 }], next_cursor: null };
+	const { client, requests } = recordingClient(() => jsonResponse(page));
+	const found = await client.searchSkills({ sort: 'popular', limit: 5 });
+	assert.equal(requests[0].url, 'https://api.example.test/rest/skills?sort=popular&limit=5');
+	assert.deepEqual(found.data.items[0], page.items[0]);
+	assert.deepEqual([...SKILL_SORTS], ['recommended', 'popular', 'used', 'likes', 'rating', 'new', 'mine', 'liked']);
+	for (const sort of SKILL_SORTS) await client.searchSkills({ sort });
+	assert.equal(requests.length, 1 + SKILL_SORTS.length);
+	// sort 를 생략하면 질의에 싣지 않는다(등록 순서).
+	await client.searchSkills({ query: '검사' });
+	assert.doesNotMatch(requests[requests.length - 1].url, /sort=/);
+	assert.throws(() => client.searchSkills({ sort: 'bogus' }), RangeError);
+	assert.equal(requests.length, 2 + SKILL_SORTS.length);
 });

@@ -177,6 +177,8 @@ function dataRequestInput(input) {
 
 const SKILL_CATEGORIES = Object.freeze(['data', 'ai', 'dev', 'document', 'marketing', 'finance', 'productivity', 'video', 'etc']);
 const SKILL_CATEGORY_SET = new Set(SKILL_CATEGORIES);
+const SKILL_SORTS = Object.freeze(['recommended', 'popular', 'used', 'likes', 'rating', 'new', 'mine', 'liked']);
+const SKILL_SORT_SET = new Set(SKILL_SORTS);
 
 function normalizeSkillId(value) {
 	return encodeURIComponent(requiredString('skillId', value, 80));
@@ -935,6 +937,11 @@ class ApickClient {
 			if (!SKILL_CATEGORY_SET.has(category)) throw new RangeError('category must be one of the supported Skill categories.');
 			query.category = category;
 		}
+		if (config.sort !== undefined && config.sort !== null && config.sort !== '') {
+			const sort = requiredString('sort', config.sort);
+			if (!SKILL_SORT_SET.has(sort)) throw new RangeError('sort must be one of the supported Skill sort orders.');
+			query.sort = sort;
+		}
 		if (config.cursor !== undefined && config.cursor !== null && config.cursor !== '') query.cursor = requiredString('cursor', String(config.cursor), 20);
 		const limit = optionalRangeInteger('limit', config.limit, 1, 20);
 		if (limit !== undefined) query.limit = String(limit);
@@ -1001,5 +1008,6 @@ module.exports = {
 	TTS_VOICE_IDS,
 	AUTH_PROVIDERS,
 	SKILL_CATEGORIES,
+	SKILL_SORTS,
 	DEFAULT_BASE_URL
 };

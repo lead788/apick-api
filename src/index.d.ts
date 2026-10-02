@@ -335,6 +335,9 @@ export class ApickClient {
 
 export const SKILL_CATEGORIES: readonly ['data', 'ai', 'dev', 'document', 'marketing', 'finance', 'productivity', 'video', 'etc'];
 export type SkillCategory = typeof SKILL_CATEGORIES[number];
+/** 검색 순서. 생략하면 등록 순서 / search order; registration order when omitted */
+export const SKILL_SORTS: readonly ['recommended', 'popular', 'used', 'likes', 'rating', 'new', 'mine', 'liked'];
+export type SkillSort = typeof SKILL_SORTS[number];
 export type SkillRunStatus = 'queued' | 'running' | 'completing' | 'succeeded' | 'failed' | 'timed_out' | 'cancelled';
 export type SkillBillingStatus = 'reserved' | 'captured' | 'released' | 'partially_refunded' | 'refunded';
 export type SkillFailureCode = 'EXECUTION_FAILED' | 'OUTPUT_INVALID' | 'TIMED_OUT' | 'CANCELLED' | 'UPSTREAM_UNAVAILABLE';
@@ -344,7 +347,12 @@ export type SkillErrorCode =
 	| 'IDEMPOTENCY_KEY_REQUIRED' | 'IDEMPOTENCY_CONFLICT' | 'QUOTE_EXPIRED' | 'VERSION_UNAVAILABLE'
 	| 'PRICE_EXCEEDS_LIMIT' | 'RUN_NOT_CANCELLABLE' | 'RESULT_NOT_READY' | 'RESULT_EXPIRED'
 	| 'INSUFFICIENT_POINTS' | 'RATE_LIMITED' | 'BUDGET_EXCEEDED' | 'TEMPORARILY_UNAVAILABLE';
-export interface SkillSearchOptions { query?: string; category?: SkillCategory; cursor?: string; limit?: number; }
+export interface SkillSearchOptions {
+	query?: string; category?: SkillCategory;
+	/** `mine`·`liked` 는 인증키의 계정 기준 / `mine` and `liked` are scoped to the API key's account */
+	sort?: SkillSort;
+	cursor?: string; limit?: number;
+}
 export interface SkillRunOptions {
 	/** 이 실행을 구분하는 고유 값. 재시도할 때 같은 값을 씁니다. 영문·숫자와 `. _ : -` 1~128자 */
 	idempotencyKey: string;
@@ -367,6 +375,12 @@ export interface SkillSummary {
 	/** true 면 실행마다 실제 사용량만큼 금액이 달라집니다 / amount varies per run with actual usage */
 	usage_priced: boolean;
 	seller: { name: string }; uses_generative_ai: boolean;
+	/** 사용 건수 구간. 예: `1,000회 미만`, `1,000+`, `1만+` / usage tier label, not an exact count */
+	usage_label: string;
+	like_count: number;
+	review_count: number;
+	/** 평점(1~5, 소수 첫째 자리). 리뷰가 없으면 null / average rating, null without reviews */
+	rating_average: number | null;
 }
 export interface SkillDetail extends SkillSummary {
 	description: string; billing_rule: 'validated_result'; limits: SkillLimits;

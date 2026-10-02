@@ -300,7 +300,7 @@ console.log(run.status, run.billing, run.result);
 
 | Method | Description |
 | --- | --- |
-| `searchSkills({ query, category, cursor, limit })` | Search. `limit` 1-20; `category` is one of `SKILL_CATEGORIES` |
+| `searchSkills({ query, category, sort, cursor, limit })` | Search. `limit` 1-20; `category` is one of `SKILL_CATEGORIES`, `sort` one of `SKILL_SORTS` |
 | `getSkill(skillId)` | Input and output formats, price, limits, examples |
 | `quoteSkill(skillId, input, { version })` | Validates the input and reports the points to be charged. Does not run |
 | `runSkill(skillId, input, { idempotencyKey, quoteId, maxCostPoints, version, waitSeconds })` | Run. `idempotencyKey` is required; `waitSeconds` 0-20 (default 20) |
@@ -308,6 +308,10 @@ console.log(run.status, run.billing, run.result);
 | `cancelSkillRun(runId)` | Cancel an unfinished run. Cancelled runs are not charged |
 | `skillUsage({ cursor, limit })` | Your runs. `limit` 1-50 |
 
+- `sort` is one of `recommended`, `popular`, `used` (most run), `likes`, `rating`, `new`, `mine` (Skills your account runs most) and `liked` (Skills your account liked). Omit it for registration order.
+- Search and detail responses include `usage_label` (a usage tier such as `1,000회 미만` (under 1,000), `1,000+`, `1만+` (10,000+), not an exact count), `like_count`, `review_count` and `rating_average` (1-5, `null` without reviews). Likes and reviews are left on the Skill page of the APICK website.
+- `sort` is one of `recommended`, `popular`, `used` (most run), `likes`, `rating`, `new`, `mine` (Skills your account runs most) and `liked` (Skills your account liked). Omit it for registration order.
+- Search and detail responses include `usage_label` (a usage tier such as `1,000회 미만` (under 1,000), `1,000+`, `1만+` (10,000+), not an exact count), `like_count`, `review_count` and `rating_average` (1-5, `null` without reviews). Likes and reviews are left on the Skill page of the APICK website.
 - Skills responses are returned as-is in `data`. Read the charge from `data.billing.status` (`reserved`, `captured`, `released`, `partially_refunded`, `refunded`); `meta.cost` is not populated.
 - If a run does not finish within 20 seconds it comes back as `queued` or `running`; poll `getSkillRun`.
 - If a response is lost, call again with the same `idempotencyKey`. Points are charged once. The same key with a different input is rejected with `IDEMPOTENCY_CONFLICT`.

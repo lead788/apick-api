@@ -130,6 +130,12 @@ while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) 
 console.log(run.status, run.billing, run.result);
 ```
 
+`searchSkills({ sort })` 로 추천(`recommended`)·인기(`popular`)·많이 사용(`used`)·좋아요순(`likes`)·평점순(`rating`)·최신(`new`) 순서를 고르고, 검색·상세 응답의 `usage_label`(사용 건수 구간)·`like_count`·`review_count`·`rating_average` 로 Skill 을 비교할 수 있습니다.
+Pick an order with `searchSkills({ sort })` (`recommended`, `popular`, `used`, `likes`, `rating`, `new`) and compare Skills with `usage_label` (a usage tier), `like_count`, `review_count` and `rating_average` in search and detail responses.
+
+`searchSkills({ sort })` 로 추천(`recommended`)·인기(`popular`)·많이 사용(`used`)·좋아요순(`likes`)·평점순(`rating`)·최신(`new`) 순서를 고르고, 검색·상세 응답의 `usage_label`(사용 건수 구간)·`like_count`·`review_count`·`rating_average` 로 Skill 을 비교할 수 있습니다.
+Pick an order with `searchSkills({ sort })` (`recommended`, `popular`, `used`, `likes`, `rating`, `new`) and compare Skills with `usage_label` (a usage tier), `like_count`, `review_count` and `rating_average` in search and detail responses.
+
 Skills 응답은 다른 API 와 달리 봉투 없이 그대로 `data` 에 담깁니다. 과금 상태는 `data.billing`(`reserved`·`captured`·`released`…)에서 확인하며 `meta.cost` 는 채워지지 않습니다. 응답을 받지 못했을 때는 **같은 `idempotencyKey`** 로 다시 호출하세요. 포인트는 한 번만 차감됩니다. 같은 키에 다른 입력을 보내면 `IDEMPOTENCY_CONFLICT` 로 거부됩니다.
 Skills responses are returned as-is in `data`. Read the charge from `data.billing`; `meta.cost` is not populated. If a response is lost, call again with the **same `idempotencyKey`** — points are charged once. The same key with a different input is rejected with `IDEMPOTENCY_CONFLICT`.
 

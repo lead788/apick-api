@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.7.0 — 2026-10-02
+
+- `searchSkills()` 에 `sort` 를 추가했습니다: `recommended`(추천)·`popular`(인기)·`used`(많이 사용)·`likes`(좋아요순)·`rating`(평점순)·`new`(최신)·`mine`(내 계정이 많이 실행한 Skill)·`liked`(내 계정이 좋아요한 Skill). 생략하면 예전처럼 등록 순서입니다. 지원하지 않는 값은 요청 전에 `RangeError` 가 발생합니다. `SKILL_SORTS` 상수와 `SkillSort` 타입을 공개했습니다.
+- Add `sort` to `searchSkills()`: `recommended`, `popular`, `used`, `likes`, `rating`, `new`, `mine` and `liked` (the last two are scoped to the API key's account). Omitting it keeps registration order. Unsupported values throw a `RangeError` before the request is sent. Export `SKILL_SORTS` and the `SkillSort` type.
+- 검색·상세 응답 타입(`SkillSummary`·`SkillDetail`)에 `usage_label`(사용 건수 구간: `1,000회 미만`, `1,000+`, `1만+` …)·`like_count`·`review_count`·`rating_average` 를 추가했습니다. 검색어는 Skill 의 이름·요약·설명과 판매자 이름에서 찾습니다.
+- Add `usage_label` (a usage tier, not an exact count), `like_count`, `review_count` and `rating_average` to the search and detail response types (`SkillSummary`, `SkillDetail`). The search query now matches a Skill's name, summary, description and seller name.
+- 기존 메서드와 요청·응답 형식은 그대로입니다. / Existing methods and request/response formats are unchanged.
+
 ## 3.6.2 — 2026-10-02
 
 - `TTS_VOICE_IDS`를 현재 지원하는 14개로 갱신했습니다. 제공이 종료된 `v2_ann_f_30s_01`, `v2_f_teen_01`을 상수·타입·문서에서 제거했으며, 이 값을 `voiceId`로 넘기면 요청 전에 `RangeError`가 발생합니다.

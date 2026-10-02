@@ -302,7 +302,7 @@ console.log(run.status, run.billing, run.result);
 
 | 메서드 | 설명 |
 | --- | --- |
-| `searchSkills({ query, category, cursor, limit })` | 검색. `limit` 1~20, `category` 는 `SKILL_CATEGORIES` 중 하나 |
+| `searchSkills({ query, category, sort, cursor, limit })` | 검색. `limit` 1~20, `category` 는 `SKILL_CATEGORIES`, `sort` 는 `SKILL_SORTS` 중 하나 |
 | `getSkill(skillId)` | 입력·결과 형식, 가격, 처리 상한, 예제 |
 | `quoteSkill(skillId, input, { version })` | 입력 검사와 차감될 포인트 확인. 실행하지 않습니다 |
 | `runSkill(skillId, input, { idempotencyKey, quoteId, maxCostPoints, version, waitSeconds })` | 실행. `idempotencyKey` 필수, `waitSeconds` 0~20(기본 20) |
@@ -310,6 +310,10 @@ console.log(run.status, run.billing, run.result);
 | `cancelSkillRun(runId)` | 끝나지 않은 실행 취소. 취소된 실행은 차감되지 않습니다 |
 | `skillUsage({ cursor, limit })` | 내 실행 내역. `limit` 1~50 |
 
+- `sort` 는 `recommended`(추천)·`popular`(인기)·`used`(많이 사용)·`likes`(좋아요순)·`rating`(평점순)·`new`(최신)·`mine`(내 계정이 많이 실행한 Skill)·`liked`(내 계정이 좋아요한 Skill) 가운데 하나입니다. 생략하면 등록 순서입니다.
+- 검색·상세 응답에는 고를 때 참고하는 `usage_label`(사용 건수 구간: `1,000회 미만`, `1,000+`, `1만+` …), `like_count`, `review_count`, `rating_average`(1~5, 리뷰가 없으면 `null`)가 있습니다. 좋아요와 리뷰는 에이픽 웹의 Skill 화면에서 남깁니다.
+- `sort` 는 `recommended`(추천)·`popular`(인기)·`used`(많이 사용)·`likes`(좋아요순)·`rating`(평점순)·`new`(최신)·`mine`(내 계정이 많이 실행한 Skill)·`liked`(내 계정이 좋아요한 Skill) 가운데 하나입니다. 생략하면 등록 순서입니다.
+- 검색·상세 응답에는 고를 때 참고하는 `usage_label`(사용 건수 구간: `1,000회 미만`, `1,000+`, `1만+` …), `like_count`, `review_count`, `rating_average`(1~5, 리뷰가 없으면 `null`)가 있습니다. 좋아요와 리뷰는 에이픽 웹의 Skill 화면에서 남깁니다.
 - Skills 응답은 봉투 없이 `data` 에 그대로 담기며, 과금 상태는 `data.billing.status`(`reserved`·`captured`·`released`·`partially_refunded`·`refunded`)로 확인합니다. `meta.cost` 는 채워지지 않습니다.
 - 20초 안에 끝나지 않으면 `status` 가 `queued`·`running` 인 채로 돌아오므로 `getSkillRun` 으로 확인하세요.
 - 응답을 받지 못했을 때는 같은 `idempotencyKey` 로 다시 호출하세요. 포인트는 한 번만 차감됩니다. 같은 키에 다른 입력을 보내면 `IDEMPOTENCY_CONFLICT` 입니다.

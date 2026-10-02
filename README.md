@@ -259,6 +259,10 @@ if (job.data.status === 'completed') {
 
 The charge is final when the job is accepted. Cancellation is allowed while `waiting` or `processing`. The MP3 and ASS subtitles can each be downloaded once. Starting either download immediately consumes that server copy, so an interrupted transfer cannot be downloaded again.
 
+`createTtsJob()`으로 접수한 문장의 숫자·단위·기호·영문 약어는 문맥에 맞는 한글 읽기로 자동 변환해 합성합니다(예: `5번 버스` → 오 번 버스, `버튼을 5번` → 다섯 번, `-5℃` → 영하 오 도, `인증번호 105028` → 한 자리씩). 과금 글자 수와 요금은 보낸 원문 기준이며 요청·응답 형식은 그대로입니다. 읽는 법을 직접 정하려면 한글로 풀어 써서 보내세요. ASS 자막은 보낸 원문 표기로 제공됩니다.
+
+Numbers, units, symbols and English abbreviations in the text passed to `createTtsJob()` are automatically converted into context-appropriate Korean readings before synthesis (for example, `5번 버스` is read as "오 번 버스", `버튼을 5번` as "다섯 번", `-5℃` as "영하 오 도", and `인증번호 105028` digit by digit). The billed character count and price are based on the text you send, and the request and response formats are unchanged. To choose a reading yourself, spell it out in Hangul. ASS subtitles keep the text as you sent it.
+
 ## 신분증 마스킹 / Identity masking
 
 ```js

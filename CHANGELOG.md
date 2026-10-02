@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.6.1 — 2026-10-02
+
+- `createTtsJob()`으로 접수한 문장의 숫자·단위·기호·영문 약어를 문맥에 맞는 한글 읽기로 자동 변환해 합성한다는 안내를 README와 한국어·영어 가이드에 추가했습니다. 과금 글자 수와 요금은 보낸 원문 기준이고 요청·응답 형식은 그대로이며, ASS 자막은 보낸 원문 표기로 제공됩니다. 문서만 바뀌었습니다.
+- Document in the README and Korean/English guides that text passed to `createTtsJob()` has its numbers, units, symbols and English abbreviations automatically converted into context-appropriate Korean readings before synthesis. Billing is based on the text you send, request and response formats are unchanged, and ASS subtitles keep the text as you sent it. Documentation only.
+
 ## 3.6.0 — 2026-10-02
 
 - Skills 메서드 8종을 추가했습니다: `searchSkills()`, `getSkill()`, `quoteSkill()`, `runSkill()`, `getSkillRun()`, `getSkillRunResult()`, `cancelSkillRun()`, `skillUsage()`. 요청·응답이 JSON 이며 응답은 봉투 없이 `data` 에 담깁니다.

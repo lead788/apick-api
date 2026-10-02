@@ -7,7 +7,7 @@ const MAX_IMAGE_AI_BYTES = 50 * 1024 * 1024;
 const IMAGE_AI_SIZES = Object.freeze(['1024x1024', '1536x1024', '1024x1536', '1152x864', '864x1152']);
 const IMAGE_AI_SIZE_SET = new Set(IMAGE_AI_SIZES);
 const TTS_VOICE_IDS = Object.freeze([
-	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_01', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_teen_01', 'v2_f_young_01', 'v2_f_senior_01'
+	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_young_01', 'v2_f_senior_01'
 ]);
 const TTS_VOICE_ID_SET = new Set(TTS_VOICE_IDS);
 const AUTH_PROVIDERS = Object.freeze([

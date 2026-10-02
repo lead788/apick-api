@@ -231,9 +231,9 @@ await excel.save('./scores.xlsx');
 
 The legacy synchronous TTS API has retired. Create a Korean narration job, poll every 2–5 seconds until it is `completed`, then download the MP3 result once.
 
-TTS supports 16 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the current list.
+TTS supports 14 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the current list.
 
-`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_01`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_teen_01`, `v2_f_young_01`, `v2_f_senior_01`
+`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_young_01`, `v2_f_senior_01`
 
 ```js
 const created = await apick.createTtsJob('오늘의 이야기를 시작합니다.', {
@@ -259,9 +259,9 @@ if (job.data.status === 'completed') {
 
 The charge is final when the job is accepted. Cancellation is allowed while `waiting` or `processing`. The MP3 and ASS subtitles can each be downloaded once. Starting either download immediately consumes that server copy, so an interrupted transfer cannot be downloaded again.
 
-`createTtsJob()`으로 접수한 문장의 숫자·단위·기호·영문은 문맥에 맞는 한글 읽기로 자동 변환한 뒤 음성을 생성합니다(예: `5번 버스` → 오 번 버스, `버튼을 5번` → 다섯 번, `-5℃` → 영하 오 도, `인증번호 105028` → 한 자리씩). 모든 TTS 요청에 자동 적용되므로 추가 옵션이나 별도 Skill 호출이 필요하지 않습니다. 과금 글자 수와 요금은 보낸 원문 기준이며 요청·응답 형식은 그대로입니다. 읽는 법을 직접 정하려면 한글로 풀어 써서 보내세요. ASS 자막은 보낸 원문 표기로 제공됩니다. 정규화에 실패하면 원문으로 음성을 생성합니다.
+`createTtsJob()`으로 접수한 문장의 숫자·단위·기호·영문은 문맥에 맞는 한글 읽기로 자동 변환한 뒤 음성을 생성합니다(예: `5번 버스` → 오 번 버스, `버튼을 5번` → 다섯 번, `-5℃` → 영하 오 도, `인증번호 105028` → 한 자리씩). 모든 TTS 요청에 자동 적용되므로 추가 옵션이나 별도 Skill 호출이 필요하지 않습니다. 과금 글자 수와 요금은 보낸 원문 기준이며 요청·응답 형식은 그대로입니다. 요금은 100자까지 30포인트이고 이후 100자마다 10포인트가 추가되며, 자동 변환에 따른 추가 요금은 없습니다. 읽는 법을 직접 정하려면 한글로 풀어 써서 보내세요. ASS 자막은 보낸 원문 표기로 제공됩니다. 정규화에 실패하면 원문으로 음성을 생성합니다.
 
-Numbers, units, symbols and English text in the text passed to `createTtsJob()` are automatically converted into context-appropriate Korean readings before synthesis (for example, `5번 버스` is read as "오 번 버스", `버튼을 5번` as "다섯 번", `-5℃` as "영하 오 도", and `인증번호 105028` digit by digit). This applies automatically to every TTS request; no extra option or separate Skill call is needed. The billed character count and price are based on the text you send, and the request and response formats are unchanged. To choose a reading yourself, spell it out in Hangul. ASS subtitles keep the text as you sent it. If normalization fails, speech is generated from the original text.
+Numbers, units, symbols and English text in the text passed to `createTtsJob()` are automatically converted into context-appropriate Korean readings before synthesis (for example, `5번 버스` is read as "오 번 버스", `버튼을 5번` as "다섯 번", `-5℃` as "영하 오 도", and `인증번호 105028` digit by digit). This applies automatically to every TTS request; no extra option or separate Skill call is needed. The billed character count and price are based on the text you send, and the request and response formats are unchanged. The price is 30 points for up to 100 characters plus 10 points for each additional 100 characters, with no extra charge for the automatic conversion. To choose a reading yourself, spell it out in Hangul. ASS subtitles keep the text as you sent it. If normalization fails, speech is generated from the original text.
 
 ## 신분증 마스킹 / Identity masking
 

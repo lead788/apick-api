@@ -165,8 +165,10 @@ test('returns binary results with headers and bytes', async () => {
 });
 
 test('implements processing cancellation and the one-time MP3 TTS Jobs contract', async () => {
-	assert.equal(TTS_VOICE_IDS.length, 16);
-	assert.ok(TTS_VOICE_IDS.includes('v2_f_teen_01'));
+	assert.equal(TTS_VOICE_IDS.length, 14);
+	assert.ok(!TTS_VOICE_IDS.includes('v2_f_teen_01'));
+	assert.ok(!TTS_VOICE_IDS.includes('v2_ann_f_30s_01'));
+	assert.ok(TTS_VOICE_IDS.includes('v2_f_young_01'));
 	assert.ok(TTS_VOICE_IDS.includes('v2_m_senior_01'));
 	const requests = [];
 	const jobId = 'a'.repeat(32);

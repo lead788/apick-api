@@ -112,6 +112,16 @@ skillPage.then(page => page.data.items.map(item => item.usage_priced ? item.esti
 const skillRun: Promise<ApickResult<SkillRun<{ passed: boolean }>>> = client.runSkill<{ passed: boolean }>("sk_example", { product_name: "우산" }, { idempotencyKey: "order-0001", maxCostPoints: 50 });
 const skillRunRead: Promise<ApickResult<SkillRun>> = client.getSkillRun("run_example");
 const skillRunResult: Promise<ApickResult<SkillRunResult>> = client.getSkillRunResult("run_example");
+const skillArtifact: Promise<ApickBinaryResult> = client.getSkillArtifact("run_example", "art_" + "a".repeat(24));
+skillQuote.then(quote => {
+  const info = quote.data.execution_info;
+  if (info) {
+    const bounds: number[] = [info.price_range.min_points, info.price_range.max_points, info.duration.min_seconds, info.duration.max_seconds];
+    const calls: Array<number | string> = info.tools.map(tool => tool.typical_calls);
+    return [bounds, calls];
+  }
+});
+void skillArtifact;
 const skillCancel: Promise<ApickResult<SkillRun>> = client.cancelSkillRun("run_example");
 const skillUsage: Promise<ApickResult<SkillPage<SkillRun>>> = client.skillUsage({ limit: 20 });
 import type { SkillSort } from '../src/index.js';

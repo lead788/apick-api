@@ -329,6 +329,8 @@ export class ApickClient {
 	runSkill<T = Record<string, unknown>>(skillId: string, input: Record<string, unknown>, options: SkillRunOptions): Promise<ApickResult<SkillRun<T>>>;
 	getSkillRun<T = Record<string, unknown>>(runId: string): Promise<ApickResult<SkillRun<T>>>;
 	getSkillRunResult<T = Record<string, unknown>>(runId: string): Promise<ApickResult<SkillRunResult<T>>>;
+	/** 본인 실행의 결과 파일을 인증해 내려받습니다. / Download an artifact owned by this API key. */
+	getSkillArtifact(runId: string, fileId: string): Promise<ApickBinaryResult>;
 	cancelSkillRun(runId: string): Promise<ApickResult<SkillRun>>;
 	skillUsage(options?: { cursor?: string; limit?: number }): Promise<ApickResult<SkillPage<SkillRun>>>;
 }
@@ -366,6 +368,8 @@ export interface SkillRunOptions {
 export interface SkillPage<T> { items: T[]; next_cursor: string | null; }
 export interface SkillLimits { max_input_chars: number; timeout_seconds: number; }
 export interface SkillSummary {
+	execution_info?: SkillExecutionInfo;
+	price_label?: string;
 	skill_id: string; slug: string; title: string; summary: string;
 	category: SkillCategory; category_label: string; version: string;
 	/** 실행마다 같은 기본 금액 / base amount charged on every run */
@@ -388,6 +392,7 @@ export interface SkillDetail extends SkillSummary {
 	examples: unknown[]; stats: Record<string, unknown> | null; published_at: string | null;
 }
 export interface SkillQuote {
+	execution_info?: SkillExecutionInfo;
 	quote_id: string; skill_id: string; version: string; price_points: number;
 	/** 이 입력의 예상 금액 / estimated amount for this input */
 	estimated_points: number;
@@ -397,6 +402,16 @@ export interface SkillQuote {
 	expires_at: string; limits: SkillLimits; billing_rule: 'validated_result';
 }
 export interface SkillBilling { status: SkillBillingStatus; reserved_points: number; charged_points: number; refunded_points: number; }
+export interface SkillExecutionInfo {
+	price_range: { min_points: number; max_points: number; variable: boolean };
+	duration: { min_seconds: number; max_seconds: number; basis: string };
+	tools: Array<{ name: string; typical_calls: number | string; max_calls: number | string; min_calls?: number }>;
+	billing_note: string;
+}
+export interface SkillArtifact {
+	id: string; name: string; mime_type: string; url: string; sha256: string; bytes: number;
+	label?: string; width?: number; height?: number; seconds?: number;
+}
 export interface SkillRun<T = Record<string, unknown>> {
 	run_id: string; status: SkillRunStatus;
 	skill: { id: string; version: string; title?: string };

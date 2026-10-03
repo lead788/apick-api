@@ -345,3 +345,7 @@ if (status.data.status === "completed") {
   await (await client.downloadVideoResult("kling", job.data.job_id)).save("boat.mp4");
 }
 ```
+
+## Skill artifacts and execution estimates
+
+Skill details and quotes provide estimated price and duration ranges and tool call counts. Check the maximum reservation before execution, then use getSkillArtifact(runId, fileId) to download files with authentication. See [Skill artifacts](skill-artifacts.md) for fields and examples.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.0 — 2026-10-03
+
+- 스킬 결과 파일 인증 다운로드와 예상 가격·시간·도구 호출 수 타입 추가.
+- Add authenticated Skill artifact downloads and execution estimate types.
+
 ## 3.7.0 — 2026-10-02
 
 - `searchSkills()` 에 `sort` 를 추가했습니다: `recommended`(추천)·`popular`(인기)·`used`(많이 사용)·`likes`(좋아요순)·`rating`(평점순)·`new`(최신)·`mine`(내 계정이 많이 실행한 Skill)·`liked`(내 계정이 좋아요한 Skill). 생략하면 예전처럼 등록 순서입니다. 지원하지 않는 값은 요청 전에 `RangeError` 가 발생합니다. `SKILL_SORTS` 상수와 `SkillSort` 타입을 공개했습니다.

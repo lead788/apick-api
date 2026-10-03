@@ -353,3 +353,7 @@ if (status.data.status === "completed") {
   await (await client.downloadVideoResult("kling", job.data.job_id)).save("boat.mp4");
 }
 ```
+
+## 스킬 결과 파일과 실행 예상
+
+스킬 상세·견적은 가격과 시간 범위, 도구별 예상 호출 수를 제공합니다. 실행 전 최대 예약액을 확인하고, 성공 결과의 파일은 인증이 적용되는 getSkillArtifact(runId, fileId)로 내려받으세요. 자세한 필드와 예시는 [스킬 결과 파일 안내](skill-artifacts.md)를 참고하세요.

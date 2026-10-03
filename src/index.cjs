@@ -986,6 +986,41 @@ class ApickClient {
 		return this._skills('GET', '/rest/skills/runs/' + normalizeSkillRunId(runId) + '/result');
 	}
 
+	/** Download a file from a completed run owned by this API key. */
+	async getSkillArtifact(runId, fileId) {
+		const run = normalizeSkillRunId(runId);
+		if (typeof fileId !== 'string' || !/^art_[a-f0-9]{24}$/.test(fileId)) throw new TypeError('fileId must be an artifact ID from a Skill result.');
+		const controller = new AbortController();
+		const timeoutMs = this.#timeoutMs || DEFAULT_TIMEOUT_MS;
+		const timer = setTimeout(() => controller.abort(), timeoutMs);
+		try {
+			const response = await this.#fetch(this.#baseUrl + '/rest/skills/runs/' + run + '/files/' + fileId + '?download=1', {
+				method: 'GET', headers: { Authorization: `Bearer ${this.#apiKey}` }, signal: controller.signal, redirect: 'error'
+			});
+			if (!response.ok) {
+				let body; try { body = await response.json(); } catch { body = null; }
+				throw new ApickApiError('APICK artifact download failed.', { status: response.status, code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR', serviceCode: body && body.error && body.error.code });
+			}
+			const limit = 200 * 1024 * 1024;
+			if (Number(response.headers.get('content-length')) > limit) { controller.abort(); throw new ApickApiError('APICK artifact exceeds the size limit.', { code: 'APICK_INVALID_RESPONSE' }); }
+			const reader = response.body.getReader(), chunks = []; let size = 0;
+			try {
+				while (true) {
+					const item = await reader.read(); if (item.done) break;
+					size += item.value.byteLength;
+					if (size > limit) { await reader.cancel(); throw new ApickApiError('APICK artifact exceeds the size limit.', { code: 'APICK_INVALID_RESPONSE' }); }
+					chunks.push(item.value);
+				}
+			} finally { reader.releaseLock(); }
+			const bytes = new Uint8Array(size); let offset = 0;
+			for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+			return new ApickBinaryResult(bytes, { contentType: (response.headers.get('content-type') || '').split(';')[0], filename: parseFilename(response.headers.get('content-disposition'), 'result.bin'), meta: responseMeta(null, response.headers) });
+		} catch (error) {
+			if (error instanceof ApickApiError) throw error;
+			throw new ApickApiError(controller.signal.aborted ? 'APICK artifact download timed out.' : redact(error && error.message || 'APICK download failed.', this.#apiKey), { code: controller.signal.aborted ? 'APICK_TIMEOUT' : 'APICK_NETWORK_ERROR' });
+		} finally { clearTimeout(timer); }
+	}
+
 	cancelSkillRun(runId) {
 		return this._skills('POST', '/rest/skills/runs/' + normalizeSkillRunId(runId) + '/cancel', { body: {} });
 	}

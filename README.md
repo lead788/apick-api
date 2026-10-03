@@ -455,3 +455,7 @@ if (status.data.status === "completed") {
   await (await client.downloadVideoResult("kling", job.data.job_id)).save("boat.mp4");
 }
 ```
+
+### 스킬 결과 파일 / Skill result files
+
+`getSkillArtifact(runId, fileId)` returns authenticated binary artifacts. 가격·시간·호출 수 범위와 다운로드 예제: [스킬 파일 가이드 / guide](docs/skill-artifacts.md).

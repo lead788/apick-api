@@ -349,3 +349,7 @@ if (status.data.status === "completed") {
 ## Skill artifacts and execution estimates
 
 Skill details and quotes provide estimated price and duration ranges and tool call counts. Check the maximum reservation before execution, then use getSkillArtifact(runId, fileId) to download files with authentication. See [Skill artifacts](skill-artifacts.md) for fields and examples.
+
+## Product-specific data guides
+
+Product-specific authenticated-data guides describe returned fields, source institutions, use cases, and FAQs. An authentication request starts access to the selected product and returns a transactionId for result polling. Request and response contracts and authentication are unchanged. See the [shared authentication guide](https://apick.app/dev_guide/data) for the flow and error handling.

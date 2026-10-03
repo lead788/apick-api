@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.1 — 2026-10-03
+
+- 상품별 조회 안내와 공통 인증 가이드 링크를 보강했습니다. API 계약 변경은 없습니다.
+- Document product-specific data guides and shared authentication; API contracts are unchanged.
+
 ## 3.8.0 — 2026-10-03
 
 - 스킬 결과 파일 인증 다운로드와 예상 가격·시간·도구 호출 수 타입 추가.

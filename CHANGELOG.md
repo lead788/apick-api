@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.9.0 — Unreleased
+
+- `getSkillPerformance()`와 공개 성능표 타입을 추가했습니다. 시험 방식·표본 수·평가일·성공률 구간·미검증 상태를 확인할 수 있습니다.
+- Add `getSkillPerformance()` and report types for methods, sample sizes, evaluation dates, success-rate intervals and untested states.
+
 ## 3.8.1 — 2026-10-03
 
 - 상품별 조회 안내와 공통 인증 가이드 링크를 보강했습니다. API 계약 변경은 없습니다.

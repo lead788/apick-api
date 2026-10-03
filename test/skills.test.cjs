@@ -21,6 +21,17 @@ function recordingClient(reply) {
 	return { client, requests };
 }
 
+test('성능 측정표는 실행·과금 요청 없이 공개 JSON을 읽는다', async () => {
+	const report = { schema_version: 1, skills: [], method: { minimum_cases: 20 } };
+	const { client, requests } = recordingClient(() => jsonResponse(report));
+	const result = await client.getSkillPerformance();
+	assert.deepEqual(result.data, report);
+	assert.equal(requests.length, 1);
+	assert.equal(requests[0].url, 'https://api.example.test/skills/performance/data.json');
+	assert.equal(requests[0].options.method, 'GET');
+	assert.equal(requests[0].options.body, undefined);
+});
+
 test('Skills 조회는 GET 과 질의 문자열로, 봉투 없는 JSON 을 data 로 돌려준다', async () => {
 	const page = { items: [{ skill_id: 'sk_1', title: '상품명 규칙 검사', price_points: 50 }], next_cursor: null };
 	const { client, requests } = recordingClient(() => jsonResponse(page));

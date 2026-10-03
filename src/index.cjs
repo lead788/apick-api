@@ -948,6 +948,10 @@ class ApickClient {
 		return this._skills('GET', '/rest/skills', { query });
 	}
 
+	getSkillPerformance() {
+		return this._skills('GET', '/skills/performance/data.json');
+	}
+
 	getSkill(skillId) {
 		return this._skills('GET', '/rest/skills/' + normalizeSkillId(skillId));
 	}

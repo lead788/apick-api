@@ -324,6 +324,8 @@ export class ApickClient {
 	requestTaxReturnHistory(input: RequestTaxReturnHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getTaxReturnHistory(transactionId: string): Promise<ApickResult<DataRequestResult<TaxReturnHistoryResultPayload>>>;
 	searchSkills(options?: SkillSearchOptions): Promise<ApickResult<SkillPage<SkillSummary>>>;
+	/** Public measured results and methods; model scores are not accuracy guarantees. */
+	getSkillPerformance(): Promise<ApickResult<SkillPerformanceReport>>;
 	getSkill(skillId: string): Promise<ApickResult<SkillDetail>>;
 	quoteSkill(skillId: string, input: Record<string, unknown>, options?: { version?: string }): Promise<ApickResult<SkillQuote>>;
 	runSkill<T = Record<string, unknown>>(skillId: string, input: Record<string, unknown>, options: SkillRunOptions): Promise<ApickResult<SkillRun<T>>>;
@@ -340,6 +342,37 @@ export type SkillCategory = typeof SKILL_CATEGORIES[number];
 /** 검색 순서. 생략하면 등록 순서 / search order; registration order when omitted */
 export const SKILL_SORTS: readonly ['recommended', 'popular', 'used', 'likes', 'rating', 'new', 'mine', 'liked'];
 export type SkillSort = typeof SKILL_SORTS[number];
+export interface SkillPerformanceRate {
+	passed: number; total: number; percent: number; interval95: [number, number];
+}
+export interface SkillPerformanceReport {
+	schema_version: 1;
+	updated_at: string;
+	inventory_verified: boolean;
+	method: { minimum_cases: number; min_score: number; mean_score: number; min_improvement: number; critical_failures: number; description: string; limitations: string[]; interval_note: string; split: { normal: number; boundary: number; adversarial: number } };
+	calibration: { at: string; cases: number; true_positive: number; false_negative: number; false_positive: number; true_negative: number; automatic_release_allowed: boolean } | null;
+	additional_calibrations: Array<{ label: string; at: string; cases: number; detected: number; missed: number; false_positive: number; uncertain: number; automatic_release_allowed: boolean; scope: string }>;
+	skills: Array<{
+		key: string; title: string; group: string; origin: 'new' | 'existing'; published: boolean | null; url: string | null;
+		current: {
+			state: 'not_tested' | 'partial' | 'held' | 'passed' | 'stale'; at?: string;
+			cases: number; planned_cases: number; score: number | null; baseline_score: number | null;
+			score_samples?: number; evaluation_errors?: number;
+			delivery: SkillPerformanceRate | null; machine: SkillPerformanceRate | null;
+			median_seconds: number | null; p95_seconds: number | null; timing_samples?: number;
+			reasons: string[]; method?: string; sample_type?: string;
+			baseline_format_valid?: boolean;
+			evaluation_stage?: 'preliminary' | 'holdout';
+			dataset_composition?: { normal: number; boundary: number; adversarial: number; misplaced_rejections: number; valid: boolean };
+			min_score?: number | null; critical_cases?: number | null;
+			case_split?: { standard: number; boundary: number; adversarial: number };
+			extra_checks?: Array<{ name: string; passed: number; total: number }>;
+			tool_calls?: Array<{ label: string; samples: number; total: number | null; median: number | null; p95: number | null }>;
+			case_results?: Array<{ index: number; name: string; kind: 'standard' | 'boundary' | 'adversarial'; status: 'tested' | 'evaluation_error' | 'machine_only' | 'not_tested'; expected: 'success' | 'reject' | null; machine_pass: boolean; score: number | null; baseline_score: number | null; failed_checks: string[]; reason: string | null }>;
+		};
+		legacy: { cases: number; score: number; baseline_score: number; method: string; independent_holdout: false; at?: string } | null;
+	}>;
+}
 export type SkillRunStatus = 'queued' | 'running' | 'completing' | 'succeeded' | 'failed' | 'timed_out' | 'cancelled';
 export type SkillBillingStatus = 'reserved' | 'captured' | 'released' | 'partially_refunded' | 'refunded';
 export type SkillFailureCode = 'EXECUTION_FAILED' | 'OUTPUT_INVALID' | 'TIMED_OUT' | 'CANCELLED' | 'UPSTREAM_UNAVAILABLE';

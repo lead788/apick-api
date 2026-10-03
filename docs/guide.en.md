@@ -1,5 +1,9 @@
 # apick-api English guide
 
+## Skill performance report
+
+Use `const { data } = await apick.getSkillPerformance()` to read the [public measurements](https://apick.app/skills/performance). Review sample sizes, dates, methods and failure reasons together. Model scores are not objective accuracy; unmeasured values are `null`. Reading the report does not execute a paid Skill.
+
 ## Request and response formats
 
 All SDK requests with a body use `multipart/form-data`. Arrays use separate indexed fields such as `utterance_ids[0]`; let the SDK set the Content-Type boundary. GET requests have no body. The server continues accepting older JSON requests for compatibility.

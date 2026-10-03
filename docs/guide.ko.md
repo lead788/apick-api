@@ -1,5 +1,9 @@
 # apick-api 한국어 가이드
 
+## 스킬 성능표
+
+`const { data } = await apick.getSkillPerformance()`로 [공개 측정표](https://apick.app/skills/performance)를 조회합니다. 표본 수·시험일·검사 방법·실패 사유를 함께 확인하세요. 모델 점수는 객관적 정확도가 아니며 미검증 값은 `null`입니다. 조회 자체에는 유료 실행이 필요하지 않습니다.
+
 ## 요청과 응답 형식
 
 SDK의 본문 요청은 모두 `multipart/form-data`입니다. `utterance_ids[0]`처럼 배열을 개별 필드로 전송하며 `Content-Type` 헤더를 직접 지정할 필요가 없습니다. GET 조회는 본문을 보내지 않습니다. 기존 JSON 요청도 서버에서 호환용으로 계속 처리합니다.

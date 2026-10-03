@@ -131,9 +131,9 @@ while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) 
 console.log(run.status, run.billing, run.result);
 ```
 
-배포 준비 중인 기능입니다. 서버 게시 후 검증 결과는 [스킬 성능표](https://apick.app/skills/performance) 또는 `const { data } = await apick.getSkillPerformance()`로 확인합니다. 표본 수·시험일·방법·기계 검사 통과율과 모델 평가 점수를 함께 읽으세요. 미검증 값은 `null`이며, 과거의 다른 조건에서 얻은 점수는 `legacy`로 구분합니다. 모델 점수는 객관적 정확도나 판매 성과 보장이 아닙니다.
+검증 결과는 [스킬 성능표](https://apick.app/skills/performance) 또는 `const { data } = await apick.getSkillPerformance()`로 확인합니다. 표본 수·시험일·방법·기계 검사 통과율과 모델 평가 점수를 함께 읽으세요. 미검증 값은 `null`이며, 과거의 다른 조건에서 얻은 점수는 `legacy`로 구분합니다. 모델 점수는 객관적 정확도나 판매 성과 보장이 아닙니다.
 
-This feature is pending deployment. Once available, see the [Skill performance report](https://apick.app/skills/performance) or call `const { data } = await apick.getSkillPerformance()`. Read sample sizes, dates, methods, machine checks and model scores together. Unmeasured values are `null`; historical results under different conditions are in `legacy`. Model scores are not objective accuracy or sales guarantees.
+See the [Skill performance report](https://apick.app/skills/performance) or call `const { data } = await apick.getSkillPerformance()`. Read sample sizes, dates, methods, machine checks and model scores together. Unmeasured values are `null`; historical results under different conditions are in `legacy`. Model scores are not objective accuracy or sales guarantees.
 
 `searchSkills({ sort })` 로 추천(`recommended`)·인기(`popular`)·많이 사용(`used`)·좋아요순(`likes`)·평점순(`rating`)·최신(`new`) 순서를 고르고, 검색·상세 응답의 `usage_label`(사용 건수 구간)·`like_count`·`review_count`·`rating_average` 로 Skill 을 비교할 수 있습니다.
 Pick an order with `searchSkills({ sort })` (`recommended`, `popular`, `used`, `likes`, `rating`, `new`) and compare Skills with `usage_label` (a usage tier), `like_count`, `review_count` and `rating_average` in search and detail responses.

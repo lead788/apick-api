@@ -380,6 +380,7 @@ class ApickClient {
 			Authorization: `Bearer ${this.#apiKey}`
 		};
 		const method = definition.method || 'POST';
+		if (definition.idempotencyKey) headers['X-Idempotency-Key'] = requiredString('idempotencyKey', definition.idempotencyKey, 128);
 		const request = {
 			method,
 			headers,
@@ -387,7 +388,8 @@ class ApickClient {
 			redirect: 'error'
 		};
 		if (method !== 'GET') {
-			request.body = formData || require('./form.cjs').createForm(payload || {}, definition.endpoint);
+			if (definition.json) { headers['Content-Type']='application/json'; request.body=JSON.stringify(payload||{}); }
+			else request.body = formData || require('./form.cjs').createForm(payload || {}, definition.endpoint);
 		}
 
 		let response;
@@ -630,11 +632,24 @@ class ApickClient {
 
 	createTtsJob(text, options) {
 		const config = options || {};
-		return this._call('createTtsJob', {
+		const payload = typeof text==='object' && text!==null ? {...text} : {
 			voice_id: normalizeTtsVoice(config.voiceId || 'v2_ann_m_30s_01'),
 			text: requiredString('text', text, 800)
-		});
+		};
+		if(config.normalizeText!==undefined)payload.normalize_text=config.normalizeText;
+		if(config.fallbackPolicy!==undefined)payload.fallback_policy=config.fallbackPolicy;
+		if(config.fallbackOptions!==undefined)payload.fallback_options=config.fallbackOptions;
+		if(payload.normalize_text!==undefined&&typeof payload.normalize_text!=='boolean')throw new TypeError('normalizeText must be boolean.');
+		if(payload.fallback_policy!==undefined&&!['never','queue_full','busy'].includes(payload.fallback_policy))throw new TypeError('Invalid fallbackPolicy.');
+		return this._call('createTtsJob',payload,null,{json:typeof text==='object'||config.normalizeText!==undefined||config.fallbackPolicy!==undefined||config.fallbackOptions!==undefined,idempotencyKey:config.idempotencyKey});
 	}
+
+	createGeminiTtsJob(input, options) {
+		if(!input||typeof input!=='object'||Array.isArray(input))throw new TypeError('Gemini TTS input is required.');
+		return this._call('createTtsJob', input, null, {endpoint:'/rest/tts/gemini/jobs',json:true,idempotencyKey:options?.idempotencyKey});
+	}
+	listGeminiTtsVoices() { return this._call('createTtsJob',null,null,{endpoint:'/rest/tts/gemini/voices',method:'GET'}); }
+	quoteTts(input) { return this._call('createTtsJob',input,null,{endpoint:'/rest/tts/quote',json:true}); }
 
 	getTtsJob(jobId) {
 		const id = normalizeTtsJobId(jobId);

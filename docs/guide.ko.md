@@ -94,7 +94,7 @@ TTS는 14개 목소리 ID를 지원합니다. 정확한 목록은 `TTS_VOICE_IDS
 
 `v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_young_01`, `v2_f_senior_01`
 
-`createTtsJob()`으로 접수한 문장의 숫자·단위·기호·영문은 문맥에 맞는 한글 읽기로 자동 변환한 뒤 음성을 생성합니다(예: `5번 버스` → 오 번 버스, `버튼을 5번` → 다섯 번, `-5℃` → 영하 오 도, `인증번호 105028` → 한 자리씩). 모든 TTS 요청에 자동 적용되므로 추가 옵션이나 별도 Skill 호출이 필요하지 않습니다. 과금 글자 수와 요금은 보낸 원문 기준이며 요청·응답 형식은 그대로입니다. 요금은 100자까지 30포인트이고 이후 100자마다 10포인트가 추가되며, 자동 변환에 따른 추가 요금은 없습니다. 읽는 법을 직접 정하려면 한글로 풀어 써서 보내세요. ASS 자막은 보낸 원문 표기로 제공됩니다. 정규화에 실패하면 원문으로 음성을 생성합니다.
+정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + AI 원가 × 환율 × 1.4입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
 
 ```js
 const screenshot = await client.screenshot('https://example.com');
@@ -145,6 +145,8 @@ const polished = await client.polish(draftText);
 입력 텍스트는 최대 100,000자입니다.
 
 ## 이미지 AI
+
+새 사용량 요금이 적용되면 외부 AI 판매가는 확인된 원가 × 적용 환율 × 1.4입니다. 생성·편집 응답에서 사용량이 미확정이면 HTTP 202와 `job_id`, `billing_status: "pending"`을 반환합니다. 이미 받은 결과는 보관하므로 재생성하지 말고 `getImageJob(job_id)`로 조회합니다. 정산 완료 후 기존 다운로드 메서드를 사용합니다.
 
 ```js
 const result = await client.generateImages('흰 배경의 제품 사진', {
@@ -365,3 +367,6 @@ if (status.data.status === "completed") {
 ## 상품별 조회 가이드
 
 상품별 간편인증 조회 가이드에는 조회 데이터, 출처 기관, 활용 사례와 자주 묻는 질문이 있습니다. 인증 요청은 해당 상품의 자료를 조회하기 위한 단계이며 결과 조회용 transactionId를 반환합니다. 요청·응답 계약과 인증 방식은 동일합니다. [공통 인증 흐름](https://apick.app/dev_guide/data)에서 절차와 오류 처리를 확인하세요.
+
+
+TTS: [Gemini · 자동 전환 · 정규화 요금 / fallback and normalization billing](tts.md). `createGeminiTtsJob`, `listGeminiTtsVoices`, `quoteTts`를 지원합니다.

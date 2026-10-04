@@ -38,6 +38,7 @@ export interface ImageAiGenerateOptions extends ImageAiOptions { referenceImage?
 export interface ImageAiEditOptions extends ImageAiOptions { filename?: string; contentType?: 'image/png'|'image/jpeg'|'image/webp'; }
 export interface ImageAiResultImage { index:number; b64_json:string; mime_type:'image/png'|'image/jpeg'|'image/webp'; width:number; height:number; }
 export interface ImageAiResultData { request_id:string; image_count:number; images:ImageAiResultImage[]; idempotent_replay?:boolean; }
+export interface ImageAiPendingData {request_id:string;job_id:string;status:'processing';billing_status:'pending';reserved_point:number;}
 export interface ImageAiJobData { job_id:string; status:ImageAiStatus; requested_count:number; completed_count?:number; failed_count?:number; prepaid_point?:number; charged_point?:number; refunded_point?:number; result_available?:boolean; expires_at?:string|null; error_code?:ApickImageErrorCode|null; }
 
 export interface MaskResidentNumberOptions extends OcrOptions {
@@ -203,11 +204,22 @@ export const TTS_VOICE_IDS: readonly [
 	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_young_01', 'v2_f_senior_01'
 ];
 export type TtsVoiceId = typeof TTS_VOICE_IDS[number];
+export type TtsFallbackPolicy = 'never' | 'queue_full' | 'busy';
+export interface TtsFallbackOptions { voice_id?: string; style?: string; }
+export interface ApickTtsInput { voice_id: TtsVoiceId; text?: string; utterances?: Array<{text:string;emotion?:string;speed?:number;pause_after_ms?:number}>; normalize_text?:boolean; fallback_policy?:TtsFallbackPolicy; fallback_options?:TtsFallbackOptions; }
+export interface GeminiTtsInput { voice_id?:string; text?:string; style?:string; utterances?:Array<{text:string;voice_id?:string;style?:string;speaker?:string}>; normalize_text?:boolean; language_code?:'ko'|'ko-KR'; }
+export interface TtsOptions { voiceId?:TtsVoiceId; normalizeText?:boolean; fallbackPolicy?:TtsFallbackPolicy; fallbackOptions?:TtsFallbackOptions; idempotencyKey?:string; }
+export interface GeminiTtsVoice { voice_id:string; name:string; gender:string|null; tone:string; age_band:string|null; reviewed_at?:string; library:string; }
+export interface TtsQuote { synthesis:number; normalization:number; estimated_total:number; maximum:number; synthesis_maximum:number; normalization_maximum:number; estimated_only:true; currency:'POINT'; fallback_price_may_change:boolean; }
 
 export interface TtsJobData {
 	job_id: string;
 	status: 'waiting' | 'processing' | 'completed' | 'cancelled' | 'failed';
-	voice_id?: TtsVoiceId;
+	voice_id?: string;
+	synthesis?: {engine:'apick'|'gemini';model:string;voice_id:string;fallback_reason:string|null;age_verified:boolean;notice:string|null};
+	normalization?: {enabled:boolean;run_id:string|null;status:string;skill_id:string|null};
+	billing?: {status:string;synthesis:number;skill:number;total:number;reserved:number;refunded:number;released:number;currency:'POINT'};
+	expires_at?:string|null;
 	character_count?: number;
 	result_available?: boolean;
 	subtitles_available?: boolean;
@@ -290,7 +302,10 @@ export class ApickClient {
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;
 	youtubeSubtitleList(url: string): Promise<ApickResult<YoutubeSubtitleList>>;
 	youtubeSubtitle(url: string, lang: string, options?: YoutubeSubtitleOptions): Promise<ApickBinaryResult>;
-	createTtsJob(text: string, options?: { voiceId?: TtsVoiceId }): Promise<ApickResult<TtsJobData>>;
+	createTtsJob(text: string | ApickTtsInput, options?: TtsOptions): Promise<ApickResult<TtsJobData>>;
+	createGeminiTtsJob(input:GeminiTtsInput, options?:{idempotencyKey?:string}):Promise<ApickResult<TtsJobData>>;
+	listGeminiTtsVoices():Promise<ApickResult<{voices:GeminiTtsVoice[];complete:boolean;checked_at:string|null}>>;
+	quoteTts(input:(ApickTtsInput|GeminiTtsInput)&{engine?:'apick'|'gemini'}):Promise<ApickResult<TtsQuote>>;
 	getTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	cancelTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	downloadTtsResult(jobId: string): Promise<ApickBinaryResult>;
@@ -302,8 +317,8 @@ export class ApickClient {
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;
 	summarize(text: string): Promise<ApickResult>;
 	polish(text: string): Promise<ApickResult>;
-	generateImages(prompt:string, options?:ImageAiGenerateOptions): Promise<ApickResult<ImageAiResultData>>;
-	editImages(image:string|BinaryInput|ArrayBuffer|ArrayBufferView, prompt:string, options?:ImageAiEditOptions): Promise<ApickResult<ImageAiResultData>>;
+	generateImages(prompt:string, options?:ImageAiGenerateOptions): Promise<ApickResult<ImageAiResultData|ImageAiPendingData>>;
+	editImages(image:string|BinaryInput|ArrayBuffer|ArrayBufferView, prompt:string, options?:ImageAiEditOptions): Promise<ApickResult<ImageAiResultData|ImageAiPendingData>>;
 	createImageGenerationJob(prompt:string, options?:ImageAiGenerateOptions): Promise<ApickResult<ImageAiJobData>>;
 	createImageEditJob(image:string|BinaryInput|ArrayBuffer|ArrayBufferView, prompt:string, options?:ImageAiEditOptions): Promise<ApickResult<ImageAiJobData>>;
 	getImageJob(jobId:string): Promise<ApickResult<ImageAiJobData>>;

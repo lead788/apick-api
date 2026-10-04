@@ -1,3 +1,10 @@
+# 3.11.0
+
+- TTS: Gemini direct synthesis, queue fallback, default-on paid normalization, unified MP3/ASS and billing.
+- TTS: Gemini 직접 합성, 대기 상태별 전환, 기본 on 유료 정규화, 공통 MP3·ASS와 정산 내역.
+- 이미지 생성·편집: 사용량 미확정 시 202와 작업 ID를 반환하는 정산 보류 응답 타입을 추가했습니다.
+- Image generation/editing: added the HTTP 202 settlement-pending response type for unconfirmed usage.
+
 # 3.10.0 — 2026-10-04
 
 서브에이전트 전용 REST 메서드와 타입을 추가했습니다. 설치형 스킬의 사용량 과금 정보를 제공합니다.

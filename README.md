@@ -266,13 +266,13 @@ if (job.data.status === 'completed') {
 }
 ```
 
-접수 성공 시 과금되며 취소해도 환불되지 않습니다. 취소는 `waiting` 또는 `processing` 상태에서 가능하고, MP3와 ASS 자막은 각각 한 번만 내려받을 수 있습니다. 각 다운로드가 시작되면 해당 서버 원본이 즉시 폐기되므로 전송 중단 시에도 다시 받을 수 없습니다.
+접수 시 최대 요금을 예약하고 완료 후 실제 금액을 확정합니다. 연결 종료는 정상 과금하며 명시 취소는 이미 수행한 유료 처리분을 정산합니다. MP3와 ASS 자막은 각각 한 번 완료 다운로드할 수 있고, 전송 중단 시 다시 시도할 수 있습니다.
 
-The charge is final when the job is accepted. Cancellation is allowed while `waiting` or `processing`. The MP3 and ASS subtitles can each be downloaded once. Starting either download immediately consumes that server copy, so an interrupted transfer cannot be downloaded again.
+Submission reserves an upper bound; successful completion settles actual charges. Disconnects do not cancel billing. Explicit cancellation settles work already performed. MP3 and ASS each allow one completed download; interrupted downloads can be retried.
 
-`createTtsJob()`으로 접수한 문장의 숫자·단위·기호·영문은 문맥에 맞는 한글 읽기로 자동 변환한 뒤 음성을 생성합니다(예: `5번 버스` → 오 번 버스, `버튼을 5번` → 다섯 번, `-5℃` → 영하 오 도, `인증번호 105028` → 한 자리씩). 모든 TTS 요청에 자동 적용되므로 추가 옵션이나 별도 Skill 호출이 필요하지 않습니다. 과금 글자 수와 요금은 보낸 원문 기준이며 요청·응답 형식은 그대로입니다. 요금은 100자까지 30포인트이고 이후 100자마다 10포인트가 추가되며, 자동 변환에 따른 추가 요금은 없습니다. 읽는 법을 직접 정하려면 한글로 풀어 써서 보내세요. ASS 자막은 보낸 원문 표기로 제공됩니다. 정규화에 실패하면 원문으로 음성을 생성합니다.
+정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + AI 원가 × 환율 × 1.4입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
 
-Numbers, units, symbols and English text in the text passed to `createTtsJob()` are automatically converted into context-appropriate Korean readings before synthesis (for example, `5번 버스` is read as "오 번 버스", `버튼을 5번` as "다섯 번", `-5℃` as "영하 오 도", and `인증번호 105028` digit by digit). This applies automatically to every TTS request; no extra option or separate Skill call is needed. The billed character count and price are based on the text you send, and the request and response formats are unchanged. The price is 30 points for up to 100 characters plus 10 points for each additional 100 characters, with no extra charge for the automatic conversion. To choose a reading yourself, spell it out in Hangul. ASS subtitles keep the text as you sent it. If normalization fails, speech is generated from the original text.
+Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus actual AI cost × the pinned exchange rate × 1.4. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
 
 ## 신분증 마스킹 / Identity masking
 
@@ -479,3 +479,6 @@ apick-subagent install
 ```
 
 Set `APICK_API_KEY` in the environment. 원격 MCP는 업로드된 자료를 처리합니다. The remote MCP processes uploaded content; the installed bridge collects local files.
+
+
+TTS: [Gemini · 자동 전환 · 정규화 요금 / fallback and normalization billing](docs/tts.md). `createGeminiTtsJob`, `listGeminiTtsVoices`, `quoteTts`를 지원합니다.

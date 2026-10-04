@@ -94,7 +94,7 @@ TTS supports 14 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the c
 
 `v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_young_01`, `v2_f_senior_01`
 
-Numbers, units, symbols and English text in the text passed to `createTtsJob()` are automatically converted into context-appropriate Korean readings before synthesis (for example, `5번 버스` is read as "오 번 버스", `버튼을 5번` as "다섯 번", `-5℃` as "영하 오 도", and `인증번호 105028` digit by digit). This applies automatically to every TTS request; no extra option or separate Skill call is needed. The billed character count and price are based on the text you send, and the request and response formats are unchanged. The price is 30 points for up to 100 characters plus 10 points for each additional 100 characters, with no extra charge for the automatic conversion. To choose a reading yourself, spell it out in Hangul. ASS subtitles keep the text as you sent it. If normalization fails, speech is generated from the original text.
+Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus actual AI cost × the pinned exchange rate × 1.4. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
 
 ```js
 const screenshot = await client.screenshot('https://example.com');
@@ -145,6 +145,8 @@ const polished = await client.polish(draftText);
 Text input is limited to 100,000 characters.
 
 ## Image AI
+
+Under usage billing, external AI costs use confirmed vendor cost × the applicable exchange rate × 1.4. If generation/editing usage cannot be confirmed, HTTP 202 returns `job_id` and `billing_status: "pending"`. The generated output is retained: poll `getImageJob(job_id)` without submitting another generation, then use the existing download methods after settlement.
 
 ```js
 const result = await client.generateImages('A clean product photo on white', {
@@ -357,3 +359,6 @@ Skill details and quotes provide estimated price and duration ranges and tool ca
 ## Product-specific data guides
 
 Product-specific authenticated-data guides describe returned fields, source institutions, use cases, and FAQs. An authentication request starts access to the selected product and returns a transactionId for result polling. Request and response contracts and authentication are unchanged. See the [shared authentication guide](https://apick.app/dev_guide/data) for the flow and error handling.
+
+
+TTS: [Gemini · 자동 전환 · 정규화 요금 / fallback and normalization billing](tts.md). `createGeminiTtsJob`, `listGeminiTtsVoices`, `quoteTts`를 지원합니다.

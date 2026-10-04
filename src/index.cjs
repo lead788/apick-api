@@ -63,6 +63,7 @@ const SERVICES = Object.freeze(Object.fromEntries(
 	])
 ));
 
+function normalizeSubagentId(value,prefix){if(typeof value!=='string'||!new RegExp('^'+prefix+'_[a-f0-9]{32}$').test(value))throw new TypeError('Invalid subagent identifier.');return value;}
 function redact(value, apiKey) {
 	let text = String(value || '');
 	if (apiKey) text = text.split(apiKey).join('***');
@@ -951,6 +952,21 @@ class ApickClient {
 	getSkillPerformance() {
 		return this._skills('GET', '/skills/performance/data.json');
 	}
+
+	_subagent(method, route, options) { return this._skills(method, '/rest/subagent/v1' + route, options); }
+	subagentStatus() { return this._subagent('GET', '/status'); }
+	subagentUsage() { return this._subagent('GET', '/usage'); }
+	createSubagentFile(input) { return this._subagent('POST', '/files', {body: input}); }
+	getSubagentFile(fileId) { return this._subagent('GET', '/files/' + normalizeSubagentId(fileId,'saf')); }
+	uploadSubagentPart(fileId, partNo, data) { if(!Number.isSafeInteger(partNo)||partNo<0||typeof data!=='string')throw new TypeError('Invalid upload part.');return this._subagent('POST','/files/'+normalizeSubagentId(fileId,'saf')+'/parts',{body:{part_no:partNo,data}}); }
+	completeSubagentFile(fileId) { return this._subagent('POST','/files/'+normalizeSubagentId(fileId,'saf')+'/complete',{body:{}}); }
+	deleteSubagentFile(fileId) { return this._subagent('DELETE','/files/'+normalizeSubagentId(fileId,'saf')); }
+	dispatchSubagent(input, options) { const key=requiredString('idempotencyKey',options?.idempotencyKey,200);if(key.length<8)throw new TypeError('idempotencyKey must contain at least 8 characters.');return this._subagent('POST','/jobs',{body:input,idempotencyKey:key}); }
+	collectSubagent(jobId, options) { return this._subagent('GET','/jobs/'+normalizeSubagentId(jobId,'saj'),{query:options?.cursor?{cursor:String(options.cursor)}:{}}); }
+	subagentEvidence(jobId,evidenceIds) { return this._subagent('POST','/jobs/'+normalizeSubagentId(jobId,'saj')+'/evidence',{body:{evidence_ids:evidenceIds}}); }
+	reviewSubagent(jobId,resultHash,decision) { if(!['accepted','rejected'].includes(decision)||!/^[a-f0-9]{64}$/.test(resultHash))throw new TypeError('Invalid review.');return this._subagent('POST','/jobs/'+normalizeSubagentId(jobId,'saj')+'/review',{body:{result_hash:resultHash,decision}}); }
+	cancelSubagent(jobId) { return this._subagent('POST','/jobs/'+normalizeSubagentId(jobId,'saj')+'/cancel',{body:{}}); }
+	deleteSubagentJob(jobId) { return this._subagent('DELETE','/jobs/'+normalizeSubagentId(jobId,'saj')); }
 
 	getSkill(skillId) {
 		return this._skills('GET', '/rest/skills/' + normalizeSkillId(skillId));

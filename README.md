@@ -464,3 +464,18 @@ if (status.data.status === "completed") {
 ### 스킬 결과 파일 / Skill result files
 
 `getSkillArtifact(runId, fileId)` returns authenticated binary artifacts. 가격·시간·호출 수 범위와 다운로드 예제: [스킬 파일 가이드 / guide](docs/skill-artifacts.md).
+
+## 서브에이전트 / Subagent
+
+설치형 `apick-agent` 상품은 `apick-subagent` 스킬 패키지와 전용 REST·MCP를 사용합니다. 원가 +40%, 승인된 동일 결과 캐시 무료, 충전 잔액 외 상품 한도 없음. [연동 가이드](https://apick.app/dev_guide/subagent).
+
+The installed `apick-agent` product uses the `apick-subagent` skill package and dedicated REST/MCP interfaces. Confirmed cost plus 40%; approved identical cache reuse is free, with no product quota beyond prepaid balance. [Integration guide](https://apick.app/dev_guide/subagent).
+
+```sh
+npx -y apick-mcp --server subagent
+# Local workspace collection / 로컬 파일 수집
+npm install -g apick-subagent
+apick-subagent install
+```
+
+Set `APICK_API_KEY` in the environment. 원격 MCP는 업로드된 자료를 처리합니다. The remote MCP processes uploaded content; the installed bridge collects local files.

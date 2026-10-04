@@ -1,3 +1,9 @@
+# 3.10.0 — 2026-10-04
+
+서브에이전트 전용 REST 메서드와 타입을 추가했습니다. 설치형 스킬의 사용량 과금 정보를 제공합니다.
+
+Adds the Subagent integration and usage-based installed-agent contract. Existing API contracts remain supported.
+
 # Changelog
 
 ## 3.9.0 — 2026-10-04

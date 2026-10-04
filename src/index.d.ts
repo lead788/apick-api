@@ -326,6 +326,19 @@ export class ApickClient {
 	searchSkills(options?: SkillSearchOptions): Promise<ApickResult<SkillPage<SkillSummary>>>;
 	/** Public measured results and methods; model scores are not accuracy guarantees. */
 	getSkillPerformance(): Promise<ApickResult<SkillPerformanceReport>>;
+	subagentStatus(): Promise<ApickResult<Record<string, unknown>>>;
+	subagentUsage(): Promise<ApickResult<Record<string, unknown>>>;
+	createSubagentFile(input: {path:string;bytes:number;sha256:string;retention?:'seven_days'|'none'}): Promise<ApickResult<SubagentFile>>;
+	getSubagentFile(fileId:string): Promise<ApickResult<SubagentFile>>;
+	uploadSubagentPart(fileId:string,partNo:number,data:string): Promise<ApickResult<Record<string,unknown>>>;
+	completeSubagentFile(fileId:string): Promise<ApickResult<SubagentFile>>;
+	deleteSubagentFile(fileId:string): Promise<ApickResult<Record<string,unknown>>>;
+	dispatchSubagent(input:SubagentTask,options:{idempotencyKey:string}): Promise<ApickResult<SubagentJob>>;
+	collectSubagent(jobId:string,options?:{cursor?:string}): Promise<ApickResult<SubagentJob>>;
+	subagentEvidence(jobId:string,evidenceIds:string[]): Promise<ApickResult<Record<string,unknown>>>;
+	reviewSubagent(jobId:string,resultHash:string,decision:'accepted'|'rejected'): Promise<ApickResult<Record<string,unknown>>>;
+	cancelSubagent(jobId:string): Promise<ApickResult<SubagentJob>>;
+	deleteSubagentJob(jobId:string): Promise<ApickResult<Record<string,unknown>>>;
 	getSkill(skillId: string): Promise<ApickResult<SkillDetail>>;
 	quoteSkill(skillId: string, input: Record<string, unknown>, options?: { version?: string }): Promise<ApickResult<SkillQuote>>;
 	runSkill<T = Record<string, unknown>>(skillId: string, input: Record<string, unknown>, options: SkillRunOptions): Promise<ApickResult<SkillRun<T>>>;
@@ -408,7 +421,7 @@ export interface SkillSummary {
 	/** 실행마다 같은 기본 금액 / base amount charged on every run */
 	price_points: number;
 	/** 사용량까지 더한 예상 금액 / estimated amount including usage */
-	estimated_points: number;
+	estimated_points: number | null;
 	/** true 면 실행마다 실제 사용량만큼 금액이 달라집니다 / amount varies per run with actual usage */
 	usage_priced: boolean;
 	seller: { name: string }; uses_generative_ai: boolean;
@@ -420,7 +433,9 @@ export interface SkillSummary {
 	rating_average: number | null;
 }
 export interface SkillDetail extends SkillSummary {
-	description: string; billing_rule: 'validated_result'; limits: SkillLimits;
+	description: string; billing_rule: 'validated_result' | 'subagent_usage'; limits: SkillLimits | null;
+	delivery?: 'installed_agent'; installation?: {package:string;command:string;api_key_env:string;guide:string;usage:string};
+	billing?: {markup_percent:number;installation_points:number;base_points:number;complete_cache_points:number;quota:null};
 	input_schema: Record<string, unknown>; output_schema: Record<string, unknown>;
 	examples: unknown[]; stats: Record<string, unknown> | null; published_at: string | null;
 }
@@ -480,3 +495,7 @@ export interface VideoJobData {
 	result_expires_at?: string | null; idempotent_replay?: boolean;
 	error?: { code: string; message: string };
 }
+
+export interface SubagentTask { kind:'inventory'|'extract'|'summarize'|'compare';goal:string;file_ids:string[];focus?:string[];acceptance?:string[];retention?:'seven_days'|'none'; }
+export interface SubagentFile { file_id:string;path:string;sha256:string;bytes:number;state:string;expires_at:string;part_bytes?:number; }
+export interface SubagentJob { job_id:string;kind:SubagentTask['kind'];state:string;billing_state:string;cache_hit:boolean;reserved_points:number;charged_points:number;accrued_points:string;result_hash?:string;result?:Record<string,unknown>; }

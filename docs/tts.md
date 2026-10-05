@@ -1,54 +1,34 @@
-# TTS · 한국어 안내
+# Gemini·ChatGPT TTS
 
-apick 직접 제작, apick → Gemini 자동 전환, Gemini 직접 제작은 같은 작업 조회·MP3·ASS 다운로드 API를 사용합니다. 파일 구조와 규격은 같으며 음성은 엔진과 목소리에 따라 다릅니다.
+기존 APICK 목소리와 자동 전환은 종료되었습니다. `createTtsJob`은 Gemini 기본 목소리 `Kore`를 사용합니다. `getTtsQuality`, `retryTtsJob`, `downloadTtsCandidate`의 기존 경로는 HTTP 409를 반환합니다.
+
+Legacy APICK voices and automatic fallback have retired. `createTtsJob` now defaults to Gemini voice `Kore`. The legacy quality, retry and candidate endpoints return HTTP 409.
 
 ```js
-const apick = new ApickClient({ apiKey: process.env.APICK_API_KEY });
-const job = await apick.createTtsJob('기온은 5℃입니다.', {
-  voiceId: 'v2_ann_m_30s_01',
-  normalizeText: true,
-  fallbackPolicy: 'busy',
-  fallbackOptions: { voice_id: 'Charon', style: '차분하게' },
-  idempotencyKey: 'narration-001'
-});
-const direct = await apick.createGeminiTtsJob({
-  voice_id: 'Kore', style: '또렷하게', normalize_text: false,
-  utterances: [{ text: '오늘의 이야기입니다.', speaker: '진행자' }]
-}, { idempotencyKey: 'gemini-001' });
-const voices = await apick.listGeminiTtsVoices();
-const quote = await apick.quoteTts({ engine: 'gemini', text: '본문', voice_id: 'Kore' });
-const status = await apick.getTtsJob(job.data.job_id);
-// completed 이후 기존 downloadTtsResult / downloadTtsSubtitles 사용
+const job = await client.createTtsJob('기온은 오 도입니다.', { voiceId: 'Kore', normalizeText: false, idempotencyKey: 'tts-001' });
+const dialogue = await client.createOpenAiTtsJob({
+  utterances: [{ speaker: '진행', text: '반갑습니다.' }, { speaker: '손님', text: '안녕하세요.' }],
+  speakers: { 진행: { voice_id: 'alloy' }, 손님: { voice_id: 'nova', emotion: 'calm' } },
+  multi_speaker: true, normalize_text: false
+}, { idempotencyKey: 'tts-002' });
+const voices = await client.listGeminiTtsVoices();
+const otherVoices = await client.listOpenAiTtsVoices();
+const options = await client.getTtsOptions();
+const quote = await client.quoteTts({ engine: 'gemini', text: '본문', voice_id: 'Kore' });
 ```
 
-| 옵션 | 동작 |
-| --- | --- |
-| `never` | 기본값. apick 대기열 등록, 가득 차면 429 |
-| `queue_full` | 대기열에도 빈자리가 없을 때 Gemini 전환 |
-| `busy` | 즉시 apick 실행이 불가능하면 Gemini 전환 |
-| `fallbackOptions` | 전환할 때만 적용되는 `voice_id`, `style` |
-| `normalizeText` / `normalize_text` | 기본 true. false는 정규화 스킬 실행·과금 생략 |
+`style`, `emotion`, `tone`, `accent`, `pace`(0.5–2), `pitch`(-12–12), `volume_gain_db`(-12–12)는 최상위·화자·발화에 지정할 수 있습니다. `speakers`는 화자 이름별 설정이고 `multi_speaker: true`는 Gemini 최대 2명, ChatGPT 최대 8명입니다. 엔진에 따라 표현 효과가 달라지며 정확한 속도 배율·반음·dB 적용을 보장하지 않습니다. 특히 ChatGPT는 수치의 방향을 낭독 지시로 전달합니다.
 
-정규화는 숫자·단위·약어의 문맥에 맞는 발음을 다듬으며, **추가 스킬 요금**이 합산됩니다. 정규화 on 입력 합계(발화 사이 줄바꿈 포함)는 2,000자, Gemini off는 8,000자, apick 기존 입력 한도는 800자입니다. 기본·확장 공개 목소리는 `listGeminiTtsVoices()`로 확인합니다. 자동 선택은 같은 성별의 한국어 목소리를 우선하고 공식 설명 또는 별도 검수로 확인한 연령대와 음색을 비교합니다. `age_basis: catalog_description`은 공식 설명에 적힌 설정 연령이며 실제 화자의 나이를 뜻하지 않습니다. 근거가 없는 목소리는 `age_verified: false`입니다. 대소문자 별칭은 목록에 중복 표시하지 않고 기존 입력도 허용합니다.
+Style, emotion, tone, accent, pace, pitch and volume options can be set per request, speaker or utterance. Gemini supports up to two native speakers; ChatGPT supports up to eight speakers across utterances. Numeric acoustic adjustments are not guaranteed: ChatGPT receives directional instructions rather than precise rate, semitone or decibel controls.
 
-Gemini 사용 시 목소리와 가격이 달라질 수 있습니다. 실제 AI 원가 × 호출 직전 적용 환율 × 1.4로 판매하고, 스킬은 기본요금(판매자 금액 + 기본 수수료) + AI 사용료입니다. Gemini 100만 토큰당 입력/출력 공급자 가격은 2026-12-31까지 $0.50/$6.00, 2027-01-01 00:00 UTC부터 $1.00/$12.00입니다. $0.54/시간은 출력 참고값이며 과금 단위가 아닙니다.
+정규화는 기본 켜짐이며 추가 스킬 요금이 합산됩니다. `normalize_text: false`(SDK 문자열 호출은 `normalizeText: false`)로 끌 수 있습니다. 정규화 입력은 발화 사이 줄바꿈을 포함해 최대 2,000자, 정규화 없이 최대 8,000자입니다. 견적은 `quoteTts`, 현재 목소리는 엔진별 목록, 옵션은 `getTtsOptions`로 조회합니다.
 
-`api.cost`는 접수 예약금을 확정액으로 표시하지 않습니다. `data.billing`의 `synthesis`, `skill`, `total`, `reserved`, `released`, `refunded`, `status`를 확인하세요. `voice_id`는 원래 요청을 보존하고 실제 엔진·모델·목소리는 `synthesis`에 표시합니다. 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. 클라이언트 연결 종료는 정상 과금하고, 명시 취소는 이미 수행된 유료 처리분을 정산합니다.
+Normalization is enabled by default and costs extra. Disable it with `normalize_text: false` (`normalizeText: false` for the string SDK helper). Input limits are 2,000 characters including utterance separators with normalization, or 8,000 without it. Query a quote, engine-specific voices and supported options before submitting.
 
-MP3 24kHz·모노·48kbps와 입력 원문 ASS를 완료 후 24시간 제공합니다. 파일별 한 번 다운로드, 중단 시 재시도가 가능합니다. 동일 요청의 접수 재시도에는 같은 `idempotencyKey`를 사용하세요. 이전 방식 작업의 품질·후보·재개 API는 해당 이전 작업에만 적용됩니다.
+실제 AI 원가 × 고정된 환율 × 1.4에 정규화 요금을 더해 정산합니다. Gemini 프로모션 입력/출력 단가는 2026-12-31까지 백만 토큰당 $0.50/$6.00이며 2027-01-01 00:00 UTC부터 $1.00/$12.00입니다. 약 $0.54/시간은 참고값이며 시간 단위 청구가 아닙니다. 엔진별 요금이 다릅니다.
 
-[개발가이드](https://apick.app/dev_guide/tts) · [정규화 스킬](https://apick.app/skills/korean-text-normalize) · [공식 가격표](https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash-lite-tts)
+AI usage is charged at verified cost × the pinned exchange rate × 1.4, plus normalization. Gemini promotional input/output rates are $0.50/$6.00 per million tokens through 2026-12-31, then $1.00/$12.00 from 2027-01-01 00:00 UTC. The approximate hourly figure is informational; billing uses actual usage and differs by engine.
 
-# TTS · English
+두 엔진은 같은 작업 조회·취소·MP3·원문 ASS 계약을 사용합니다. `billing`의 예약·해제·확정·환불을 확인하세요. MP3는 24kHz 모노 48kbps, 결과는 완료 후 24시간 보관합니다. MP3와 ASS는 각각 완료된 다운로드 1회만 허용하며 전송 중단은 재시도할 수 있습니다. 접수 응답 유실 시 같은 입력과 멱등 키를 재사용하세요. 서버·공급자 최종 실패는 정규화까지 환불하며, 연결 종료는 작업 취소가 아닙니다. 취소 시 이미 수행된 작업분을 정산합니다.
 
-`createTtsJob` supports APICK synthesis and optional Gemini fallback. `createGeminiTtsJob` accepts Gemini voices, style, text or per-speaker utterances. All three paths share `getTtsJob`, `downloadTtsResult`, and `downloadTtsSubtitles`. The MP3/ASS format and response structure match; the generated voices differ.
-
-Fallback policies: `never` (default) queues APICK and returns 429 when its queue is full; `queue_full` uses Gemini only when the waiting queue is full; `busy` uses Gemini whenever immediate APICK execution is unavailable. `fallbackOptions.voice_id/style` apply only after fallback. Unsupported explicit voice IDs are rejected. `listGeminiTtsVoices` returns public basic and extended voices without case-alias duplicates, while existing aliases remain accepted. Automatic matching prioritizes Korean voices of the same gender, then the closest supported age band and vocal traits. `age_basis: catalog_description` refers to an age explicitly stated in the official voice description, not a real speaker's biological age. Voices without age evidence remain unverified.
-
-Text normalization is **on by default and costs extra**. Set `normalizeText: false` on SDK APICK options or `normalize_text: false` in a request body to skip both the skill and its charge. Normalization allows 2,000 characters across utterances including separating newlines. Gemini without normalization allows 8,000 characters; APICK retains its 800-character limit. The original spelling appears in ASS subtitles.
-
-External AI charges equal verified provider cost × the pinned USD/KRW exchange rate × 1.4. A skill adds its base fee once, including seller amount and base commission, without a second markup on AI usage. Gemini provider input/output prices per million tokens are $0.50/$6.00 through December 31, 2026, then $1.00/$12.00 from January 1, 2027, 00:00 UTC. The approximate $0.54/hour figure is informational, not a billing unit. Fallback may change the price and voice.
-
-Read the job's `billing` breakdown for reserved, released, captured, and refunded amounts. Submission `api.cost` does not treat a reservation as a final charge. Top-level `voice_id` preserves the APICK request; `synthesis` reports the actual provider/model/voice. Final server/provider failures refund synthesis and normalization. Disconnecting does not cancel background work or billing; explicit cancellation settles work already performed.
-
-Results are MP3 (24 kHz, mono, 48 kbps) and ASS, retained for 24 hours after completion. Each file permits one completed download; interrupted transfers may be retried. Reuse the same `idempotencyKey` and input after a lost submission response. Legacy quality/candidate/retry methods apply only to legacy jobs.
+Both engines share job status, cancellation, MP3 and original-text ASS downloads. Check reserved, released, captured and refunded amounts in `billing`. MP3 is 24 kHz mono at 48 kbps. Files are kept for 24 hours; each permits one completed download, and interrupted transfers can be retried. Reuse the same input and idempotency key after a lost response. Final server/provider failures refund synthesis and normalization; disconnecting does not cancel work. Explicit cancellation settles work already performed.

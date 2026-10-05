@@ -80,9 +80,9 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |
 | `downloadTtsResult(jobId)` | TTS 결과 1회 다운로드 / One-time TTS result | MP3 |
 | `downloadTtsSubtitles(jobId)` | TTS 자막 1회 다운로드 / One-time TTS subtitles | ASS |
-| `getTtsQuality(jobId)` | 발화별 검수·후보 이력 / Utterance quality and candidates | JSON |
-| `retryTtsJob(jobId, utteranceIds, idempotencyKey)` | 같은 작업의 국소 복구 / Idempotent local recovery | JSON |
-| `downloadTtsCandidate(jobId, candidateId)` | 검수 후보 청취 / Candidate audio | WAV |
+| `getTtsQuality(jobId)` | 폐기됨 / Retired | HTTP 409 |
+| `retryTtsJob(jobId, utteranceIds, idempotencyKey)` | 폐기됨 / Retired | HTTP 409 |
+| `downloadTtsCandidate(jobId, candidateId)` | 폐기됨 / Retired | HTTP 409 |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |
@@ -242,13 +242,12 @@ await excel.save('./scores.xlsx');
 
 The legacy synchronous TTS API has retired. Create a Korean narration job, poll every 2–5 seconds until it is `completed`, then download the MP3 result once.
 
-TTS supports 14 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the current list.
+Query `listGeminiTtsVoices()` and `listOpenAiTtsVoices()` for current voices; legacy `TTS_VOICE_IDS` are retired.
 
-`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_young_01`, `v2_f_senior_01`
 
 ```js
 const created = await apick.createTtsJob('오늘의 이야기를 시작합니다.', {
-  voiceId: 'v2_ann_m_30s_01'
+  voiceId: 'Kore'
 });
 const jobId = created.data.job_id;
 
@@ -481,4 +480,4 @@ apick-subagent install
 Set `APICK_API_KEY` in the environment. 원격 MCP는 업로드된 자료를 처리합니다. The remote MCP processes uploaded content; the installed bridge collects local files.
 
 
-TTS: [Gemini · 자동 전환 · 정규화 요금 / fallback and normalization billing](docs/tts.md). `createGeminiTtsJob`, `listGeminiTtsVoices`, `quoteTts`를 지원합니다.
+TTS: [Gemini·ChatGPT·정규화 / engines and normalization](docs/tts.md). `createOpenAiTtsJob`, `listOpenAiTtsVoices`, `getTtsOptions`를 포함한 최신 계약입니다.

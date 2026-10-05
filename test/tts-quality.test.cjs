@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { ApickClient, ApickBinaryResult } = require('../src/index.cjs');
 
-test('quality and candidate requests preserve final downloads and retry identity', async () => {
+test('deprecated quality methods retain their transport shape for legacy clients', async () => {
   const requests = [];
   const job = 'a'.repeat(32), candidate = 'b'.repeat(32);
   const client = new ApickClient({ apiKey: 'key', fetch: async (url, options) => {
@@ -22,4 +22,11 @@ test('quality and candidate requests preserve final downloads and retry identity
   assert.throws(() => client.retryTtsJob(job, ['../private'], 'recovery-key-1'), /utteranceIds/);
   assert.throws(() => client.retryTtsJob(job, [], 'short'), /idempotencyKey/);
   assert.equal(requests.length, 3);
+});
+
+test('retired quality endpoints propagate the current HTTP 409 response', async () => {
+  const client = new ApickClient({apiKey:'key',fetch:async()=>new Response(JSON.stringify({data:{success:0,code:'TTS_JOB_CONFLICT'},api:{success:true,cost:0}}),{status:409,headers:{'content-type':'application/json'}})});
+  await assert.rejects(client.getTtsQuality('a'.repeat(32)));
+  await assert.rejects(client.retryTtsJob('a'.repeat(32),['u001'],'retired-001'));
+  await assert.rejects(client.downloadTtsCandidate('a'.repeat(32),'b'.repeat(32)));
 });

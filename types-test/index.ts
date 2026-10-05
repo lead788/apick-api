@@ -18,8 +18,11 @@ const ocr: Promise<ApickResult> = client.ocr(new Uint8Array([1, 2, 3]), {
 const maskedResidentNumber: Promise<ApickBinaryResult> = client.maskResidentNumber(new Uint8Array([1, 2, 3]), { type: 3, filename: 'id.png', contentType: 'image/png' });
 const maskedIdCard: Promise<ApickResult> = client.maskIdCard(new Uint8Array([1, 2, 3]), { filename: 'id.png', contentType: 'image/png' });
 const pdf: Promise<ApickBinaryResult> = client.htmlToPdf('<h1>Report</h1>');
-const ttsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
-const newTtsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('새 목소리입니다.', { voiceId: 'v2_f_young_01' });
+const ttsJob: Promise<ApickResult<TtsJobData>> = client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'Kore' });
+const newTtsJob: Promise<ApickResult<TtsJobData>> = client.createOpenAiTtsJob({text:'새 목소리입니다.', voice_id:'alloy',emotion:'calm',tone:'documentary',pace:0.9,pitch:1,volume_gain_db:-1});
+client.createGeminiTtsJob({utterances:[{speaker:'진행',text:'안녕하세요.'},{speaker:'손님',text:'반갑습니다.'}],speakers:{진행:{voice_id:'Kore',style:'또렷하게'},손님:{voice_id:'Charon'}},multi_speaker:true});
+client.getTtsOptions();
+client.listOpenAiTtsVoices();
 const ttsSubtitles: Promise<ApickBinaryResult> = client.downloadTtsSubtitles('a'.repeat(32));
 const voiceId: TtsVoiceId = TTS_VOICE_IDS[13];
 const endpoint: string = SERVICES.businessDetails.endpoint;

@@ -186,13 +186,13 @@ test('implements processing cancellation and the one-time MP3 TTS Jobs contract'
 			});
 			if (url.endsWith('/cancel')) return jsonResponse({ data: { job_id: jobId, status: 'cancelled' }, api: { success: true, cost: 0 } });
 			if (url.endsWith('/' + jobId)) return jsonResponse({ data: { job_id: jobId, status: 'processing', result_available: false }, api: { success: true, cost: 0 } });
-			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'v2_ann_m_30s_01', character_count: 14 }, api: { success: true, cost: 10 } }, { status: 202 });
+			return jsonResponse({ data: { job_id: jobId, status: 'waiting', voice_id: 'Kore', character_count: 14 }, api: { success: true, cost: 10 } }, { status: 202 });
 		}
 	});
-	const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
+	const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'Kore' });
 	assert.equal(created.data.status, 'waiting');
 	assert.equal(created.meta.cost, 10);
-	assert.deepEqual(Object.fromEntries(requests[0].options.body), { voice_id: 'v2_ann_m_30s_01', text: '오늘의 이야기를 시작합니다.' });
+	assert.deepEqual(JSON.parse(requests[0].options.body), { voice_id: 'Kore', text: '오늘의 이야기를 시작합니다.' });
 	assert.equal((await client.getTtsJob(jobId)).data.status, 'processing');
 	assert.equal(requests[1].options.method, 'GET');
 	assert.equal(requests[1].options.body, undefined);
@@ -209,7 +209,7 @@ test('implements processing cancellation and the one-time MP3 TTS Jobs contract'
 	assert.equal(subtitles.filename, jobId + '.ass');
 	assert.equal(subtitles.contentType, 'text/plain');
 	assert.match(new TextDecoder().decode(subtitles.bytes), /\[Events\]/);
-	assert.throws(() => client.createTtsJob('hello', { voiceId: 'unknown' }), /voiceId/);
+	assert.throws(() => client.createTtsJob('hello', { voiceId: 'v2_ann_m_30s_01' }), /voiceId/);
 	assert.throws(() => client.getTtsJob('bad-id'), /jobId/);
 });
 
@@ -483,7 +483,7 @@ test('validates inputs before making a request', async () => {
 	const client = new ApickClient({ apiKey: 'key', fetch: async () => { calls += 1; } });
 	assert.throws(() => client.businessDetails('1234'), /10 digits/);
 	assert.throws(() => client.holidays(1800, 1), /1900/);
-	assert.throws(() => client.createTtsJob('', { voiceId: 'v2_ann_m_30s_01' }), /text/);
+	assert.throws(() => client.createTtsJob('', { voiceId: 'Kore' }), /text/);
 	assert.throws(() => client.jsonToExcel({ value: 1 }), /array/);
 	assert.equal(calls, 0);
 });

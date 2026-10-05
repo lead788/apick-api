@@ -1,14 +1,22 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {ApickClient}=require('../src/index.cjs');
-test('TTS 옵션·Gemini·견적·목소리 목록은 공통 응답을 보존하고 JSON 불리언 전달',async()=>{
+test('Gemini 기본 접수와 두 엔진의 확장 옵션·목록·견적을 JSON으로 전달',async()=>{
   const requests=[];const client=new ApickClient({apiKey:'test-key',fetch:async(url,request)=>{requests.push({url,request});return new Response(JSON.stringify({data:{job_id:'a'.repeat(32),status:'waiting',billing:{reserved:100,total:0}},api:{success:true,cost:0}}),{status:202,headers:{'Content-Type':'application/json'}});}});
-  const result=await client.createTtsJob('본문',{fallbackPolicy:'busy',normalizeText:false,fallbackOptions:{voice_id:'Charon',style:'차분하게'},idempotencyKey:'tts-1'});
+  const result=await client.createTtsJob('본문',{normalizeText:false,idempotencyKey:'tts-1'});
   assert.equal(result.data.billing.total,0);assert.equal(requests[0].request.headers['X-Idempotency-Key'],'tts-1');
-  assert.equal(JSON.parse(requests[0].request.body).normalize_text,false);assert.equal(JSON.parse(requests[0].request.body).fallback_policy,'busy');
+  assert.equal(JSON.parse(requests[0].request.body).normalize_text,false);assert.equal(JSON.parse(requests[0].request.body).voice_id,'Kore');
   await client.createGeminiTtsJob({text:'본문',voice_id:'Kore'},{idempotencyKey:'tts-2'});assert.ok(requests[1].url.endsWith('/rest/tts/gemini/jobs'));
   await client.listGeminiTtsVoices();assert.equal(requests[2].request.method,'GET');
   await client.quoteTts({engine:'gemini',text:'본문'});assert.ok(requests[3].url.endsWith('/rest/tts/quote'));
+  const input={utterances:[{text:'본문',speaker:'가',emotion:'calm',pace:0.8}],speakers:{가:{voice_id:'alloy'},나:{voice_id:'nova'}},multi_speaker:true,tone:'documentary',pitch:2,volume_gain_db:-1};
+  await client.createOpenAiTtsJob(input,{idempotencyKey:'tts-3'});assert.ok(requests[4].url.endsWith('/rest/tts/openai/jobs'));assert.deepEqual(JSON.parse(requests[4].request.body),input);
+  await client.listOpenAiTtsVoices();assert.ok(requests[5].url.endsWith('/rest/tts/openai/voices'));
+  await client.getTtsOptions();assert.ok(requests[6].url.endsWith('/rest/tts/options'));
+  await client.createTtsJob('가'.repeat(2000));
+  await client.createTtsJob('가'.repeat(8000),{normalizeText:false});
+  assert.throws(()=>client.createTtsJob('가'.repeat(2001)));
+  assert.throws(()=>client.createTtsJob('가'.repeat(8001),{normalizeText:false}));
   assert.throws(()=>client.createTtsJob('본문',{fallbackPolicy:'unknown'}));
   assert.throws(()=>client.createTtsJob('본문',{normalizeText:'false'}));
 });

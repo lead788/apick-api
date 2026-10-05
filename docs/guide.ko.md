@@ -90,9 +90,8 @@ await client.ocr(bytes, {
 
 ## 파일 생성
 
-TTS는 14개 목소리 ID를 지원합니다. 정확한 목록은 `TTS_VOICE_IDS` 상수와 개발가이드에서 확인합니다.
+현재 목소리는 `listGeminiTtsVoices()`와 `listOpenAiTtsVoices()`로 조회합니다. 기존 `TTS_VOICE_IDS`는 폐기된 목소리입니다.
 
-`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_young_01`, `v2_f_senior_01`
 
 정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + AI 원가 × 환율 × 1.4입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
 
@@ -107,7 +106,7 @@ const subtitle = await client.youtubeSubtitle(video.data.video_id, 'en', { forma
 await subtitle.save('./' + subtitle.filename);
 await (await client.youtubeThumbnail(video.data.video_id)).save('./thumbnail.jpg');
 
-const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
+const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'Kore' });
 const jobId = created.data.job_id;
 let job = await client.getTtsJob(jobId);
 while (job.data.status === 'waiting' || job.data.status === 'processing') {
@@ -329,11 +328,11 @@ console.log(run.status, run.billing, run.result);
 ## 오류와 재시도
 
 `ApickApiError`에는 공개 오류 정보인 `code`, `serviceCode`, `status`, `message`가 포함됩니다. SDK는 중복 호출과 중복 과금을 방지하기 위해 자동 재시도를 하지 않습니다. 재시도가 필요하면 작업의 멱등성과 오류 코드를 확인한 뒤 애플리케이션에서 명시적으로 결정하세요.
-# TTS 검수와 재개
+## TTS 이전 버전에서 전환 / TTS migration
 
-`getTtsQuality(jobId)`로 발화별 속도·실패 이유와 후보 목록을 조회합니다. 후보는 작업 종료 후 72시간 보존되며 `downloadTtsCandidate(jobId, candidateId)` 호출은 최종 MP3·ASS의 1회 다운로드를 소비하지 않습니다.
+기존 APICK 목소리와 자동 전환은 종료되었습니다. `createTtsJob`은 Gemini 기본 목소리 `Kore`를 사용합니다. `getTtsQuality`, `retryTtsJob`, `downloadTtsCandidate`의 기존 경로는 HTTP 409를 반환합니다.
 
-`retryTtsJob(jobId, ['u002'], idempotencyKey)`는 해당 발화의 기술적 복구를 같은 작업에서 요청합니다. 응답이 끊겨도 같은 키와 발화 목록을 사용하세요. 기술적 복구는 추가 과금하지 않으며, 재개 회차는 `resume_revision`으로 확인합니다. 필수 검수를 통과하지 못한 작업은 완료되지 않습니다.
+Legacy APICK voices and automatic fallback have retired. `createTtsJob` now defaults to Gemini voice `Kore`. The legacy quality, retry and candidate endpoints return HTTP 409.
 
 ## 영상 모델 버전 선택
 
@@ -369,4 +368,4 @@ if (status.data.status === "completed") {
 상품별 간편인증 조회 가이드에는 조회 데이터, 출처 기관, 활용 사례와 자주 묻는 질문이 있습니다. 인증 요청은 해당 상품의 자료를 조회하기 위한 단계이며 결과 조회용 transactionId를 반환합니다. 요청·응답 계약과 인증 방식은 동일합니다. [공통 인증 흐름](https://apick.app/dev_guide/data)에서 절차와 오류 처리를 확인하세요.
 
 
-TTS: [Gemini · 자동 전환 · 정규화 요금 / fallback and normalization billing](tts.md). `createGeminiTtsJob`, `listGeminiTtsVoices`, `quoteTts`를 지원합니다.
+TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOpenAiTtsJob`, `listOpenAiTtsVoices`, `getTtsOptions`를 포함한 최신 계약입니다.

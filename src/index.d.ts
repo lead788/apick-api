@@ -200,15 +200,22 @@ export interface YoutubeSubtitleList {
 }
 export interface YoutubeSubtitleOptions { format?: 'vtt' | 'srt' | 'txt'; type?: 'any' | 'manual' | 'auto'; }
 
+/** @deprecated Retired APICK voice IDs. Query listGeminiTtsVoices or listOpenAiTtsVoices. */
 export const TTS_VOICE_IDS: readonly [
 	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_young_01', 'v2_f_senior_01'
 ];
-export type TtsVoiceId = typeof TTS_VOICE_IDS[number];
+export type TtsVoiceId = string;
+/** @deprecated Automatic fallback is no longer supported. */
 export type TtsFallbackPolicy = 'never' | 'queue_full' | 'busy';
 export interface TtsFallbackOptions { voice_id?: string; style?: string; }
+/** @deprecated Retired APICK request shape. Use GeminiTtsInput or OpenAiTtsInput. */
 export interface ApickTtsInput { voice_id: TtsVoiceId; text?: string; utterances?: Array<{text:string;emotion?:string;speed?:number;pause_after_ms?:number}>; normalize_text?:boolean; fallback_policy?:TtsFallbackPolicy; fallback_options?:TtsFallbackOptions; }
-export interface GeminiTtsInput { voice_id?:string; text?:string; style?:string; utterances?:Array<{text:string;voice_id?:string;style?:string;speaker?:string}>; normalize_text?:boolean; language_code?:'ko'|'ko-KR'; }
-export interface TtsOptions { voiceId?:TtsVoiceId; normalizeText?:boolean; fallbackPolicy?:TtsFallbackPolicy; fallbackOptions?:TtsFallbackOptions; idempotencyKey?:string; }
+export interface TtsStyleOptions { style?:string; emotion?:'neutral'|'calm'|'cheerful'|'excited'|'sad'|'serious'|'friendly'|'empathetic'|'confident'|'gentle'|'whisper'|'narration'; tone?:'narration'|'news'|'audiobook'|'documentary'|'ad'|'conversation'|'announcement'|'tutorial'|'storytelling'; accent?:'standard'|'seoul'|'gyeongsang'|'jeolla'|'chungcheong'; pace?:number; pitch?:number; volume_gain_db?:number; }
+export interface TtsSpeakerOptions extends TtsStyleOptions { voice_id?:string; }
+export interface TtsUtterance extends TtsSpeakerOptions { text:string; speaker?:string; }
+export interface GeminiTtsInput extends TtsStyleOptions { voice_id?:string; text?:string; utterances?:TtsUtterance[]; speakers?:Record<string,TtsSpeakerOptions>; multi_speaker?:boolean; normalize_text?:boolean; language_code?:'ko'|'ko-KR'; }
+export interface OpenAiTtsInput extends GeminiTtsInput {}
+export interface TtsOptions { voiceId?:TtsVoiceId; normalizeText?:boolean; idempotencyKey?:string; }
 export interface GeminiTtsVoice { voice_id:string; name:string; gender:string|null; tone:string; age_band:string|null; age_years?:number|null; age_verified?:boolean; age_basis?:'catalog_description'|'reviewed'; age_source?:string; description?:string; language_code?:string|null; reviewed_at?:string; library:string; }
 export interface TtsQuote { synthesis:number; normalization:number; estimated_total:number; maximum:number; synthesis_maximum:number; normalization_maximum:number; estimated_only:true; currency:'POINT'; fallback_price_may_change:boolean; }
 
@@ -216,7 +223,7 @@ export interface TtsJobData {
 	job_id: string;
 	status: 'waiting' | 'processing' | 'completed' | 'cancelled' | 'failed';
 	voice_id?: string;
-	synthesis?: {engine:'apick'|'gemini';model:string;voice_id:string;fallback_reason:string|null;age_verified:boolean;notice:string|null};
+	synthesis?: {engine:'apick'|'gemini'|'openai';model:string;voice_id:string;fallback_reason:string|null;age_verified:boolean;notice:string|null};
 	normalization?: {enabled:boolean;run_id:string|null;status:string;skill_id:string|null};
 	billing?: {status:string;synthesis:number;skill:number;total:number;reserved:number;refunded:number;released:number;currency:'POINT'};
 	expires_at?:string|null;
@@ -302,16 +309,22 @@ export class ApickClient {
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;
 	youtubeSubtitleList(url: string): Promise<ApickResult<YoutubeSubtitleList>>;
 	youtubeSubtitle(url: string, lang: string, options?: YoutubeSubtitleOptions): Promise<ApickBinaryResult>;
-	createTtsJob(text: string | ApickTtsInput, options?: TtsOptions): Promise<ApickResult<TtsJobData>>;
+	createTtsJob(text: string | GeminiTtsInput, options?: TtsOptions): Promise<ApickResult<TtsJobData>>;
 	createGeminiTtsJob(input:GeminiTtsInput, options?:{idempotencyKey?:string}):Promise<ApickResult<TtsJobData>>;
 	listGeminiTtsVoices():Promise<ApickResult<{voices:GeminiTtsVoice[];complete:boolean;checked_at:string|null}>>;
-	quoteTts(input:(ApickTtsInput|GeminiTtsInput)&{engine?:'apick'|'gemini'}):Promise<ApickResult<TtsQuote>>;
+	createOpenAiTtsJob(input:OpenAiTtsInput, options?:{idempotencyKey?:string}):Promise<ApickResult<TtsJobData>>;
+	listOpenAiTtsVoices():Promise<ApickResult<{voices:GeminiTtsVoice[];complete:boolean;checked_at:string|null}>>;
+	getTtsOptions():Promise<ApickResult<{engines:Record<'gemini'|'openai',Record<string,unknown>>}>>;
+	quoteTts(input:GeminiTtsInput&{engine?:'gemini'|'openai'}):Promise<ApickResult<TtsQuote>>;
 	getTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	cancelTtsJob(jobId: string): Promise<ApickResult<TtsJobData>>;
 	downloadTtsResult(jobId: string): Promise<ApickBinaryResult>;
 	downloadTtsSubtitles(jobId: string): Promise<ApickBinaryResult>;
+	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	getTtsQuality(jobId: string): Promise<ApickResult<TtsQualityData>>;
+	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	retryTtsJob(jobId: string, utteranceIds: string[], idempotencyKey: string): Promise<ApickResult<TtsJobData>>;
+	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;

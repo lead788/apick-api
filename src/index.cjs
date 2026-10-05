@@ -119,8 +119,8 @@ function normalizeTtsJobId(value) {
 }
 
 function normalizeTtsVoice(value) {
-	const voiceId = requiredString('voiceId', value);
-	if (!TTS_VOICE_ID_SET.has(voiceId)) throw new RangeError('voiceId must be one of the supported TTS voice IDs.');
+	const voiceId = requiredString('voiceId', value, 160);
+	if (TTS_VOICE_ID_SET.has(voiceId)) throw new RangeError('This voiceId has retired. Select a current Gemini voice with listGeminiTtsVoices().');
 	return voiceId;
 }
 
@@ -633,15 +633,14 @@ class ApickClient {
 	createTtsJob(text, options) {
 		const config = options || {};
 		const payload = typeof text==='object' && text!==null ? {...text} : {
-			voice_id: normalizeTtsVoice(config.voiceId || 'v2_ann_m_30s_01'),
-			text: requiredString('text', text, 800)
+			voice_id: normalizeTtsVoice(config.voiceId || 'Kore'),
+			text: requiredString('text', text, config.normalizeText === false ? 8000 : 2000)
 		};
 		if(config.normalizeText!==undefined)payload.normalize_text=config.normalizeText;
-		if(config.fallbackPolicy!==undefined)payload.fallback_policy=config.fallbackPolicy;
-		if(config.fallbackOptions!==undefined)payload.fallback_options=config.fallbackOptions;
+		if(config.fallbackPolicy!==undefined||config.fallbackOptions!==undefined||payload.fallback_policy!==undefined||payload.fallback_options!==undefined)throw new TypeError('TTS fallback has retired. Use createGeminiTtsJob or createOpenAiTtsJob.');
 		if(payload.normalize_text!==undefined&&typeof payload.normalize_text!=='boolean')throw new TypeError('normalizeText must be boolean.');
-		if(payload.fallback_policy!==undefined&&!['never','queue_full','busy'].includes(payload.fallback_policy))throw new TypeError('Invalid fallbackPolicy.');
-		return this._call('createTtsJob',payload,null,{json:typeof text==='object'||config.normalizeText!==undefined||config.fallbackPolicy!==undefined||config.fallbackOptions!==undefined,idempotencyKey:config.idempotencyKey});
+		if(payload.voice_id!==undefined)normalizeTtsVoice(payload.voice_id);
+		return this._call('createTtsJob',payload,null,{json:true,idempotencyKey:config.idempotencyKey});
 	}
 
 	createGeminiTtsJob(input, options) {
@@ -649,6 +648,12 @@ class ApickClient {
 		return this._call('createTtsJob', input, null, {endpoint:'/rest/tts/gemini/jobs',json:true,idempotencyKey:options?.idempotencyKey});
 	}
 	listGeminiTtsVoices() { return this._call('createTtsJob',null,null,{endpoint:'/rest/tts/gemini/voices',method:'GET'}); }
+	createOpenAiTtsJob(input, options) {
+		if(!input||typeof input!=='object'||Array.isArray(input))throw new TypeError('OpenAI TTS input is required.');
+		return this._call('createTtsJob',input,null,{endpoint:'/rest/tts/openai/jobs',json:true,idempotencyKey:options?.idempotencyKey});
+	}
+	listOpenAiTtsVoices() { return this._call('createTtsJob',null,null,{endpoint:'/rest/tts/openai/voices',method:'GET'}); }
+	getTtsOptions() { return this._call('createTtsJob',null,null,{endpoint:'/rest/tts/options',method:'GET'}); }
 	quoteTts(input) { return this._call('createTtsJob',input,null,{endpoint:'/rest/tts/quote',json:true}); }
 
 	getTtsJob(jobId) {

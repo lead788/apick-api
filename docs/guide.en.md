@@ -90,9 +90,8 @@ await client.ocr(bytes, {
 
 ## Generated files
 
-TTS supports 14 voice IDs. Use `TTS_VOICE_IDS` and the developer guide for the current list.
+Query `listGeminiTtsVoices()` and `listOpenAiTtsVoices()` for current voices; legacy `TTS_VOICE_IDS` are retired.
 
-`v2_ann_m_30s_01`, `v2_ann_m_30s_02`, `v2_ann_m_30s_04`, `v2_ann_m_30s_05`, `v2_ann_f_30s_02`, `v2_ann_f_30s_03`, `v2_ann_f_30s_04`, `v2_ann_f_30s_05`, `v2_m_teen_01`, `v2_m_young_01`, `v2_m_mid_01`, `v2_m_senior_01`, `v2_f_young_01`, `v2_f_senior_01`
 
 Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus actual AI cost × the pinned exchange rate × 1.4. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
 
@@ -107,7 +106,7 @@ const subtitle = await client.youtubeSubtitle(video.data.video_id, 'en', { forma
 await subtitle.save('./' + subtitle.filename);
 await (await client.youtubeThumbnail(video.data.video_id)).save('./thumbnail.jpg');
 
-const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'v2_ann_m_30s_01' });
+const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'Kore' });
 const jobId = created.data.job_id;
 let job = await client.getTtsJob(jobId);
 while (job.data.status === 'waiting' || job.data.status === 'processing') {
@@ -327,11 +326,11 @@ console.log(run.status, run.billing, run.result);
 ## Errors and retries
 
 `ApickApiError` includes public error information: `code`, optional `serviceCode`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.
-# TTS quality and recovery
+## TTS 이전 버전에서 전환 / TTS migration
 
-Use `getTtsQuality(jobId)` to inspect utterance speed, rejection reasons, and candidate history. Candidates remain available for 72 hours after the job terminates. `downloadTtsCandidate(jobId, candidateId)` does not consume the final MP3 or ASS download.
+기존 APICK 목소리와 자동 전환은 종료되었습니다. `createTtsJob`은 Gemini 기본 목소리 `Kore`를 사용합니다. `getTtsQuality`, `retryTtsJob`, `downloadTtsCandidate`의 기존 경로는 HTTP 409를 반환합니다.
 
-`retryTtsJob(jobId, ['u002'], idempotencyKey)` requests technical recovery within the same job without an additional charge. Reuse the same key and utterance list after a lost response. Check `resume_revision` to identify the current revision. Required quality checks must pass before a job completes.
+Legacy APICK voices and automatic fallback have retired. `createTtsJob` now defaults to Gemini voice `Kore`. The legacy quality, retry and candidate endpoints return HTTP 409.
 
 ## Video model versions
 
@@ -361,4 +360,4 @@ Skill details and quotes provide estimated price and duration ranges and tool ca
 Product-specific authenticated-data guides describe returned fields, source institutions, use cases, and FAQs. An authentication request starts access to the selected product and returns a transactionId for result polling. Request and response contracts and authentication are unchanged. See the [shared authentication guide](https://apick.app/dev_guide/data) for the flow and error handling.
 
 
-TTS: [Gemini · 자동 전환 · 정규화 요금 / fallback and normalization billing](tts.md). `createGeminiTtsJob`, `listGeminiTtsVoices`, `quoteTts`를 지원합니다.
+TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOpenAiTtsJob`, `listOpenAiTtsVoices`, `getTtsOptions`를 포함한 최신 계약입니다.

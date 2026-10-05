@@ -1,3 +1,9 @@
+# 4.0.0
+
+- Breaking migration: `createTtsJob` now defaults to Gemini `Kore`; retired APICK voices and fallback options are rejected. Use engine-specific voice catalogs instead of legacy `TTS_VOICE_IDS`.
+- Add ChatGPT TTS submission, voice and option queries, shared expressive options and multi-speaker types. Preserve MP3/ASS and billing responses. Normalized/raw string limits are 2,000/8,000 characters.
+- 기본 접수는 Gemini로 전환됐습니다. 기존 APICK 목소리·자동 전환은 종료됐으며, 품질·재개·후보 음원 경로는 409를 반환합니다. ChatGPT와 공통 확장 옵션을 추가했습니다.
+
 # 3.11.0
 
 - TTS voice metadata includes documented preset age evidence; case aliases remain supported without duplicate catalog entries. Reservation reductions are included in `billing.released`.

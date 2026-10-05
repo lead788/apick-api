@@ -209,7 +209,7 @@ export interface TtsFallbackOptions { voice_id?: string; style?: string; }
 export interface ApickTtsInput { voice_id: TtsVoiceId; text?: string; utterances?: Array<{text:string;emotion?:string;speed?:number;pause_after_ms?:number}>; normalize_text?:boolean; fallback_policy?:TtsFallbackPolicy; fallback_options?:TtsFallbackOptions; }
 export interface GeminiTtsInput { voice_id?:string; text?:string; style?:string; utterances?:Array<{text:string;voice_id?:string;style?:string;speaker?:string}>; normalize_text?:boolean; language_code?:'ko'|'ko-KR'; }
 export interface TtsOptions { voiceId?:TtsVoiceId; normalizeText?:boolean; fallbackPolicy?:TtsFallbackPolicy; fallbackOptions?:TtsFallbackOptions; idempotencyKey?:string; }
-export interface GeminiTtsVoice { voice_id:string; name:string; gender:string|null; tone:string; age_band:string|null; reviewed_at?:string; library:string; }
+export interface GeminiTtsVoice { voice_id:string; name:string; gender:string|null; tone:string; age_band:string|null; age_years?:number|null; age_verified?:boolean; age_basis?:'catalog_description'|'reviewed'; age_source?:string; description?:string; language_code?:string|null; reviewed_at?:string; library:string; }
 export interface TtsQuote { synthesis:number; normalization:number; estimated_total:number; maximum:number; synthesis_maximum:number; normalization_maximum:number; estimated_only:true; currency:'POINT'; fallback_price_may_change:boolean; }
 
 export interface TtsJobData {

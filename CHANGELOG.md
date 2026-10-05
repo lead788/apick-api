@@ -1,5 +1,8 @@
 # 3.11.0
 
+- TTS voice metadata includes documented preset age evidence; case aliases remain supported without duplicate catalog entries. Reservation reductions are included in `billing.released`.
+- 목소리 목록에 공식 설정 연령 근거를 추가하고 대소문자 별칭 호환을 유지합니다. 예약 감액은 `billing.released`에 누적됩니다.
+
 - TTS: Gemini direct synthesis, queue fallback, default-on paid normalization, unified MP3/ASS and billing.
 - TTS: Gemini 직접 합성, 대기 상태별 전환, 기본 on 유료 정규화, 공통 MP3·ASS와 정산 내역.
 - 이미지 생성·편집: 사용량 미확정 시 202와 작업 ID를 반환하는 정산 보류 응답 타입을 추가했습니다.

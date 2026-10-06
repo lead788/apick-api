@@ -120,6 +120,15 @@ const subtitle = await client.youtubeSubtitle(video.data.video_id, 'en', { forma
 await subtitle.save('./' + subtitle.filename);
 await (await client.youtubeThumbnail(video.data.video_id)).save('./thumbnail.jpg');
 
+// Search, channel, comments; check formats, then download (base fee + per-10MB fee, 1-hour link)
+const found = await client.youtubeSearch('파이썬 기초 강좌', { count: 5, sort: 'views' });
+const channel = await client.youtubeChannel('@jocoding', { tab: 'videos', count: 10 });
+const comments = await client.youtubeComments(found.data.results[0].id, { count: 20, sort: 'top' });
+const formats = await client.youtubeFormats(found.data.results[0].id);
+const mp4 = await client.downloadYoutubeVideo(found.data.results[0].id, { quality: '720' });
+console.log(mp4.data.download_url, mp4.data.billing.total);
+const mp3 = await client.downloadYoutubeAudio(found.data.results[0].id, { format: 'mp3', bitrate: 192, start: '0:30', end: '1:30' });
+
 const created = await client.createTtsJob('오늘의 이야기를 시작합니다.', { voiceId: 'Kore' });
 const jobId = created.data.job_id;
 let job = await client.getTtsJob(jobId);

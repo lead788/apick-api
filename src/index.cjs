@@ -49,6 +49,14 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	youtubeThumbnail: { endpoint: '/rest/youtube_thumbnail', timeoutMs: 60_000, output: 'binary', filename: 'thumbnail.jpg' },
 	youtubeSubtitleList: { endpoint: '/rest/youtube_subtitle_list', timeoutMs: 60_000, output: 'json' },
 	youtubeSubtitle: { endpoint: '/rest/youtube_subtitle', timeoutMs: 60_000, output: 'binary', filename: 'subtitle.vtt' },
+	youtubeSearch: { endpoint: '/rest/youtube_search', timeoutMs: 60_000, output: 'json' },
+	youtubeChannel: { endpoint: '/rest/youtube_channel', timeoutMs: 60_000, output: 'json' },
+	youtubePlaylist: { endpoint: '/rest/youtube_playlist', timeoutMs: 60_000, output: 'json' },
+	youtubeHashtag: { endpoint: '/rest/youtube_hashtag', timeoutMs: 60_000, output: 'json' },
+	youtubeFormats: { endpoint: '/rest/youtube_formats', timeoutMs: 60_000, output: 'json' },
+	youtubeComments: { endpoint: '/rest/youtube_comments', timeoutMs: 120_000, output: 'json' },
+	downloadYoutubeVideo: { endpoint: '/rest/download_youtube_video', timeoutMs: 610_000, output: 'json' },
+	downloadYoutubeAudio: { endpoint: '/rest/youtube_audio_download', timeoutMs: 610_000, output: 'json' },
 	createTtsJob: { endpoint: '/rest/tts/jobs', timeoutMs: 35_000, output: 'json' },
 	createVideoJob: { endpoint: '/rest/seedance/jobs', timeoutMs: 60_000, output: 'json' },
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
@@ -168,6 +176,26 @@ function normalizeYearMonth(name, value) {
 	const text = requiredString(name, value);
 	if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(text)) throw new TypeError(`${name} must be in YYYY-MM format.`);
 	return text;
+}
+
+// 정해진 값 중 하나. 비어 있으면 서버 기본값을 쓰도록 보내지 않는다.
+function optionalChoice(name, value, choices) {
+	if (value === undefined || value === null || value === '') return undefined;
+	const text = String(value);
+	if (!choices.includes(text)) throw new RangeError(`${name} must be one of ${choices.join(', ')}.`);
+	return text;
+}
+
+// 구간 시작·끝: 초(숫자) 또는 시:분:초 문자열.
+function optionalTimePoint(name, value) {
+	if (value === undefined || value === null || value === '') return undefined;
+	const text = String(value).trim();
+	if (!/^(?:\d+(?:\.\d+)?|(?:\d{1,2}:)?\d{1,2}:\d{1,2}(?:\.\d+)?)$/.test(text)) throw new TypeError(`${name} must be seconds or [hh:]mm:ss.`);
+	return text;
+}
+
+function compact(payload) {
+	return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
 }
 
 function optionalRangeInteger(name, value, min, max) {
@@ -640,6 +668,82 @@ class ApickClient {
 			payload.type = config.type;
 		}
 		return this._call('youtubeSubtitle', payload, null, { filename: 'subtitle.' + (payload.format || 'vtt') });
+	}
+
+	// 키워드 검색. 영상·쇼츠·채널·재생목록을 돌려준다.
+	youtubeSearch(query, options) {
+		const config = options || {};
+		return this._call('youtubeSearch', compact({
+			query: requiredString('query', query, 200),
+			count: optionalRangeInteger('count', config.count, 1, 50),
+			sort: optionalChoice('sort', config.sort, ['relevance', 'date', 'views', 'rating']),
+			type: optionalChoice('type', config.type, ['any', 'video', 'channel', 'playlist', 'movie']),
+			upload_date: optionalChoice('uploadDate', config.uploadDate, ['any', 'hour', 'today', 'week', 'month', 'year']),
+			duration: optionalChoice('duration', config.duration, ['any', 'short', 'medium', 'long'])
+		}));
+	}
+
+	// channel 은 채널 주소, 핸들(@이름) 또는 채널 ID(UC…).
+	youtubeChannel(channel, options) {
+		const config = options || {};
+		return this._call('youtubeChannel', compact({
+			channel: requiredString('channel', channel, 2048),
+			tab: optionalChoice('tab', config.tab, ['videos', 'shorts', 'streams', 'playlists']),
+			count: optionalRangeInteger('count', config.count, 1, 100)
+		}));
+	}
+
+	youtubePlaylist(url, options) {
+		const config = options || {};
+		return this._call('youtubePlaylist', compact({ url: requiredString('url', url, 2048), count: optionalRangeInteger('count', config.count, 1, 200) }));
+	}
+
+	youtubeHashtag(hashtag, options) {
+		const config = options || {};
+		return this._call('youtubeHashtag', compact({ hashtag: requiredString('hashtag', hashtag, 101), count: optionalRangeInteger('count', config.count, 1, 100) }));
+	}
+
+	// 받을 수 있는 화질·오디오 형식과 화질별 예상 다운로드 요금.
+	youtubeFormats(url) {
+		return this._call('youtubeFormats', { url: requiredString('url', url, 2048) });
+	}
+
+	youtubeComments(url, options) {
+		const config = options || {};
+		if (config.replies !== undefined && typeof config.replies !== 'boolean') throw new TypeError('replies must be a boolean.');
+		return this._call('youtubeComments', compact({
+			url: requiredString('url', url, 2048),
+			count: optionalRangeInteger('count', config.count, 1, 200),
+			sort: optionalChoice('sort', config.sort, ['top', 'new']),
+			replies: config.replies === undefined ? undefined : String(config.replies)
+		}));
+	}
+
+	// 영상을 MP4 로 받아 1시간 유효한 다운로드 주소(data.download_url)를 돌려준다.
+	// 요금은 기본요금 + 받은 파일 10MB 마다 추가 요금이며 처리에 최대 10분이 걸릴 수 있다.
+	downloadYoutubeVideo(url, options) {
+		const config = options || {};
+		return this._call('downloadYoutubeVideo', compact({
+			url: requiredString('url', url, 2048),
+			quality: optionalChoice('quality', config.quality === undefined ? undefined : String(config.quality), ['best', '2160', '1440', '1080', '720', '480', '360', '240', '144']),
+			codec: optionalChoice('codec', config.codec, ['any', 'h264']),
+			start: optionalTimePoint('start', config.start),
+			end: optionalTimePoint('end', config.end),
+			delivery: 'link'
+		}));
+	}
+
+	// 소리만 MP3·M4A·Opus 로 받아 1시간 유효한 다운로드 주소를 돌려준다.
+	downloadYoutubeAudio(url, options) {
+		const config = options || {};
+		return this._call('downloadYoutubeAudio', compact({
+			url: requiredString('url', url, 2048),
+			format: optionalChoice('format', config.format, ['mp3', 'm4a', 'opus']),
+			bitrate: optionalChoice('bitrate', config.bitrate === undefined ? undefined : String(config.bitrate), ['128', '192', '320']),
+			start: optionalTimePoint('start', config.start),
+			end: optionalTimePoint('end', config.end),
+			delivery: 'link'
+		}));
 	}
 
 	async createVideoJob(model, prompt, options) {

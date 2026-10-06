@@ -320,6 +320,46 @@ export interface YoutubeSubtitleList {
 	subtitles: YoutubeSubtitleTrack[]; automatic_captions: YoutubeSubtitleTrack[];
 }
 export interface YoutubeSubtitleOptions { format?: 'vtt' | 'srt' | 'txt'; type?: 'any' | 'manual' | 'auto'; }
+export interface YoutubeChannelRef { id: string | null; name: string | null; url: string | null; handle: string | null; }
+export interface YoutubeListItem {
+	type: 'video' | 'short' | 'channel' | 'playlist'; id: string; url: string; title: string | null; thumbnail: string | null;
+	description?: string | null; duration?: number | null; view_count?: number | null; live_status?: string | null; published_at?: string | null;
+	channel?: YoutubeChannelRef | null; handle?: string | null; follower_count?: number | null; is_verified?: boolean; video_count?: number | null;
+}
+export interface YoutubeSearchOptions {
+	count?: number; sort?: 'relevance' | 'date' | 'views' | 'rating'; type?: 'any' | 'video' | 'channel' | 'playlist' | 'movie';
+	uploadDate?: 'any' | 'hour' | 'today' | 'week' | 'month' | 'year'; duration?: 'any' | 'short' | 'medium' | 'long';
+}
+export interface YoutubeSearchResult { query: string; count: number; results: YoutubeListItem[]; }
+export interface YoutubeChannelResult {
+	channel: YoutubeChannelRef & { description: string; follower_count: number | null; is_verified: boolean; tags: string[]; thumbnail: string | null };
+	tab: 'videos' | 'shorts' | 'streams' | 'playlists'; count: number; items: YoutubeListItem[];
+}
+export interface YoutubePlaylistResult {
+	playlist_id: string; url: string; title: string | null; description: string; channel: YoutubeChannelRef | null;
+	video_count: number | null; view_count: number | null; modified_date: string | null; count: number; videos: YoutubeListItem[];
+}
+export interface YoutubeHashtagResult { hashtag: string; count: number; videos: YoutubeListItem[]; }
+export interface YoutubeVideoFormat { quality: string; width: number | null; height: number; fps: number | null; codec: string | null; hdr: boolean; has_audio: boolean; bitrate_kbps: number | null; filesize: number | null; filesize_estimated: boolean; }
+export interface YoutubeAudioFormat { codec: string | null; bitrate_kbps: number | null; sample_rate: number | null; channels: number | null; language: string | null; filesize: number | null; filesize_estimated: boolean; }
+export interface YoutubeFormats {
+	video_id: string; title: string | null; duration: number | null; live_status: string | null; downloadable: boolean;
+	video_formats: YoutubeVideoFormat[]; audio_formats: YoutubeAudioFormat[];
+	download_options: { video: { quality: string; estimated_size: number; estimated_cost: number }[]; audio: { format: 'mp3' | 'm4a' | 'opus'; bitrate: number | null; estimated_size: number; estimated_cost: number }[] };
+}
+export interface YoutubeComment {
+	id: string; parent_id: string | null; text: string; author: string | null; author_channel_id: string | null; author_url: string | null; author_thumbnail: string | null;
+	author_is_uploader: boolean; author_is_verified: boolean; like_count: number | null; is_pinned: boolean; is_hearted: boolean; published_at: string | null;
+}
+export interface YoutubeComments { video_id: string; title: string | null; sort: 'top' | 'new'; include_replies: boolean; count: number; comments: YoutubeComment[]; }
+export interface YoutubeCommentsOptions { count?: number; sort?: 'top' | 'new'; replies?: boolean; }
+export interface YoutubeDownloadLink {
+	video_id: string | null; title: string | null; duration: number | null; size: number; size_units: number; content_type: string; filename: string;
+	download_url: string; expires_at: string; quality?: string | null; format?: 'mp3' | 'm4a' | 'opus'; bitrate?: number | null;
+	billing: { base: number; size_unit_cost: number; size_cost: number; total: number };
+}
+export interface YoutubeVideoDownloadOptions { quality?: 'best' | '2160' | '1440' | '1080' | '720' | '480' | '360' | '240' | '144' | number; codec?: 'any' | 'h264'; start?: string | number; end?: string | number; }
+export interface YoutubeAudioDownloadOptions { format?: 'mp3' | 'm4a' | 'opus'; bitrate?: 128 | 192 | 320 | '128' | '192' | '320'; start?: string | number; end?: string | number; }
 
 /** @deprecated Retired APICK voice IDs. Query listGeminiTtsVoices or listOpenAiTtsVoices. */
 export const TTS_VOICE_IDS: readonly [
@@ -437,6 +477,14 @@ export class ApickClient {
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;
 	youtubeSubtitleList(url: string): Promise<ApickResult<YoutubeSubtitleList>>;
 	youtubeSubtitle(url: string, lang: string, options?: YoutubeSubtitleOptions): Promise<ApickBinaryResult>;
+	youtubeSearch(query: string, options?: YoutubeSearchOptions): Promise<ApickResult<YoutubeSearchResult>>;
+	youtubeChannel(channel: string, options?: { tab?: 'videos' | 'shorts' | 'streams' | 'playlists'; count?: number }): Promise<ApickResult<YoutubeChannelResult>>;
+	youtubePlaylist(url: string, options?: { count?: number }): Promise<ApickResult<YoutubePlaylistResult>>;
+	youtubeHashtag(hashtag: string, options?: { count?: number }): Promise<ApickResult<YoutubeHashtagResult>>;
+	youtubeFormats(url: string): Promise<ApickResult<YoutubeFormats>>;
+	youtubeComments(url: string, options?: YoutubeCommentsOptions): Promise<ApickResult<YoutubeComments>>;
+	downloadYoutubeVideo(url: string, options?: YoutubeVideoDownloadOptions): Promise<ApickResult<YoutubeDownloadLink>>;
+	downloadYoutubeAudio(url: string, options?: YoutubeAudioDownloadOptions): Promise<ApickResult<YoutubeDownloadLink>>;
 	createTtsJob(text: string | GeminiTtsInput, options?: TtsOptions): Promise<ApickResult<TtsJobData>>;
 	createGeminiTtsJob(input:GeminiTtsInput, options?:{idempotencyKey?:string}):Promise<ApickResult<TtsJobData>>;
 	listGeminiTtsVoices():Promise<ApickResult<{voices:GeminiTtsVoice[];complete:boolean;checked_at:string|null}>>;

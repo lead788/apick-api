@@ -109,6 +109,19 @@ const youtubeThumb: Promise<ApickBinaryResult> = client.youtubeThumbnail("dQw4w9
 const youtubeText: Promise<ApickBinaryResult> = client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "srt", type: "auto" });
 void receiptRequest; void receiptResult; void taxRequest; void taxResult;
 void youtubeMeta; void youtubeTracks; void youtubeThumb; void youtubeText;
+const ytSearch = client.youtubeSearch("파이썬 강좌", { count: 5, sort: "views", uploadDate: "week", type: "video" }).then((result) => result.data.results[0]?.type);
+const ytChannel = client.youtubeChannel("@jocoding", { tab: "shorts", count: 10 }).then((result) => result.data.channel.follower_count);
+const ytPlaylist = client.youtubePlaylist("PLRqwX-V7Uu6ZiZxtDDRCi6uhfTH4FilpH").then((result) => result.data.videos.length);
+const ytHashtag = client.youtubeHashtag("kpop").then((result) => result.data.videos[0]?.id);
+const ytFormats = client.youtubeFormats("dQw4w9WgXcQ").then((result) => result.data.download_options.video[0]?.estimated_cost);
+const ytComments = client.youtubeComments("dQw4w9WgXcQ", { count: 50, sort: "new", replies: true }).then((result) => result.data.comments[0]?.like_count);
+const ytVideo = client.downloadYoutubeVideo("dQw4w9WgXcQ", { quality: "720", codec: "h264", start: "0:30", end: 90 }).then((result) => result.data.download_url);
+const ytAudio = client.downloadYoutubeAudio("dQw4w9WgXcQ", { format: "mp3", bitrate: 320 }).then((result) => result.data.billing.total);
+void ytSearch; void ytChannel; void ytPlaylist; void ytHashtag; void ytFormats; void ytComments; void ytVideo; void ytAudio;
+// @ts-expect-error 지원하지 않는 검색 정렬
+client.youtubeSearch("a", { sort: "random" });
+// @ts-expect-error 지원하지 않는 오디오 형식
+client.downloadYoutubeAudio("dQw4w9WgXcQ", { format: "wav" });
 // @ts-expect-error 지원하지 않는 자막 형식
 client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "ass" });
 // @ts-expect-error 지원하지 않는 간편인증 방식

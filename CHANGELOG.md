@@ -1,5 +1,7 @@
 # 4.1.0
 
+- Add YouTube methods: `youtubeSearch`, `youtubeChannel`, `youtubePlaylist`, `youtubeHashtag`, `youtubeFormats`, `youtubeComments`, `downloadYoutubeVideo` and `downloadYoutubeAudio`. Downloads return a download link valid for 1 hour and are billed as a base fee plus 2 points per 10MB.
+- 유튜브 검색·채널·재생목록·해시태그·다운로드 화질·댓글 조회와 영상(MP4)·오디오(MP3·M4A·Opus) 다운로드 메서드를 추가했습니다. 다운로드는 1시간 유효한 링크를 돌려주며 기본요금에 파일 10MB당 2포인트가 더해집니다.
 - Add `googleNewsSearch`, `googleShoppingSearch`, `googleMapsSearch`, `googleRankCheck`, `instagramProfile`, `instagramPost` and `tiktokProfile` with typed results. Failed calls are not charged.
 - `googleRankCheck` returns `complete`, `checked_pages` and `unchecked_ranks`; when some rank ranges could not be checked, only the checked share is charged.
 - `googleSearch` returns up to 10 results per page; `googleImageSearch` pages are 1-5 (20 per page). Search timeouts are 50 seconds.

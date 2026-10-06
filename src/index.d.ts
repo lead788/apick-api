@@ -79,6 +79,148 @@ export interface RankCheck {
 	readonly unchecked_ranks: readonly string[];
 }
 
+export interface AmazonProduct {
+	readonly asin: string;
+	readonly url: string;
+	readonly title: string;
+	readonly brand: string;
+	readonly price: number | null;
+	readonly original_price: number | null;
+	readonly currency: string;
+	readonly rating: number | null;
+	readonly reviews_count: number | null;
+	readonly availability: string;
+	readonly is_available: boolean;
+	readonly bought_past_month: number | null;
+	readonly seller_name: string;
+	readonly categories: readonly string[];
+	readonly features: readonly string[];
+	readonly customers_say: string;
+	readonly image_url: string;
+	readonly image_urls: readonly string[];
+	readonly date_first_available: string;
+	readonly model_number: string;
+}
+
+export interface XPostSummary {
+	readonly post_id: string;
+	readonly url: string;
+	readonly text: string;
+	readonly posted_at: string;
+	readonly likes: number | null;
+	readonly reposts: number | null;
+	readonly replies: number | null;
+	readonly views: number | null;
+	readonly hashtags: readonly string[];
+}
+
+export interface XProfile {
+	readonly username: string;
+	readonly name: string;
+	readonly biography: string;
+	readonly followers: number | null;
+	readonly following: number | null;
+	readonly posts_count: number | null;
+	readonly is_verified: boolean;
+	readonly is_business_account: boolean;
+	readonly is_government_account: boolean;
+	readonly location: string;
+	readonly website: string;
+	readonly joined_at: string;
+	readonly profile_image_url: string;
+	readonly banner_image_url: string;
+	readonly profile_url: string;
+	readonly recent_posts: readonly XPostSummary[];
+}
+
+export interface XPost {
+	readonly post_id: string;
+	readonly url: string;
+	readonly username: string;
+	readonly name: string;
+	readonly text: string;
+	readonly posted_at: string;
+	readonly likes: number | null;
+	readonly reposts: number | null;
+	readonly replies: number | null;
+	readonly quotes: number | null;
+	readonly views: number | null;
+	readonly bookmarks: number | null;
+	readonly hashtags: readonly string[];
+	readonly is_repost: boolean;
+	readonly photo_urls: readonly string[];
+	readonly video_urls: readonly string[];
+	readonly author: { readonly followers: number | null; readonly is_verified: boolean };
+}
+
+export interface TiktokVideo {
+	readonly video_id: string;
+	readonly url: string;
+	readonly username: string;
+	readonly description: string;
+	readonly posted_at: string;
+	readonly views: number | null;
+	readonly likes: number | null;
+	readonly comments: number | null;
+	readonly shares: number | null;
+	readonly saves: number | null;
+	readonly duration_sec: number | null;
+	readonly hashtags: readonly string[];
+	readonly region: string;
+	readonly cover_image_url: string;
+	readonly author: { readonly followers: number | null; readonly is_verified: boolean };
+}
+
+/** 댓글 작성자는 공개 사용자명만 제공한다. */
+export interface SocialComment {
+	readonly comment_id: string;
+	readonly username: string;
+	readonly text: string;
+	readonly posted_at: string;
+	readonly likes: number | null;
+	readonly replies: number | null;
+}
+
+export interface AmazonReview {
+	readonly review_id: string;
+	readonly rating: number | null;
+	readonly title: string;
+	readonly text: string;
+	readonly author: string;
+	readonly posted_at: string;
+	readonly country: string;
+	readonly is_verified_purchase: boolean;
+	readonly helpful_count: number | null;
+	readonly variant: string;
+}
+
+export type ScrapeJobProduct = "instagram_posts" | "instagram_comments" | "tiktok_search" | "tiktok_video" | "tiktok_comments" | "amazon_reviews";
+
+export interface ScrapeJobOptions {
+	/** 최대 결과 수. 이 수 × 단가를 예약하고 실제 결과 건수만 차감한다(instagram_comments 15, tiktok_search 50, 그 밖 100). */
+	readonly maxResults?: number;
+	/** 응답을 못 받아 다시 보낼 때 같은 접수로 처리할 키(8~128자). */
+	readonly idempotencyKey?: string;
+}
+
+export interface ScrapeJob<T = unknown> {
+	readonly job_id: string;
+	readonly product: ScrapeJobProduct;
+	readonly status: "waiting" | "processing" | "completed" | "failed";
+	readonly max_results: number;
+	readonly unit_point: number;
+	readonly reserved_point: number;
+	readonly charged_point: number;
+	readonly result_count: number;
+	readonly created_at: string;
+	readonly completed_at: string | null;
+	/** 결과 보관 기한(완료 후 72시간). */
+	readonly result_expires_at?: string;
+	readonly result_expired?: boolean;
+	readonly items?: readonly T[];
+	readonly error?: { readonly code: string; readonly message: string };
+}
+
 export interface InstagramProfile {
 	readonly username: string;
 	readonly full_name: string;
@@ -472,6 +614,17 @@ export class ApickClient {
 	instagramProfile(usernameOrUrl: string): Promise<ApickResult<InstagramProfile>>;
 	instagramPost(url: string): Promise<ApickResult<InstagramPost>>;
 	tiktokProfile(usernameOrUrl: string): Promise<ApickResult<TiktokProfile>>;
+	amazonProduct(urlOrAsin: string): Promise<ApickResult<AmazonProduct>>;
+	xProfile(usernameOrUrl: string): Promise<ApickResult<XProfile>>;
+	xPost(url: string): Promise<ApickResult<XPost>>;
+	createInstagramPostsJob(usernameOrUrl: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<InstagramPost>>>;
+	createInstagramCommentsJob(url: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<SocialComment>>>;
+	createTiktokSearchJob(keyword: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<TiktokVideo>>>;
+	createTiktokVideoJob(url: string, options?: Pick<ScrapeJobOptions, "idempotencyKey">): Promise<ApickResult<ScrapeJob<TiktokVideo>>>;
+	createTiktokCommentsJob(url: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<SocialComment>>>;
+	createAmazonReviewsJob(urlOrAsin: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<AmazonReview>>>;
+	getScrapeJob<T = unknown>(jobId: string): Promise<ApickResult<ScrapeJob<T>>>;
+	waitForScrapeJob<T = unknown>(jobId: string, options?: { intervalMs?: number; timeoutMs?: number }): Promise<ApickResult<ScrapeJob<T>>>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
 	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;

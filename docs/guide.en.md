@@ -82,6 +82,18 @@ Only public information from public accounts is returned. Lookups usually take 2
 const instagram = await client.instagramProfile('natgeo');
 const post = await client.instagramPost('https://www.instagram.com/p/DeHufcWDCjf/');
 const tiktok = await client.tiktokProfile('https://www.tiktok.com/@tiktok');
+const product = await client.amazonProduct('B0BDHWDR12');
+const x = await client.xProfile('NASA');
+```
+
+### Collection jobs (lists, comments, search, reviews)
+
+Products that collect many items return a `job_id` immediately. Submitting reserves `maxResults` × unit price; when you read the result, only the results actually returned are charged and the rest is refunded. Failed jobs and missing targets are fully refunded, and results are kept for 72 hours. Comment and review authors are public usernames only.
+
+```js
+const job = await client.createTiktokSearchJob('camping recipes', { maxResults: 10, idempotencyKey: 'camping-0001' });
+const done = await client.waitForScrapeJob(job.data.job_id); // every 10 s, up to 10 min
+console.log(done.data.status, done.data.charged_point, done.data.items);
 ```
 
 ## OCR

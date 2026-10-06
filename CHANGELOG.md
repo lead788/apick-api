@@ -1,3 +1,10 @@
+# 4.2.0
+
+- Add `amazonProduct`, `xProfile` and `xPost`, and collection jobs `createInstagramPostsJob`, `createInstagramCommentsJob`, `createTiktokSearchJob`, `createTiktokVideoJob`, `createTiktokCommentsJob`, `createAmazonReviewsJob` with `getScrapeJob` and `waitForScrapeJob`, all with typed results.
+- Collection jobs reserve `maxResults` × unit price and charge only the results actually returned; failures are fully refunded and results are kept for 72 hours.
+- 아마존 상품, X 프로필·게시물 조회와 인스타그램 게시물 목록·댓글, 틱톡 키워드 검색·영상·댓글, 아마존 리뷰 수집 작업 메서드, 작업 조회·대기 메서드와 결과 타입을 추가했습니다.
+- 수집 작업은 `maxResults` × 단가를 예약하고 실제 결과 건수만 차감합니다. 실패는 전액 환불, 결과는 72시간 보관합니다.
+
 # 4.1.0
 
 - Add YouTube methods: `youtubeSearch`, `youtubeChannel`, `youtubePlaylist`, `youtubeHashtag`, `youtubeFormats`, `youtubeComments`, `downloadYoutubeVideo` and `downloadYoutubeAudio`. Downloads return a download link valid for 1 hour and are billed as a base fee plus 2 points per 10MB.

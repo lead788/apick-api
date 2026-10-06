@@ -82,6 +82,18 @@ const rank = await client.googleRankCheck('주소 검색 API', 'apick.app'); // 
 const instagram = await client.instagramProfile('natgeo');
 const post = await client.instagramPost('https://www.instagram.com/p/DeHufcWDCjf/');
 const tiktok = await client.tiktokProfile('https://www.tiktok.com/@tiktok');
+const product = await client.amazonProduct('B0BDHWDR12');
+const x = await client.xProfile('NASA');
+```
+
+### 수집 작업(목록·댓글·검색·리뷰)
+
+여러 건을 모으는 상품은 접수 즉시 `job_id` 를 돌려줍니다. 접수 때 `maxResults` × 단가를 예약하고, 결과를 받을 때 실제 결과 건수만 차감한 뒤 나머지는 돌려드립니다. 실패하거나 대상이 없으면 전액 환불되며 결과는 72시간 보관합니다. 댓글·리뷰 작성자는 공개 사용자명만 제공합니다.
+
+```js
+const job = await client.createTiktokSearchJob('캠핑 요리', { maxResults: 10, idempotencyKey: 'camping-0001' });
+const done = await client.waitForScrapeJob(job.data.job_id); // 기본 10초 간격, 최대 10분
+console.log(done.data.status, done.data.charged_point, done.data.items);
 ```
 
 ## OCR

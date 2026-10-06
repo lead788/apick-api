@@ -21,7 +21,7 @@ function jsonResponse(body, options) {
 }
 
 test('exports a focused catalog of 45 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 53);
+	assert.equal(Object.keys(SERVICES).length, 57);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -547,6 +547,51 @@ test('implements the Google news, shopping, maps, rank check and Instagram/TikTo
 	assert.throws(() => client.instagramProfile(''), /usernameOrUrl/);
 	assert.throws(() => client.instagramPost(''), /url/);
 	assert.equal(requests.length, 8);
+});
+
+test('implements Amazon, X and collection-job contracts', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, method: options.method, body: options.body, headers: options.headers });
+			if (/\/jobs$/.test(url)) return jsonResponse({ data: { job_id: 'a'.repeat(32), status: 'processing', reserved_point: 15 }, api: { success: true, cost: 15 } }, { status: 202 });
+			if (/scrape_jobs/.test(url)) return jsonResponse({ data: { job_id: 'a'.repeat(32), status: requests.length > 10 ? 'completed' : 'processing', items: [] }, api: { success: true, cost: 0 } });
+			return jsonResponse({ data: { ok: true }, api: { success: true, cost: 20 } });
+		}
+	});
+	await client.amazonProduct('b0bdhwdr12');
+	assert.ok(requests[0].url.endsWith('/rest/amazon_product'));
+	assert.equal(requests[0].body.get('asin'), 'B0BDHWDR12');
+	await client.amazonProduct('https://www.amazon.com/dp/B0BDHWDR12');
+	assert.equal(requests[1].body.get('url'), 'https://www.amazon.com/dp/B0BDHWDR12');
+	await client.xProfile('@NASA');
+	assert.ok(requests[2].url.endsWith('/rest/x_profile'));
+	assert.equal(requests[2].body.get('username'), 'NASA');
+	await client.xPost('https://x.com/NASA/status/1');
+	assert.ok(requests[3].url.endsWith('/rest/x_post'));
+	const job = await client.createTiktokSearchJob('캠핑 요리', { maxResults: 3, idempotencyKey: 'job-key-0001' });
+	assert.equal(job.data.job_id, 'a'.repeat(32));
+	assert.ok(requests[4].url.endsWith('/rest/tiktok_search/jobs'));
+	assert.deepEqual(JSON.parse(requests[4].body), { keyword: '캠핑 요리', max_results: 3, idempotency_key: 'job-key-0001' });
+	await client.createInstagramPostsJob('natgeo');
+	assert.deepEqual(JSON.parse(requests[5].body), { username: 'natgeo' });
+	await client.createInstagramCommentsJob('https://www.instagram.com/p/x/', { maxResults: 15 });
+	await client.createTiktokVideoJob('https://www.tiktok.com/@a/video/1', { maxResults: 5 });
+	assert.deepEqual(JSON.parse(requests[7].body), { url: 'https://www.tiktok.com/@a/video/1' });
+	await client.createTiktokCommentsJob('https://www.tiktok.com/@a/video/1');
+	await client.createAmazonReviewsJob('B0BDHWDR12', { maxResults: 100 });
+	assert.ok(requests[9].url.endsWith('/rest/amazon_reviews/jobs'));
+	assert.deepEqual(JSON.parse(requests[9].body), { asin: 'B0BDHWDR12', max_results: 100 });
+	const status = await client.getScrapeJob('a'.repeat(32));
+	assert.equal(requests[10].method, 'GET');
+	assert.ok(requests[10].url.endsWith('/rest/scrape_jobs/' + 'a'.repeat(32)));
+	assert.equal(status.data.status, 'completed');
+	assert.throws(() => client.getScrapeJob('bad'), /jobId/);
+	assert.throws(() => client.createInstagramCommentsJob('https://www.instagram.com/p/x/', { maxResults: 16 }), /maxResults/);
+	assert.throws(() => client.createTiktokSearchJob('k', { idempotencyKey: 'short' }), /idempotencyKey/);
+	assert.throws(() => client.amazonProduct(''), /urlOrAsin/);
+	assert.equal(requests.length, 11);
 });
 
 test('implements the YouTube search, list, comments, formats and download-link contracts', async () => {

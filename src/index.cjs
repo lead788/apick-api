@@ -44,6 +44,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	instagramProfile: { endpoint: '/rest/instagram_profile', timeoutMs: 110_000, output: 'json' },
 	instagramPost: { endpoint: '/rest/instagram_post', timeoutMs: 110_000, output: 'json' },
 	tiktokProfile: { endpoint: '/rest/tiktok_profile', timeoutMs: 110_000, output: 'json' },
+	amazonProduct: { endpoint: '/rest/amazon_product', timeoutMs: 110_000, output: 'json' },
+	xProfile: { endpoint: '/rest/x_profile', timeoutMs: 110_000, output: 'json' },
+	xPost: { endpoint: '/rest/x_post', timeoutMs: 110_000, output: 'json' },
+	getScrapeJob: { endpoint: '/rest/scrape_jobs', timeoutMs: 35_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
 	youtubeThumbnail: { endpoint: '/rest/youtube_thumbnail', timeoutMs: 60_000, output: 'binary', filename: 'thumbnail.jpg' },
@@ -91,6 +95,29 @@ function redact(value, apiKey) {
 function profileInput(value) {
 	const text = requiredString('usernameOrUrl', value, 2048);
 	return /^https?:\/\//i.test(text) ? { url: text } : { username: text.replace(/^@/, '') };
+}
+
+// 아마존 상품 입력: 주소면 url, 10자리 ASIN 이면 asin 으로 보낸다.
+function amazonInput(value) {
+	const text = requiredString('urlOrAsin', value, 2048);
+	return /^https?:\/\//i.test(text) ? { url: text } : { asin: text.toUpperCase() };
+}
+
+const SCRAPE_JOB_PRODUCTS = Object.freeze({ instagram_posts: 100, instagram_comments: 15, tiktok_search: 50, tiktok_video: 1, tiktok_comments: 100, amazon_reviews: 100 });
+
+// 수집 작업 공통 옵션: maxResults(상품별 상한), idempotencyKey(응답을 못 받아 다시 보낼 때 같은 접수로 처리).
+function scrapeJobOptions(product, payload, options) {
+	const config = options || {};
+	if (config.maxResults !== undefined && SCRAPE_JOB_PRODUCTS[product] > 1) {
+		const max = Number(config.maxResults);
+		if (!Number.isInteger(max) || max < 1 || max > SCRAPE_JOB_PRODUCTS[product]) throw new RangeError(`maxResults must be an integer from 1 to ${SCRAPE_JOB_PRODUCTS[product]}.`);
+		payload.max_results = max;
+	}
+	if (config.idempotencyKey !== undefined) {
+		if (typeof config.idempotencyKey !== 'string' || !/^[A-Za-z0-9_.:-]{8,128}$/.test(config.idempotencyKey)) throw new TypeError('idempotencyKey must be 8-128 characters of letters, digits, and . _ : -');
+		payload.idempotency_key = config.idempotencyKey;
+	}
+	return payload;
 }
 
 function requiredString(name, value, maxLength) {
@@ -637,6 +664,68 @@ class ApickClient {
 
 	tiktokProfile(usernameOrUrl) {
 		return this._call('tiktokProfile', profileInput(usernameOrUrl));
+	}
+
+	// 상품 주소(/dp/ASIN) 또는 10자리 ASIN(미국 아마존).
+	amazonProduct(urlOrAsin) {
+		return this._call('amazonProduct', amazonInput(urlOrAsin));
+	}
+
+	xProfile(usernameOrUrl) {
+		return this._call('xProfile', profileInput(usernameOrUrl));
+	}
+
+	xPost(url) {
+		return this._call('xPost', { url: requiredString('url', url, 2048) });
+	}
+
+	// 수집 작업: 접수 즉시 job_id 를 돌려준다. maxResults × 단가를 예약하고 결과를 받을 때 실제 건수만 차감한다.
+	_createScrapeJob(product, payload, options) {
+		return this._call('getScrapeJob', scrapeJobOptions(product, payload, options), null, { endpoint: '/rest/' + product + '/jobs', json: true });
+	}
+
+	createInstagramPostsJob(usernameOrUrl, options) {
+		return this._createScrapeJob('instagram_posts', profileInput(usernameOrUrl), options);
+	}
+
+	createInstagramCommentsJob(url, options) {
+		return this._createScrapeJob('instagram_comments', { url: requiredString('url', url, 2048) }, options);
+	}
+
+	createTiktokSearchJob(keyword, options) {
+		return this._createScrapeJob('tiktok_search', { keyword: requiredString('keyword', keyword, 100) }, options);
+	}
+
+	createTiktokVideoJob(url, options) {
+		return this._createScrapeJob('tiktok_video', { url: requiredString('url', url, 2048) }, options);
+	}
+
+	createTiktokCommentsJob(url, options) {
+		return this._createScrapeJob('tiktok_comments', { url: requiredString('url', url, 2048) }, options);
+	}
+
+	createAmazonReviewsJob(urlOrAsin, options) {
+		return this._createScrapeJob('amazon_reviews', amazonInput(urlOrAsin), options);
+	}
+
+	// 상태·결과 조회(무료). 끝난 작업은 실제 결과 건수로 정산돼 있다.
+	getScrapeJob(jobId) {
+		if (typeof jobId !== 'string' || !/^[a-f0-9]{32}$/.test(jobId)) throw new TypeError('jobId must be a 32-character job ID.');
+		return this._call('getScrapeJob', null, null, { endpoint: '/rest/scrape_jobs/' + jobId, method: 'GET', timeoutMs: 70_000 });
+	}
+
+	// completed 또는 failed 가 될 때까지 조회한다. 기본 10초 간격, 최대 10분.
+	async waitForScrapeJob(jobId, options) {
+		const config = options || {};
+		const intervalMs = Math.max(3_000, positiveInteger('intervalMs', config.intervalMs, 10_000));
+		const deadline = Date.now() + positiveInteger('timeoutMs', config.timeoutMs, 600_000);
+		for (;;) {
+			const result = await this.getScrapeJob(jobId);
+			const status = result && result.data && result.data.status;
+			if (status === 'completed' || status === 'failed') return result;
+			if (Date.now() + intervalMs > deadline) throw new ApickApiError('Scrape job did not finish in time.', { code: 'APICK_TIMEOUT' });
+			await new Promise((resolve) => setTimeout(resolve, intervalMs));
+		}
 	}
 
 	screenshot(url) {

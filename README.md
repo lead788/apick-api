@@ -90,6 +90,16 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `instagramProfile(usernameOrUrl)` | 인스타그램 공개 프로필 / Instagram public profile | JSON |
 | `instagramPost(url)` | 인스타그램 게시물·릴스 / Instagram post or reel | JSON |
 | `tiktokProfile(usernameOrUrl)` | 틱톡 공개 프로필 / TikTok public profile | JSON |
+| `amazonProduct(urlOrAsin)` | 아마존 상품 정보 / Amazon product | JSON |
+| `xProfile(usernameOrUrl)` | X 공개 프로필·최근 게시물 / X public profile and recent posts | JSON |
+| `xPost(url)` | X 게시물 / X post | JSON |
+| `createInstagramPostsJob(usernameOrUrl, options)` | 인스타그램 게시물 목록 수집 접수(최대 100) / Instagram posts job | JSON |
+| `createInstagramCommentsJob(url, options)` | 인스타그램 댓글 수집 접수(최대 15) / Instagram comments job | JSON |
+| `createTiktokSearchJob(keyword, options)` | 틱톡 키워드 영상 검색 접수(최대 50) / TikTok keyword search job | JSON |
+| `createTiktokVideoJob(url, options)` | 틱톡 영상 정보 접수 / TikTok video job | JSON |
+| `createTiktokCommentsJob(url, options)` | 틱톡 댓글 수집 접수(최대 100) / TikTok comments job | JSON |
+| `createAmazonReviewsJob(urlOrAsin, options)` | 아마존 리뷰 수집 접수(최대 100) / Amazon reviews job | JSON |
+| `getScrapeJob(jobId)` / `waitForScrapeJob(jobId, options)` | 수집 작업 상태·결과(무료, 결과 건수로 정산) / Collection job status and results | JSON |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |

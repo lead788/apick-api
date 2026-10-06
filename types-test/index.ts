@@ -5,7 +5,7 @@ import ApickClient, {
   SERVICES,
   TTS_VOICE_IDS
 } from '../src/index.js';
-import type { TtsJobData, TtsVoiceId } from '../src/index.js';
+import type { TtsJobData, TtsVoiceId, AmazonReview } from '../src/index.js';
 import type { ImageAiJobData, ImageAiResultData, ImageAiPendingData } from '../src/index.js';
 
 const client = new ApickClient('test-key');
@@ -104,6 +104,12 @@ const ttProfile = client.tiktokProfile("https://www.tiktok.com/@tiktok").then((r
 const news = client.googleNewsSearch("반도체", { page: 2 }).then((result) => result.data.items[0]?.source);
 const shopping = client.googleShoppingSearch("무선 이어폰").then((result) => result.data.items[0]?.price);
 void rank; void places; void igProfile; void igPost; void ttProfile; void news; void shopping;
+const amazon = client.amazonProduct("B0BDHWDR12").then((result) => result.data.price);
+const xp = client.xProfile("NASA").then((result) => result.data.recent_posts[0]?.likes);
+const xpost = client.xPost("https://x.com/NASA/status/1").then((result) => result.data.views);
+const searchJob = client.createTiktokSearchJob("캠핑 요리", { maxResults: 10, idempotencyKey: "job-key-0001" }).then((result) => result.data.job_id);
+const reviews = client.waitForScrapeJob<AmazonReview>("a".repeat(32)).then((result) => result.data.items?.[0]?.rating);
+void amazon; void xp; void xpost; void searchJob; void reviews;
 const youtubeTracks: Promise<ApickResult<YoutubeSubtitleList>> = client.youtubeSubtitleList("dQw4w9WgXcQ");
 const youtubeThumb: Promise<ApickBinaryResult> = client.youtubeThumbnail("dQw4w9WgXcQ");
 const youtubeText: Promise<ApickBinaryResult> = client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "srt", type: "auto" });

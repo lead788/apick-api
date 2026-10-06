@@ -69,12 +69,19 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `geolocate(address)` | 도메인·IP 위치 / Domain and IP location | JSON |
 | `whois(address)` | WHOIS 조회 / WHOIS lookup | JSON |
 | `googleSearch(keyword, options)` | 웹 검색 / Web search | JSON |
-| `googleImageSearch(keyword, options)` | 이미지 검색 / Image search | JSON |
+| `googleImageSearch(keyword, options)` | 이미지 검색(page 1~5) / Image search (pages 1-5) | JSON |
+| `googleNewsSearch(keyword, options)` | 구글 뉴스 검색 / Google News search | JSON |
+| `googleShoppingSearch(keyword, options)` | 구글 쇼핑 검색 / Google Shopping search | JSON |
+| `googleMapsSearch(keyword)` | 구글 지도 장소 검색 / Google Maps place search | JSON |
+| `googleRankCheck(keyword, domain)` | 구글 검색 순위 확인(1~100위) / Google rank check (top 100) | JSON |
 | `screenshot(url)` | 웹페이지 화면캡처 / Web screenshot | Binary |
 | `youtubeMetadata(url)` | 유튜브 영상 정보 / YouTube video metadata | JSON |
 | `youtubeThumbnail(url)` | 유튜브 썸네일 / YouTube thumbnail | JPG |
 | `youtubeSubtitleList(url)` | 유튜브 자막 언어 목록 / YouTube subtitle languages | JSON |
 | `youtubeSubtitle(url, lang, options)` | 유튜브 자막 다운로드 / YouTube subtitles | VTT·SRT·TXT |
+| `instagramProfile(usernameOrUrl)` | 인스타그램 공개 프로필 / Instagram public profile | JSON |
+| `instagramPost(url)` | 인스타그램 게시물·릴스 / Instagram post or reel | JSON |
+| `tiktokProfile(usernameOrUrl)` | 틱톡 공개 프로필 / TikTok public profile | JSON |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |

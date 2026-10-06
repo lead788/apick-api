@@ -16,6 +16,123 @@ export interface ApickResult<T = Record<string, unknown>> {
 	readonly meta: ApickMeta;
 }
 
+export interface SearchList<T> {
+	readonly keyword: string;
+	readonly page?: number;
+	readonly count: number;
+	readonly items: readonly T[];
+}
+
+export interface NewsItem {
+	readonly rank: number;
+	readonly title: string;
+	readonly link: string;
+	readonly source: string;
+	readonly published: string;
+	readonly description: string;
+	readonly image_url: string;
+}
+
+export interface ShoppingItem {
+	readonly rank: number;
+	readonly title: string;
+	readonly price: string;
+	readonly old_price: string;
+	readonly shop: string;
+	readonly rating: number | null;
+	readonly reviews: number | null;
+	readonly link: string;
+	readonly image_url: string;
+}
+
+export interface PlaceItem {
+	readonly rank: number;
+	readonly name: string;
+	readonly address: string;
+	readonly phone: string;
+	readonly categories: readonly string[];
+	readonly rating: number | null;
+	readonly reviews: number | null;
+	readonly price_range: string;
+	readonly open_status: string;
+	readonly open_hours: Readonly<Record<string, string>>;
+	readonly website: string;
+	readonly latitude: number | null;
+	readonly longitude: number | null;
+	readonly place_id: string;
+	readonly map_link: string;
+	readonly thumbnail: string;
+}
+
+export interface RankCheck {
+	readonly keyword: string;
+	readonly domain: string;
+	readonly found: boolean;
+	readonly rank: number | null;
+	readonly matches: readonly { readonly rank: number; readonly title: string; readonly link: string }[];
+	readonly checked_results: number;
+	/** 확인한 10위 구간 수(최대 10). */
+	readonly checked_pages: number;
+	/** 1~100위를 모두 확인했거나 앞에서부터 끊김 없이 확인한 구간에서 찾았으면 true. false 면 확인한 구간 비율만큼만 과금된다. */
+	readonly complete: boolean;
+	/** 확인하지 못한 순위 구간(예: "41-50"). */
+	readonly unchecked_ranks: readonly string[];
+}
+
+export interface InstagramProfile {
+	readonly username: string;
+	readonly full_name: string;
+	readonly biography: string;
+	readonly followers: number | null;
+	readonly following: number | null;
+	readonly posts_count: number | null;
+	readonly is_verified: boolean;
+	readonly is_private: boolean;
+	readonly external_urls: readonly string[];
+	readonly highlights_count: number | null;
+	readonly profile_image_url: string;
+	readonly profile_url: string;
+	readonly recent_posts: readonly { readonly url: string; readonly content_type: string; readonly caption: string; readonly posted_at: string; readonly image_url: string; readonly hashtags: readonly string[] }[];
+}
+
+export interface InstagramPost {
+	readonly url: string;
+	readonly shortcode: string;
+	readonly username: string;
+	readonly caption: string;
+	readonly content_type: string;
+	readonly posted_at: string;
+	readonly likes: number | null;
+	readonly comments: number | null;
+	readonly views: number | null;
+	readonly duration_sec: number | null;
+	readonly hashtags: readonly string[];
+	readonly is_paid_partnership: boolean;
+	readonly coauthors: readonly string[];
+	readonly thumbnail_url: string;
+	readonly image_urls: readonly string[];
+	readonly video_url: string;
+	readonly author: { readonly followers: number | null; readonly is_verified: boolean; readonly profile_url: string };
+}
+
+export interface TiktokProfile {
+	readonly username: string;
+	readonly nickname: string;
+	readonly biography: string;
+	readonly followers: number | null;
+	readonly following: number | null;
+	readonly likes: number | null;
+	readonly videos_count: number | null;
+	readonly is_verified: boolean;
+	readonly is_private: boolean;
+	readonly bio_link: string;
+	readonly engagement_rate: number | null;
+	readonly created_at: string;
+	readonly profile_image_url: string;
+	readonly profile_url: string;
+	readonly recent_videos: readonly { readonly video_id: string; readonly url: string; readonly views: number | null; readonly likes: number | null; readonly comments: number | null; readonly shares: number | null; readonly posted_at: string; readonly cover_image_url: string }[];
+}
+
 export interface BinaryInput {
 	readonly size?: number;
 	readonly type?: string;
@@ -308,6 +425,13 @@ export class ApickClient {
 	whois(address: string): Promise<ApickResult>;
 	googleSearch(keyword: string, options?: { page?: number }): Promise<ApickResult>;
 	googleImageSearch(keyword: string, options?: { page?: number }): Promise<ApickResult>;
+	googleNewsSearch(keyword: string, options?: { page?: number }): Promise<ApickResult<SearchList<NewsItem>>>;
+	googleShoppingSearch(keyword: string, options?: { page?: number }): Promise<ApickResult<SearchList<ShoppingItem>>>;
+	googleMapsSearch(keyword: string): Promise<ApickResult<SearchList<PlaceItem>>>;
+	googleRankCheck(keyword: string, domain: string): Promise<ApickResult<RankCheck>>;
+	instagramProfile(usernameOrUrl: string): Promise<ApickResult<InstagramProfile>>;
+	instagramPost(url: string): Promise<ApickResult<InstagramPost>>;
+	tiktokProfile(usernameOrUrl: string): Promise<ApickResult<TiktokProfile>>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
 	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;

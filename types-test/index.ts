@@ -96,6 +96,14 @@ const taxRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.request
 });
 const taxResult: Promise<ApickResult<DataRequestResult<TaxReturnHistoryResultPayload>>> = client.getTaxReturnHistory("a".repeat(32));
 const youtubeMeta: Promise<ApickResult<YoutubeMetadata>> = client.youtubeMetadata("dQw4w9WgXcQ");
+const rank = client.googleRankCheck("주소 검색 API", "apick.app").then((result) => (result.data.complete ? result.data.rank : result.data.unchecked_ranks.length));
+const places = client.googleMapsSearch("강남역 카페").then((result) => result.data.items[0]?.latitude);
+const igProfile = client.instagramProfile("natgeo").then((result) => result.data.followers);
+const igPost = client.instagramPost("https://www.instagram.com/p/DeHufcWDCjf/").then((result) => result.data.likes);
+const ttProfile = client.tiktokProfile("https://www.tiktok.com/@tiktok").then((result) => result.data.recent_videos.length);
+const news = client.googleNewsSearch("반도체", { page: 2 }).then((result) => result.data.items[0]?.source);
+const shopping = client.googleShoppingSearch("무선 이어폰").then((result) => result.data.items[0]?.price);
+void rank; void places; void igProfile; void igPost; void ttProfile; void news; void shopping;
 const youtubeTracks: Promise<ApickResult<YoutubeSubtitleList>> = client.youtubeSubtitleList("dQw4w9WgXcQ");
 const youtubeThumb: Promise<ApickBinaryResult> = client.youtubeThumbnail("dQw4w9WgXcQ");
 const youtubeText: Promise<ApickBinaryResult> = client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "srt", type: "auto" });

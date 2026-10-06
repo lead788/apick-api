@@ -35,8 +35,15 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	dnsLookup: { endpoint: '/rest/nslookup', timeoutMs: 16_000, output: 'json' },
 	geolocate: { endpoint: '/rest/location', timeoutMs: 35_000, output: 'json' },
 	whois: { endpoint: '/rest/whois', timeoutMs: 35_000, output: 'json' },
-	googleSearch: { endpoint: '/rest/google_search', timeoutMs: 35_000, output: 'json' },
-	googleImageSearch: { endpoint: '/rest/google_image_search', timeoutMs: 35_000, output: 'json' },
+	googleSearch: { endpoint: '/rest/google_search', timeoutMs: 50_000, output: 'json' },
+	googleImageSearch: { endpoint: '/rest/google_image_search', timeoutMs: 50_000, output: 'json' },
+	googleNewsSearch: { endpoint: '/rest/google_news_search', timeoutMs: 50_000, output: 'json' },
+	googleShoppingSearch: { endpoint: '/rest/google_shopping_search', timeoutMs: 50_000, output: 'json' },
+	googleMapsSearch: { endpoint: '/rest/google_maps_search', timeoutMs: 100_000, output: 'json' },
+	googleRankCheck: { endpoint: '/rest/google_rank_check', timeoutMs: 50_000, output: 'json' },
+	instagramProfile: { endpoint: '/rest/instagram_profile', timeoutMs: 110_000, output: 'json' },
+	instagramPost: { endpoint: '/rest/instagram_post', timeoutMs: 110_000, output: 'json' },
+	tiktokProfile: { endpoint: '/rest/tiktok_profile', timeoutMs: 110_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
 	youtubeThumbnail: { endpoint: '/rest/youtube_thumbnail', timeoutMs: 60_000, output: 'binary', filename: 'thumbnail.jpg' },
@@ -70,6 +77,12 @@ function redact(value, apiKey) {
 	let text = String(value || '');
 	if (apiKey) text = text.split(apiKey).join('***');
 	return text.replace(/(Authorization\s*:\s*Bearer\s*)\S+/gi, '$1***').replace(/(CL_AUTH_KEY\s*[:=]\s*)\S+/gi, '$1***');
+}
+
+// SNS 프로필 입력: 주소면 url, 아니면 username 으로 보낸다.
+function profileInput(value) {
+	const text = requiredString('usernameOrUrl', value, 2048);
+	return /^https?:\/\//i.test(text) ? { url: text } : { username: text.replace(/^@/, '') };
 }
 
 function requiredString(name, value, maxLength) {
@@ -553,6 +566,49 @@ class ApickClient {
 			keyword: requiredString('keyword', keyword),
 			page: String(positiveInteger('page', config.page, 1))
 		});
+	}
+
+	googleNewsSearch(keyword, options) {
+		const config = options || {};
+		return this._call('googleNewsSearch', {
+			keyword: requiredString('keyword', keyword, 200),
+			page: String(positiveInteger('page', config.page, 1))
+		});
+	}
+
+	googleShoppingSearch(keyword, options) {
+		const config = options || {};
+		return this._call('googleShoppingSearch', {
+			keyword: requiredString('keyword', keyword, 200),
+			page: String(positiveInteger('page', config.page, 1))
+		});
+	}
+
+	// 지도 장소 검색은 처리에 보통 30~60초가 걸린다.
+	googleMapsSearch(keyword) {
+		return this._call('googleMapsSearch', { keyword: requiredString('keyword', keyword, 200) });
+	}
+
+	// keyword 로 구글을 검색했을 때 domain 이 1~100위 중 몇 위인지 확인한다.
+	googleRankCheck(keyword, domain) {
+		return this._call('googleRankCheck', {
+			keyword: requiredString('keyword', keyword, 200),
+			domain: requiredString('domain', domain, 253)
+		});
+	}
+
+	// 사용자명 또는 프로필 주소. 처리에 보통 40~60초가 걸린다.
+	instagramProfile(usernameOrUrl) {
+		return this._call('instagramProfile', profileInput(usernameOrUrl));
+	}
+
+	// 게시물(/p/) 또는 릴스(/reel/) 주소.
+	instagramPost(url) {
+		return this._call('instagramPost', { url: requiredString('url', url, 2048) });
+	}
+
+	tiktokProfile(usernameOrUrl) {
+		return this._call('tiktokProfile', profileInput(usernameOrUrl));
 	}
 
 	screenshot(url) {

@@ -20,8 +20,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 38 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 38);
+test('exports a focused catalog of 45 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 45);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -507,4 +507,44 @@ test('ESM and CommonJS entry points expose the same client', async () => {
 	const esm = await import('../src/index.js');
 	assert.equal(esm.default, ApickClient);
 	assert.equal(esm.ApickApiError, ApickApiError);
+});
+
+test('implements the Google news, shopping, maps, rank check and Instagram/TikTok lookup contracts', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { keyword: 'k', count: 0, items: [] }, api: { success: true, cost: 5 } });
+		}
+	});
+	await client.googleNewsSearch('반도체', { page: 2 });
+	assert.ok(requests[0].url.endsWith('/rest/google_news_search'));
+	assert.equal(requests[0].body.get('keyword'), '반도체');
+	assert.equal(requests[0].body.get('page'), '2');
+	await client.googleShoppingSearch('무선 이어폰');
+	assert.ok(requests[1].url.endsWith('/rest/google_shopping_search'));
+	assert.equal(requests[1].body.get('page'), '1');
+	await client.googleMapsSearch('강남역 카페');
+	assert.ok(requests[2].url.endsWith('/rest/google_maps_search'));
+	await client.googleRankCheck('주소 검색 API', 'apick.app');
+	assert.ok(requests[3].url.endsWith('/rest/google_rank_check'));
+	assert.equal(requests[3].body.get('domain'), 'apick.app');
+	await client.instagramProfile('@natgeo');
+	assert.ok(requests[4].url.endsWith('/rest/instagram_profile'));
+	assert.equal(requests[4].body.get('username'), 'natgeo');
+	assert.equal(requests[4].body.get('url'), null);
+	await client.instagramProfile('https://www.instagram.com/natgeo/');
+	assert.equal(requests[5].body.get('url'), 'https://www.instagram.com/natgeo/');
+	await client.instagramPost('https://www.instagram.com/reel/DdG4RIxIPyf/');
+	assert.ok(requests[6].url.endsWith('/rest/instagram_post'));
+	await client.tiktokProfile('https://www.tiktok.com/@tiktok');
+	assert.ok(requests[7].url.endsWith('/rest/tiktok_profile'));
+	assert.equal(requests[7].body.get('url'), 'https://www.tiktok.com/@tiktok');
+
+	assert.throws(() => client.googleNewsSearch(''), /keyword/);
+	assert.throws(() => client.googleRankCheck('키워드', ''), /domain/);
+	assert.throws(() => client.instagramProfile(''), /usernameOrUrl/);
+	assert.throws(() => client.instagramPost(''), /url/);
+	assert.equal(requests.length, 8);
 });

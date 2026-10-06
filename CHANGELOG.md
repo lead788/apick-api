@@ -1,3 +1,11 @@
+# 4.1.0
+
+- Add `googleNewsSearch`, `googleShoppingSearch`, `googleMapsSearch`, `googleRankCheck`, `instagramProfile`, `instagramPost` and `tiktokProfile` with typed results. Failed calls are not charged.
+- `googleRankCheck` returns `complete`, `checked_pages` and `unchecked_ranks`; when some rank ranges could not be checked, only the checked share is charged.
+- `googleSearch` returns up to 10 results per page; `googleImageSearch` pages are 1-5 (20 per page). Search timeouts are 50 seconds.
+- 구글 뉴스·쇼핑·지도 장소 검색, 검색 순위 확인(1~100위), 인스타그램 프로필·게시물/릴스, 틱톡 프로필 메서드와 결과 타입을 추가했습니다. 실패한 호출은 과금되지 않습니다.
+- `googleSearch` 는 페이지당 최대 10건, `googleImageSearch` 의 page 는 1~5(페이지당 20건)입니다.
+
 # 4.0.1 — 2026-10-06
 
 - 이미지 생성·편집에 `quality` 옵션을 추가했습니다: `basic`(기본) 40P · `advanced` 350P · `premium` 1,400P(장당 고정가, 크기 무관).

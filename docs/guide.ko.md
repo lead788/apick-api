@@ -67,7 +67,21 @@ const dns = await client.dnsLookup('apick.app');
 const location = await client.geolocate('apick.app');
 const registration = await client.whois('apick.app');
 const web = await client.googleSearch('에이픽 API', { page: 1 });
-const images = await client.googleImageSearch('서울 야경', { page: 1 });
+const images = await client.googleImageSearch('서울 야경', { page: 1 }); // page 1~5
+const news = await client.googleNewsSearch('반도체', { page: 1 });
+const shopping = await client.googleShoppingSearch('무선 이어폰');
+const places = await client.googleMapsSearch('강남역 카페'); // 보통 30~60초
+const rank = await client.googleRankCheck('주소 검색 API', 'apick.app'); // 1~100위
+```
+
+## SNS 공개 정보
+
+공개 계정의 공개 정보만 제공합니다. 처리에 보통 20~60초가 걸리므로 요청 시간 제한을 100초 이상으로 두세요. 실패한 호출은 과금되지 않습니다.
+
+```js
+const instagram = await client.instagramProfile('natgeo');
+const post = await client.instagramPost('https://www.instagram.com/p/DeHufcWDCjf/');
+const tiktok = await client.tiktokProfile('https://www.tiktok.com/@tiktok');
 ```
 
 ## OCR

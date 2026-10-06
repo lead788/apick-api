@@ -67,7 +67,21 @@ const dns = await client.dnsLookup('apick.app');
 const location = await client.geolocate('apick.app');
 const registration = await client.whois('apick.app');
 const web = await client.googleSearch('APICK API', { page: 1 });
-const images = await client.googleImageSearch('Seoul skyline', { page: 1 });
+const images = await client.googleImageSearch('Seoul skyline', { page: 1 }); // pages 1-5
+const news = await client.googleNewsSearch('semiconductor', { page: 1 });
+const shopping = await client.googleShoppingSearch('wireless earbuds');
+const places = await client.googleMapsSearch('Gangnam cafe'); // usually 30-60 seconds
+const rank = await client.googleRankCheck('address search API', 'apick.app'); // top 100
+```
+
+## Public social profiles
+
+Only public information from public accounts is returned. Lookups usually take 20-60 seconds, so allow a request timeout of at least 100 seconds. Failed calls are not charged.
+
+```js
+const instagram = await client.instagramProfile('natgeo');
+const post = await client.instagramPost('https://www.instagram.com/p/DeHufcWDCjf/');
+const tiktok = await client.tiktokProfile('https://www.tiktok.com/@tiktok');
 ```
 
 ## OCR

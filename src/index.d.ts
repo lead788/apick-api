@@ -455,6 +455,7 @@ export interface YoutubeMetadata {
 	age_limit: number | null; chapters: YoutubeChapter[]; thumbnail: string | null; thumbnails: YoutubeThumbnail[];
 	subtitle_languages: string[]; automatic_caption_count: number;
 }
+/** translated=true 인 자동 번역 자막은 유튜브 제한으로 받지 못할 수 있다. 수동 자막이나 원어 자동 자막을 권장한다. */
 export interface YoutubeSubtitleTrack { lang: string; name: string | null; auto: boolean; formats: string[]; translated?: boolean; }
 export interface YoutubeSubtitleList {
 	video_id: string; title: string | null; original_language: string | null;

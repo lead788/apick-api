@@ -128,7 +128,9 @@ await screenshot.save('./example.jpeg');
 // Public YouTube videos: a video URL or the 11-character video ID
 const video = await client.youtubeMetadata('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 const tracks = await client.youtubeSubtitleList(video.data.video_id);
-const subtitle = await client.youtubeSubtitle(video.data.video_id, 'en', { format: 'srt' });
+// Auto-translated captions (translated=true) may be refused by YouTube, so pick a manual or original-language track.
+const track = tracks.data.subtitles[0] || tracks.data.automatic_captions.find(item => !item.translated);
+const subtitle = await client.youtubeSubtitle(video.data.video_id, track.lang, { format: 'srt' });
 await subtitle.save('./' + subtitle.filename);
 await (await client.youtubeThumbnail(video.data.video_id)).save('./thumbnail.jpg');
 

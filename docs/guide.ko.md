@@ -128,7 +128,9 @@ await screenshot.save('./example.jpeg');
 // 유튜브 공개 영상: 영상 주소 또는 11자리 영상 ID
 const video = await client.youtubeMetadata('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 const tracks = await client.youtubeSubtitleList(video.data.video_id);
-const subtitle = await client.youtubeSubtitle(video.data.video_id, 'en', { format: 'srt' });
+// 자동 번역 자막(translated=true)은 유튜브 제한으로 받지 못할 수 있어 수동 자막이나 원어 자동 자막을 고른다.
+const track = tracks.data.subtitles[0] || tracks.data.automatic_captions.find(item => !item.translated);
+const subtitle = await client.youtubeSubtitle(video.data.video_id, track.lang, { format: 'srt' });
 await subtitle.save('./' + subtitle.filename);
 await (await client.youtubeThumbnail(video.data.video_id)).save('./thumbnail.jpg');
 

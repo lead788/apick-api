@@ -78,7 +78,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `youtubeMetadata(url)` | 유튜브 영상 정보 / YouTube video metadata | JSON |
 | `youtubeThumbnail(url)` | 유튜브 썸네일 / YouTube thumbnail | JPG |
 | `youtubeSubtitleList(url)` | 유튜브 자막 언어 목록 / YouTube subtitle languages | JSON |
-| `youtubeSubtitle(url, lang, options)` | 유튜브 자막 다운로드 / YouTube subtitles | VTT·SRT·TXT |
+| `youtubeSubtitle(url, lang, options)` | 유튜브 자막 다운로드(원어 자막 권장) / YouTube subtitles (prefer original-language tracks) | VTT·SRT·TXT |
 | `youtubeSearch(query, options)` | 유튜브 검색(정렬·필터) / YouTube search with sort and filters | JSON |
 | `youtubeChannel(channel, options)` | 유튜브 채널 정보·탭 목록 / YouTube channel and tab items | JSON |
 | `youtubePlaylist(url, options)` | 유튜브 재생목록 / YouTube playlist | JSON |

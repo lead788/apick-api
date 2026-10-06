@@ -1,3 +1,8 @@
+# 4.2.1
+
+- `youtubeSubtitle()` fails with guidance to use an original-language track when an auto-translated caption (`translated: true`) is refused; such calls are not charged. Examples now pick a manual or original-language track. YouTube requests interrupted by a server restart are retried automatically.
+- 자동 번역 자막(`translated: true`)을 받지 못하면 원어 자막을 쓰라는 안내와 함께 실패로 응답합니다(과금 없음). 예제는 수동·원어 자막을 고르도록 바꿨습니다. 서버 재시작으로 끊긴 유튜브 요청은 서버가 자동으로 다시 시도합니다.
+
 # 4.2.0
 
 - Add `amazonProduct`, `xProfile` and `xPost`, and collection jobs `createInstagramPostsJob`, `createInstagramCommentsJob`, `createTiktokSearchJob`, `createTiktokVideoJob`, `createTiktokCommentsJob`, `createAmazonReviewsJob` with `getScrapeJob` and `waitForScrapeJob`, all with typed results.

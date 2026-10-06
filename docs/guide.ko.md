@@ -96,6 +96,8 @@ const done = await client.waitForScrapeJob(job.data.job_id); // 기본 10초 간
 console.log(done.data.status, done.data.charged_point, done.data.items);
 ```
 
+결과 건수 과금 수집 작업은 결과 1건당 단가로 정산하며, 2026-11-06부터 결과가 1건 이상이면 작업당 기본요금(10P, 인스타그램 댓글 50P)을 최소액으로 받습니다. 결과가 없거나 실패하면 예약한 포인트를 모두 돌려드립니다.
+
 구글 지도 장소는 `googleMapsSearch` 결과의 `place_id` 로 상세·별점 분포·대표 리뷰(최대 10건)를 받습니다. 건당 20포인트이고 텍스트는 영어로 제공합니다.
 
 ```js

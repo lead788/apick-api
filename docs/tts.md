@@ -25,9 +25,9 @@ Style, emotion, tone, accent, pace, pitch and volume options can be set per requ
 
 Normalization is enabled by default and costs extra. Disable it with `normalize_text: false` (`normalizeText: false` for the string SDK helper). Input limits are 2,000 characters including utterance separators with normalization, or 8,000 without it. Query a quote, engine-specific voices and supported options before submitting.
 
-실제 AI 원가 × 고정된 환율 × 1.4에 정규화 요금을 더해 정산합니다. Gemini 프로모션 입력/출력 단가는 2026-12-31까지 백만 토큰당 $0.50/$6.00이며 2027-01-01 00:00 UTC부터 $1.00/$12.00입니다. 약 $0.54/시간은 참고값이며 시간 단위 청구가 아닙니다. 엔진별 요금이 다릅니다.
+실제 AI 원가 × 고정된 환율 × 1.4에 정규화 요금을 더해 정산합니다. 소수점은 올림하며, 2026-11-06부터 합성 작업 1건의 기본요금 5P를 최소액으로 받습니다. Gemini 프로모션 입력/출력 단가는 2026-12-31까지 백만 토큰당 $0.50/$6.00이며 2027-01-01 00:00 UTC부터 $1.00/$12.00입니다. 약 $0.54/시간은 참고값이며 시간 단위 청구가 아닙니다. 엔진별 요금이 다릅니다.
 
-AI usage is charged at verified cost × the pinned exchange rate × 1.4, plus normalization. Gemini promotional input/output rates are $0.50/$6.00 per million tokens through 2026-12-31, then $1.00/$12.00 from 2027-01-01 00:00 UTC. The approximate hourly figure is informational; billing uses actual usage and differs by engine.
+AI usage is charged at verified cost × the pinned exchange rate × 1.4, plus normalization. Fractions are rounded up, and from 2026-11-06 each synthesis job has a 5-point base fee. Gemini promotional input/output rates are $0.50/$6.00 per million tokens through 2026-12-31, then $1.00/$12.00 from 2027-01-01 00:00 UTC. The approximate hourly figure is informational; billing uses actual usage and differs by engine.
 
 두 엔진은 같은 작업 조회·취소·MP3·원문 ASS 계약을 사용합니다. `billing`의 예약·해제·확정·환불을 확인하세요. MP3는 24kHz 모노 48kbps, 결과는 완료 후 24시간 보관합니다. MP3와 ASS는 각각 완료된 다운로드 1회만 허용하며 전송 중단은 재시도할 수 있습니다. 접수 응답 유실 시 같은 입력과 멱등 키를 재사용하세요. 서버·공급자 최종 실패는 정규화까지 환불하며, 연결 종료는 작업 취소가 아닙니다. 취소 시 이미 수행된 작업분을 정산합니다.
 

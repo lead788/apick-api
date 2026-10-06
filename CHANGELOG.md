@@ -1,3 +1,9 @@
+# 4.3.1
+
+- Pricing notes (Terms art. 9 amended, effective 2026-11-06): TTS synthesis has a 5-point base fee per job and result-billed collection jobs have a 10-point base fee per job with results (Instagram comments 50). Fractional points are rounded up (0.1 → 1) and every billed use is at least 1 point. No method or type changes.
+- 요금 안내 갱신(이용약관 제9조 개정, 2026-11-06 시행): TTS 합성 작업당 기본요금 5P, 결과 건수 과금 수집 작업은 결과가 있을 때 작업당 10P(인스타그램 댓글 50P)입니다. 포인트 계산의 소수점은 올림하며(0.1P → 1P) 과금되는 이용 1건은 최소 1P입니다. 메서드·타입 변경은 없습니다.
+- 에이픽 에이전트(`apick-agent`) 안내: AI 사용 작업 기본 5P(2026-11-06부터), 캐시 재사용 1P로 표기를 실제 요금에 맞췄습니다. / `apick-agent` notes now match billing: 5-point base fee for AI jobs from 2026-11-06, cache reuse 1 point.
+
 # 4.3.0
 
 - Add `createGoogleMapsPlaceJob(placeIdOrUrl)` with the `GoogleMapsPlace` result type: rating, reviews count, 1-5 star distribution, top reviews (up to 10), opening hours, busy hours, similar places and photos. 20 points per place, refunded if not found; text is returned in English.

@@ -96,6 +96,8 @@ const done = await client.waitForScrapeJob(job.data.job_id); // every 10 s, up t
 console.log(done.data.status, done.data.charged_point, done.data.items);
 ```
 
+Result-billed collection jobs are charged per result; from 2026-11-06 a job with at least one result has a base fee (10 points, Instagram comments 50). Jobs with no results or failures are fully refunded.
+
 For a Google Maps place, pass the `place_id` from `googleMapsSearch` to get details, the star distribution and top reviews (up to 10). 20 points per place; text is returned in English.
 
 ```js

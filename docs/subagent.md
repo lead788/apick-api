@@ -1,8 +1,8 @@
 # 서브에이전트 / Subagent
 
-`apick-agent`는 설치형 상품이며 `quoteSkill`·`runSkill` 대신 전용 API를 사용합니다. 성공 작업의 확인된 원가에 40%를 가산하며 승인된 동일 결과 캐시는 무료입니다. 충전 잔액 외 상품 사용량 한도는 없습니다.
+`apick-agent`는 설치형 상품이며 `quoteSkill`·`runSkill` 대신 전용 API를 사용합니다. 설치비·도입비·구독료는 없고, 성공 작업의 확인된 원가에 40%를 가산합니다(소수점 올림, 2026-11-06부터 AI 사용 작업 기본 5P). 승인된 동일 결과 캐시는 1P입니다. 충전 잔액 외 상품 사용량 한도는 없습니다.
 
-`apick-agent` is an installed-agent product. Use the dedicated API rather than `quoteSkill` or `runSkill`. Successful work is billed at confirmed model cost plus 40%; approved identical-result cache reuse is free. There are no product usage quotas beyond prepaid balance.
+`apick-agent` is an installed-agent product. Use the dedicated API rather than `quoteSkill` or `runSkill`. There is no installation, setup or subscription fee. Successful work is billed at confirmed model cost plus 40% (fractions rounded up, 5-point base fee for AI jobs from 2026-11-06); approved identical-result cache reuse costs 1 point. There are no product usage quotas beyond prepaid balance.
 
 ```js
 import { ApickClient } from 'apick-api';

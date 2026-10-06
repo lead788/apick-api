@@ -164,14 +164,13 @@ console.log(result.meta);
 
 ## 이미지 생성·편집 / Image generation and editing
 
-이미지는 장당 25포인트이며 동기는 1~4장, 작업형 API는 최대 50장까지 지원합니다. 요청이 접수되면 전체 금액을 먼저 차감하고, 생성에 실패한 이미지가 있으면 해당 장수만큼 즉시 환급합니다. 접수된 작업은 취소할 수 없으며 결과는 완료 후 24시간 동안 반복 다운로드할 수 있습니다.
+품질(`quality`)별 장당 고정가입니다. `basic`(기본) 40P, `advanced`(고급) 350P, `premium`(최고급) 1,400P이며 크기와 관계없이 같습니다. 같은 요청을 다시 보내도 결과를 재사용하지 않고 매번 새로 생성·과금합니다. 동기는 1~4장, 작업형 API는 최대 50장까지 지원합니다. 요청이 접수되면 전체 금액을 먼저 차감하고, 생성에 실패한 이미지가 있으면 해당 장수만큼 즉시 환급합니다. 접수된 작업은 취소할 수 없으며 결과는 완료 후 24시간 동안 반복 다운로드할 수 있습니다.
 
-Images cost 25 points each. Synchronous calls support 1–4 images and job calls support up to 50. The full amount is deducted when a request is accepted, and failed images are refunded immediately. Accepted jobs cannot be cancelled. Completed results remain downloadable for 24 hours.
+Images use a fixed per-image price by `quality`: `basic` (default) 40 points, `advanced` 350 points and `premium` 1,400 points, regardless of size. Repeated requests are never reused; each request is generated and charged again. Synchronous calls support 1–4 images and job calls support up to 50. The full amount is deducted when a request is accepted, and failed images are refunded immediately. Accepted jobs cannot be cancelled. Completed results remain downloadable for 24 hours.
 
 ```js
 const made = await apick.generateImages("따뜻한 조명의 미니멀 제품 사진", {
-  imageCount: 2, size: "1024x1024", outputFormat: "webp",
-  idempotencyKey: "catalog-cover-20260905"
+  imageCount: 2, size: "1024x1024", outputFormat: "webp", quality: "advanced"
 });
 
 const referenced = await apick.generateImages("구도와 제품 형태는 유지하고 여름 해변 분위기로", {

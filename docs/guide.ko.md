@@ -145,14 +145,14 @@ const polished = await client.polish(draftText);
 
 ## 이미지 AI
 
-새 사용량 요금이 적용되면 외부 AI 판매가는 확인된 원가 × 적용 환율 × 1.4입니다. 생성·편집 응답에서 사용량이 미확정이면 HTTP 202와 `job_id`, `billing_status: "pending"`을 반환합니다. 이미 받은 결과는 보관하므로 재생성하지 말고 `getImageJob(job_id)`로 조회합니다. 정산 완료 후 기존 다운로드 메서드를 사용합니다.
+품질(`quality`)별 장당 고정가입니다. `basic`(기본) 40P, `advanced`(고급) 350P, `premium`(최고급) 1,400P이며 크기와 관계없이 같습니다. 같은 요청을 다시 보내도 결과를 재사용하지 않고 매번 새로 생성·과금합니다. 접수 시 장수만큼 먼저 차감하고 실패한 장은 환급합니다. 이전 요금 정책으로 접수된 작업이 정산 보류(HTTP 202, `billing_status: "pending"`)로 응답하면 `getImageJob(job_id)`로 조회합니다.
 
 ```js
 const result = await client.generateImages('흰 배경의 제품 사진', {
   imageCount: 4,
   size: '1024x1024',
   outputFormat: 'webp',
-  idempotencyKey: 'product-draft-001'
+  quality: 'advanced'
 });
 
 const referenceResult = await client.generateImages('제품 모양과 구도는 유지하고 배경을 햇살 좋은 주방으로 변경', {

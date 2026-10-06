@@ -6,6 +6,8 @@ const MAX_OCR_BYTES = 50 * 1024 * 1024;
 const MAX_IMAGE_AI_BYTES = 50 * 1024 * 1024;
 const IMAGE_AI_SIZES = Object.freeze(['1024x1024', '1536x1024', '1024x1536', '1152x864', '864x1152']);
 const IMAGE_AI_SIZE_SET = new Set(IMAGE_AI_SIZES);
+// 품질별 장당 고정가: basic 40P(기본) · advanced 350P · premium 1,400P
+const IMAGE_AI_QUALITIES = Object.freeze(['basic', 'advanced', 'premium']);
 const TTS_VOICE_IDS = Object.freeze([
 	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_young_01', 'v2_f_senior_01'
 ]);
@@ -736,7 +738,7 @@ class ApickClient {
 
 	_imageOptions(prompt, options, maxCount) {
 		const config = options || {};
-		for (const key of ['model', 'quality', 'count', 'n', 'outputCompression', 'input_fidelity', 'moderation', 'mask', 'maskFilename', 'maskContentType']) {
+		for (const key of ['model', 'count', 'n', 'outputCompression', 'input_fidelity', 'moderation', 'mask', 'maskFilename', 'maskContentType']) {
 			if (Object.prototype.hasOwnProperty.call(config, key)) throw new TypeError(`${key} is not a supported image option.`);
 		}
 		const imageCount = positiveInteger('imageCount', config.imageCount, 1);
@@ -748,10 +750,11 @@ class ApickClient {
 			size, output_format: config.outputFormat || 'png',
 			background: config.background || 'auto'
 		};
-		if (config.idempotencyKey !== undefined) {
-			payload.idempotency_key = requiredString('idempotencyKey', config.idempotencyKey, 128);
-			if (!/^[A-Za-z0-9_-]{8,128}$/.test(payload.idempotency_key)) throw new TypeError('idempotencyKey must use 8-128 letters, numbers, underscores, or hyphens.');
+		if (config.quality !== undefined) {
+			if (!IMAGE_AI_QUALITIES.includes(config.quality)) throw new TypeError(`quality must be one of: ${IMAGE_AI_QUALITIES.join(', ')}.`);
+			payload.quality = config.quality;
 		}
+		// 서버가 같은 요청도 매번 새로 생성·과금하므로 idempotencyKey 는 보내지 않는다(예전 코드 호환을 위해 받기만 한다).
 		return payload;
 	}
 

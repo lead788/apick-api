@@ -139,3 +139,8 @@ void skillPage; void skillDetail; void skillQuote; void skillRun; void skillRunR
 client.runSkill("sk_example", { product_name: "우산" }, { maxCostPoints: 50 });
 // @ts-expect-error 지원하지 않는 분류
 client.searchSkills({ category: "unknown" });
+
+const premiumImage = client.generateImages("제품 사진", { quality: "premium", imageCount: 1 });
+void premiumImage;
+// @ts-expect-error 공개 품질은 basic·advanced·premium 뿐이다
+client.generateImages("제품 사진", { quality: "high" });

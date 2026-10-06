@@ -34,6 +34,21 @@ test('keeps the API key out of enumerable client state', () => {
 	assert.doesNotMatch(JSON.stringify(client), /private-test-key/);
 });
 
+test('image quality is validated and repeated requests are never deduplicated', async () => {
+	const bodies = [];
+	const client = new ApickClient({ apiKey:'key', baseUrl:'https://api.example.test', fetch:async (url, options) => {
+		bodies.push(Object.fromEntries(options.body));
+		return jsonResponse({data:{request_id:'b'.repeat(32),image_count:1,images:[]},api:{success:true,cost:40}});
+	}});
+	for (const quality of ['basic','advanced','premium']) await client.generateImages('x', { quality });
+	assert.deepEqual(bodies.map(body => body.quality), ['basic','advanced','premium']);
+	await client.generateImages('x');
+	assert.equal(Object.hasOwn(bodies.at(-1), 'quality'), false);
+	await client.generateImages('x', { idempotencyKey:'short' });
+	assert.equal(Object.hasOwn(bodies.at(-1), 'idempotency_key'), false);
+	await assert.rejects(client.generateImages('x', { quality:'low' }), /quality must be one of/);
+});
+
 test('supports synchronous and batch image contracts without provider options', async () => {
 	const requests = [];
 	const client = new ApickClient({ apiKey:'key', baseUrl:'https://api.example.test', fetch:async (url, options) => {
@@ -41,13 +56,13 @@ test('supports synchronous and batch image contracts without provider options', 
 		if (url.endsWith('/images/0')) return new Response(new Uint8Array([1,2,3]), {status:200,headers:{'content-type':'image/png'}});
 		return jsonResponse({data:url.includes('/jobs/')?{job_id:'a'.repeat(32),status:'waiting',requested_count:20}:{request_id:'b'.repeat(32),image_count:1,images:[]},api:{success:true,cost:0}});
 	}});
-	await client.generateImages('제품 사진', { imageCount:1, outputFormat:'webp', idempotencyKey:'image-test-0001' });
+	await client.generateImages('제품 사진', { imageCount:1, outputFormat:'webp', quality:'advanced', idempotencyKey:'image-test-0001' });
 	await client.createImageGenerationJob('커버 시안', { imageCount:20 });
 	await client.getImageJob('a'.repeat(32));
 	const binary=await client.downloadImageJobImage('a'.repeat(32),0);
 	assert.equal(binary.contentType,'image/png');
 	assert.equal(requests[0].url,'https://api.example.test/rest/image-generation/generate');
-	assert.deepEqual(Object.fromEntries(requests[0].options.body),{prompt:'제품 사진',image_count:'1',size:'1024x1024',output_format:'webp',background:'auto',idempotency_key:'image-test-0001'});
+	assert.deepEqual(Object.fromEntries(requests[0].options.body),{prompt:'제품 사진',image_count:'1',size:'1024x1024',output_format:'webp',background:'auto',quality:'advanced'});
 	assert.equal(requests[0].options.headers['Content-Type'], undefined);
 	assert.equal(requests[1].url,'https://api.example.test/rest/image-generation/jobs/generate');
 	assert.equal(requests[2].options.method,'GET');
@@ -56,7 +71,7 @@ test('supports synchronous and batch image contracts without provider options', 
 	await assert.rejects(client.generateImages('x',{outputCompression:80}),/outputCompression is not a supported image option/);
 	await assert.rejects(client.generateImages('x',{size:'2560x1440'}),/size must be one of/);
 	await assert.rejects(client.generateImages('x',{model:'hidden'}),/not a supported image option/);
-	await assert.rejects(client.generateImages('x',{idempotencyKey:'short'}),/8-128/);
+	await assert.rejects(client.generateImages('x',{quality:'high'}),/quality must be one of: basic, advanced, premium/);
 	await client.generateImages('가'.repeat(28_000));
 	await assert.rejects(client.generateImages('가'.repeat(28_001)),/28000/);
 	assert.equal(typeof client.cancelImageJob, 'undefined');

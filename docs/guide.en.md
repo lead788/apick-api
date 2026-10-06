@@ -145,12 +145,11 @@ Text input is limited to 100,000 characters.
 
 ## Image AI
 
-Under usage billing, external AI costs use confirmed vendor cost × the applicable exchange rate × 1.4. If generation/editing usage cannot be confirmed, HTTP 202 returns `job_id` and `billing_status: "pending"`. The generated output is retained: poll `getImageJob(job_id)` without submitting another generation, then use the existing download methods after settlement.
+Images use a fixed per-image price by `quality`: `basic` (default) 40 points, `advanced` 350 points and `premium` 1,400 points, regardless of size. Repeated requests are never reused; each request is generated and charged again. The total is deducted when a request is accepted and failed images are refunded. If a job accepted under the previous pricing returns a settlement-pending response (HTTP 202, `billing_status: "pending"`), poll `getImageJob(job_id)`.
 
 ```js
 const result = await client.generateImages('A clean product photo on white', {
-  imageCount: 4, size: '1024x1024', outputFormat: 'webp',
-  idempotencyKey: 'product-draft-001'
+  imageCount: 4, size: '1024x1024', outputFormat: 'webp', quality: 'advanced'
 });
 
 const referenceResult = await client.generateImages('Keep the product shape and composition, and change the background to a sunny kitchen', {

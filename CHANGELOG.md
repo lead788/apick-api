@@ -1,3 +1,10 @@
+# 4.0.1 — 2026-10-06
+
+- 이미지 생성·편집에 `quality` 옵션을 추가했습니다: `basic`(기본) 40P · `advanced` 350P · `premium` 1,400P(장당 고정가, 크기 무관).
+- 같은 요청도 매번 새로 생성·과금하므로 이미지 `idempotencyKey` 는 더 이상 보내지 않습니다(호환을 위해 받기만 하며 폐기 예정입니다).
+- Add the image `quality` option: `basic` (default) 40 points, `advanced` 350 points, `premium` 1,400 points per image regardless of size.
+- Image `idempotencyKey` is deprecated and no longer sent; every image request is generated and charged as a new request.
+
 # 4.0.0
 
 - Breaking migration: `createTtsJob` now defaults to Gemini `Kore`; retired APICK voices and fallback options are rejected. Use engine-specific voice catalogs instead of legacy `TTS_VOICE_IDS`.

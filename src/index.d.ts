@@ -31,9 +31,13 @@ export interface OcrOptions {
 export type ImageAiFormat = 'png' | 'jpeg' | 'webp';
 export type ImageAiBackground = 'auto' | 'opaque' | 'transparent';
 export type ImageAiSize = '1024x1024' | '1536x1024' | '1024x1536' | '1152x864' | '864x1152';
+/** basic 40P(default) · advanced 350P · premium 1,400P per image */
+export type ImageAiQuality = 'basic' | 'advanced' | 'premium';
 export type ImageAiStatus = 'waiting' | 'processing' | 'completed' | 'completed_partial' | 'failed';
 export type ApickImageErrorCode = `APICK_IMAGE_${string}`;
-export interface ImageAiOptions { imageCount?: number; size?: ImageAiSize; outputFormat?: ImageAiFormat; background?: ImageAiBackground; idempotencyKey?: string; }
+export interface ImageAiOptions { imageCount?: number; size?: ImageAiSize; outputFormat?: ImageAiFormat; background?: ImageAiBackground; quality?: ImageAiQuality;
+	/** @deprecated Ignored. Every image request is generated and charged as a new request. */
+	idempotencyKey?: string; }
 export interface ImageAiGenerateOptions extends ImageAiOptions { referenceImage?: string|BinaryInput|ArrayBuffer|ArrayBufferView; referenceFilename?: string; referenceContentType?: 'image/png'|'image/jpeg'|'image/webp'; }
 export interface ImageAiEditOptions extends ImageAiOptions { filename?: string; contentType?: 'image/png'|'image/jpeg'|'image/webp'; }
 export interface ImageAiResultImage { index:number; b64_json:string; mime_type:'image/png'|'image/jpeg'|'image/webp'; width:number; height:number; }

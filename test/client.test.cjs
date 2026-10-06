@@ -556,7 +556,7 @@ test('implements Amazon, X and collection-job contracts', async () => {
 		fetch: async (url, options) => {
 			requests.push({ url, method: options.method, body: options.body, headers: options.headers });
 			if (/\/jobs$/.test(url)) return jsonResponse({ data: { job_id: 'a'.repeat(32), status: 'processing', reserved_point: 15 }, api: { success: true, cost: 15 } }, { status: 202 });
-			if (/scrape_jobs/.test(url)) return jsonResponse({ data: { job_id: 'a'.repeat(32), status: requests.length > 10 ? 'completed' : 'processing', items: [] }, api: { success: true, cost: 0 } });
+			if (/scrape_jobs/.test(url)) return jsonResponse({ data: { job_id: 'a'.repeat(32), status: requests.length > 12 ? 'completed' : 'processing', items: [] }, api: { success: true, cost: 0 } });
 			return jsonResponse({ data: { ok: true }, api: { success: true, cost: 20 } });
 		}
 	});
@@ -583,15 +583,21 @@ test('implements Amazon, X and collection-job contracts', async () => {
 	await client.createAmazonReviewsJob('B0BDHWDR12', { maxResults: 100 });
 	assert.ok(requests[9].url.endsWith('/rest/amazon_reviews/jobs'));
 	assert.deepEqual(JSON.parse(requests[9].body), { asin: 'B0BDHWDR12', max_results: 100 });
+	await client.createGoogleMapsPlaceJob('ChIJobb671mhfDURrcE4SebLfyw', { maxResults: 3 });
+	assert.ok(requests[10].url.endsWith('/rest/google_maps_place/jobs'));
+	assert.deepEqual(JSON.parse(requests[10].body), { place_id: 'ChIJobb671mhfDURrcE4SebLfyw' });
+	await client.createGoogleMapsPlaceJob('https://maps.google.com/?cid=43683618384203914');
+	assert.deepEqual(JSON.parse(requests[11].body), { url: 'https://maps.google.com/?cid=43683618384203914' });
 	const status = await client.getScrapeJob('a'.repeat(32));
-	assert.equal(requests[10].method, 'GET');
-	assert.ok(requests[10].url.endsWith('/rest/scrape_jobs/' + 'a'.repeat(32)));
+	assert.equal(requests[12].method, 'GET');
+	assert.ok(requests[12].url.endsWith('/rest/scrape_jobs/' + 'a'.repeat(32)));
 	assert.equal(status.data.status, 'completed');
 	assert.throws(() => client.getScrapeJob('bad'), /jobId/);
 	assert.throws(() => client.createInstagramCommentsJob('https://www.instagram.com/p/x/', { maxResults: 16 }), /maxResults/);
 	assert.throws(() => client.createTiktokSearchJob('k', { idempotencyKey: 'short' }), /idempotencyKey/);
 	assert.throws(() => client.amazonProduct(''), /urlOrAsin/);
-	assert.equal(requests.length, 11);
+	assert.throws(() => client.createGoogleMapsPlaceJob(''), /placeIdOrUrl/);
+	assert.equal(requests.length, 13);
 });
 
 test('implements the YouTube search, list, comments, formats and download-link contracts', async () => {

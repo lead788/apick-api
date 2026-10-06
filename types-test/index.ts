@@ -5,7 +5,7 @@ import ApickClient, {
   SERVICES,
   TTS_VOICE_IDS
 } from '../src/index.js';
-import type { TtsJobData, TtsVoiceId, AmazonReview } from '../src/index.js';
+import type { TtsJobData, TtsVoiceId, AmazonReview, GoogleMapsPlace } from '../src/index.js';
 import type { ImageAiJobData, ImageAiResultData, ImageAiPendingData } from '../src/index.js';
 
 const client = new ApickClient('test-key');
@@ -109,7 +109,9 @@ const xp = client.xProfile("NASA").then((result) => result.data.recent_posts[0]?
 const xpost = client.xPost("https://x.com/NASA/status/1").then((result) => result.data.views);
 const searchJob = client.createTiktokSearchJob("캠핑 요리", { maxResults: 10, idempotencyKey: "job-key-0001" }).then((result) => result.data.job_id);
 const reviews = client.waitForScrapeJob<AmazonReview>("a".repeat(32)).then((result) => result.data.items?.[0]?.rating);
-void amazon; void xp; void xpost; void searchJob; void reviews;
+const place = client.createGoogleMapsPlaceJob("ChIJobb671mhfDURrcE4SebLfyw").then((result) => result.data.job_id);
+const placeDone = client.waitForScrapeJob<GoogleMapsPlace>("a".repeat(32)).then((result) => result.data.items?.[0]?.rating_distribution["5"]);
+void amazon; void xp; void xpost; void searchJob; void reviews; void place; void placeDone;
 const youtubeTracks: Promise<ApickResult<YoutubeSubtitleList>> = client.youtubeSubtitleList("dQw4w9WgXcQ");
 const youtubeThumb: Promise<ApickBinaryResult> = client.youtubeThumbnail("dQw4w9WgXcQ");
 const youtubeText: Promise<ApickBinaryResult> = client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "srt", type: "auto" });

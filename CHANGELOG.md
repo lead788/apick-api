@@ -1,3 +1,8 @@
+# 4.3.0
+
+- Add `createGoogleMapsPlaceJob(placeIdOrUrl)` with the `GoogleMapsPlace` result type: rating, reviews count, 1-5 star distribution, top reviews (up to 10), opening hours, busy hours, similar places and photos. 20 points per place, refunded if not found; text is returned in English.
+- 구글 지도 장소 상세·별점 분포·대표 리뷰(최대 10건) 조회 접수 메서드 `createGoogleMapsPlaceJob` 과 결과 타입 `GoogleMapsPlace` 를 추가했습니다. 건당 20포인트, 장소를 찾지 못하면 환불됩니다.
+
 # 4.2.1
 
 - `youtubeSubtitle()` fails with guidance to use an original-language track when an auto-translated caption (`translated: true`) is refused; such calls are not charged. Examples now pick a manual or original-language track. YouTube requests interrupted by a server restart are retried automatically.

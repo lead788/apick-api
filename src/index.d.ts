@@ -194,7 +194,37 @@ export interface AmazonReview {
 	readonly variant: string;
 }
 
-export type ScrapeJobProduct = "instagram_posts" | "instagram_comments" | "tiktok_search" | "tiktok_video" | "tiktok_comments" | "amazon_reviews";
+export interface GoogleMapsPlace {
+	readonly name: string;
+	readonly category: string;
+	readonly categories: readonly string[];
+	readonly address: string;
+	readonly country_code: string;
+	readonly phone: string;
+	readonly website: string;
+	readonly description: string;
+	readonly rating: number | null;
+	readonly reviews_count: number | null;
+	/** 별점별 리뷰 수. */
+	readonly rating_distribution: Readonly<Record<"1" | "2" | "3" | "4" | "5", number | null>>;
+	/** 대표 리뷰(최대 10건). 작성자는 공개 표시 이름만. */
+	readonly top_reviews: readonly { readonly reviewer_name: string; readonly rating: number | null; readonly posted_at: string; readonly text: string }[];
+	readonly open_hours: Readonly<Record<string, string>>;
+	/** day: 1=월 … 7=일 */
+	readonly popular_times: readonly { readonly day: number | null; readonly hours: readonly { readonly hour: string; readonly busy_percent: number | null }[] }[];
+	readonly similar_places: readonly { readonly name: string; readonly category: string; readonly rating: number | null; readonly reviews_count: number | null }[];
+	readonly photo_urls: readonly string[];
+	readonly main_image_url: string;
+	readonly is_claimed: boolean;
+	readonly permanently_closed: boolean;
+	readonly temporarily_closed: boolean;
+	readonly latitude: number | null;
+	readonly longitude: number | null;
+	readonly place_id: string;
+	readonly map_url: string;
+}
+
+export type ScrapeJobProduct = "instagram_posts" | "instagram_comments" | "tiktok_search" | "tiktok_video" | "tiktok_comments" | "amazon_reviews" | "google_maps_place";
 
 export interface ScrapeJobOptions {
 	/** 최대 결과 수. 이 수 × 단가를 예약하고 실제 결과 건수만 차감한다(instagram_comments 15, tiktok_search 50, 그 밖 100). */
@@ -624,6 +654,7 @@ export class ApickClient {
 	createTiktokVideoJob(url: string, options?: Pick<ScrapeJobOptions, "idempotencyKey">): Promise<ApickResult<ScrapeJob<TiktokVideo>>>;
 	createTiktokCommentsJob(url: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<SocialComment>>>;
 	createAmazonReviewsJob(urlOrAsin: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<AmazonReview>>>;
+	createGoogleMapsPlaceJob(placeIdOrUrl: string, options?: Pick<ScrapeJobOptions, "idempotencyKey">): Promise<ApickResult<ScrapeJob<GoogleMapsPlace>>>;
 	getScrapeJob<T = unknown>(jobId: string): Promise<ApickResult<ScrapeJob<T>>>;
 	waitForScrapeJob<T = unknown>(jobId: string, options?: { intervalMs?: number; timeoutMs?: number }): Promise<ApickResult<ScrapeJob<T>>>;
 	screenshot(url: string): Promise<ApickBinaryResult>;

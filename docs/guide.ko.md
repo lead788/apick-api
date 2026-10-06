@@ -96,6 +96,15 @@ const done = await client.waitForScrapeJob(job.data.job_id); // 기본 10초 간
 console.log(done.data.status, done.data.charged_point, done.data.items);
 ```
 
+구글 지도 장소는 `googleMapsSearch` 결과의 `place_id` 로 상세·별점 분포·대표 리뷰(최대 10건)를 받습니다. 건당 20포인트이고 텍스트는 영어로 제공합니다.
+
+```js
+const places = await client.googleMapsSearch('강남역 카페');
+const placeJob = await client.createGoogleMapsPlaceJob(places.data.items[0].place_id);
+const place = await client.waitForScrapeJob(placeJob.data.job_id);
+console.log(place.data.items[0].rating_distribution, place.data.items[0].top_reviews);
+```
+
 ## OCR
 
 PNG와 JPEG를 지원하며 최대 크기는 50MB입니다.

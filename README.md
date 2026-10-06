@@ -99,6 +99,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `createTiktokVideoJob(url, options)` | 틱톡 영상 정보 접수 / TikTok video job | JSON |
 | `createTiktokCommentsJob(url, options)` | 틱톡 댓글 수집 접수(최대 100) / TikTok comments job | JSON |
 | `createAmazonReviewsJob(urlOrAsin, options)` | 아마존 리뷰 수집 접수(최대 100) / Amazon reviews job | JSON |
+| `createGoogleMapsPlaceJob(placeIdOrUrl, options)` | 구글 지도 장소 상세·별점 분포·대표 리뷰 접수 / Google Maps place details and top reviews job | JSON |
 | `getScrapeJob(jobId)` / `waitForScrapeJob(jobId, options)` | 수집 작업 상태·결과(무료, 결과 건수로 정산) / Collection job status and results | JSON |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |

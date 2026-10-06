@@ -97,13 +97,19 @@ function profileInput(value) {
 	return /^https?:\/\//i.test(text) ? { url: text } : { username: text.replace(/^@/, '') };
 }
 
+// 구글 지도 장소 입력: 주소면 url, 아니면 place_id(googleMapsSearch 결과의 place_id)로 보낸다.
+function placeInput(value) {
+	const text = requiredString('placeIdOrUrl', value, 2048);
+	return /^https?:\/\//i.test(text) ? { url: text } : { place_id: text };
+}
+
 // 아마존 상품 입력: 주소면 url, 10자리 ASIN 이면 asin 으로 보낸다.
 function amazonInput(value) {
 	const text = requiredString('urlOrAsin', value, 2048);
 	return /^https?:\/\//i.test(text) ? { url: text } : { asin: text.toUpperCase() };
 }
 
-const SCRAPE_JOB_PRODUCTS = Object.freeze({ instagram_posts: 100, instagram_comments: 15, tiktok_search: 50, tiktok_video: 1, tiktok_comments: 100, amazon_reviews: 100 });
+const SCRAPE_JOB_PRODUCTS = Object.freeze({ instagram_posts: 100, instagram_comments: 15, tiktok_search: 50, tiktok_video: 1, tiktok_comments: 100, amazon_reviews: 100, google_maps_place: 1 });
 
 // 수집 작업 공통 옵션: maxResults(상품별 상한), idempotencyKey(응답을 못 받아 다시 보낼 때 같은 접수로 처리).
 function scrapeJobOptions(product, payload, options) {
@@ -706,6 +712,11 @@ class ApickClient {
 
 	createAmazonReviewsJob(urlOrAsin, options) {
 		return this._createScrapeJob('amazon_reviews', amazonInput(urlOrAsin), options);
+	}
+
+	// 구글 지도 장소 상세·대표 리뷰(건당 고정가). 텍스트는 영어로 온다.
+	createGoogleMapsPlaceJob(placeIdOrUrl, options) {
+		return this._createScrapeJob('google_maps_place', placeInput(placeIdOrUrl), options);
 	}
 
 	// 상태·결과 조회(무료). 끝난 작업은 실제 결과 건수로 정산돼 있다.

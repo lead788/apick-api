@@ -96,6 +96,15 @@ const done = await client.waitForScrapeJob(job.data.job_id); // every 10 s, up t
 console.log(done.data.status, done.data.charged_point, done.data.items);
 ```
 
+For a Google Maps place, pass the `place_id` from `googleMapsSearch` to get details, the star distribution and top reviews (up to 10). 20 points per place; text is returned in English.
+
+```js
+const places = await client.googleMapsSearch('cafes near Gangnam station');
+const placeJob = await client.createGoogleMapsPlaceJob(places.data.items[0].place_id);
+const place = await client.waitForScrapeJob(placeJob.data.job_id);
+console.log(place.data.items[0].rating_distribution, place.data.items[0].top_reviews);
+```
+
 ## OCR
 
 OCR accepts PNG and JPEG files up to 50MB.

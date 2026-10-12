@@ -513,27 +513,12 @@ export interface YoutubePlaylistResult {
 	video_count: number | null; view_count: number | null; modified_date: string | null; count: number; videos: YoutubeListItem[];
 }
 export interface YoutubeHashtagResult { hashtag: string; count: number; videos: YoutubeListItem[]; }
-export interface YoutubeVideoFormat { quality: string; width: number | null; height: number; fps: number | null; codec: string | null; hdr: boolean; has_audio: boolean; bitrate_kbps: number | null; filesize: number | null; filesize_estimated: boolean; }
-export interface YoutubeAudioFormat { codec: string | null; bitrate_kbps: number | null; sample_rate: number | null; channels: number | null; language: string | null; filesize: number | null; filesize_estimated: boolean; }
-export interface YoutubeFormats {
-	video_id: string; title: string | null; duration: number | null; live_status: string | null; downloadable: boolean;
-	video_formats: YoutubeVideoFormat[]; audio_formats: YoutubeAudioFormat[];
-	download_options: { video: { quality: string; estimated_size: number; estimated_cost: number }[]; audio: { format: 'mp3' | 'm4a' | 'opus'; bitrate: number | null; estimated_size: number; estimated_cost: number }[] };
-}
 export interface YoutubeComment {
 	id: string; parent_id: string | null; text: string; author: string | null; author_channel_id: string | null; author_url: string | null; author_thumbnail: string | null;
 	author_is_uploader: boolean; author_is_verified: boolean; like_count: number | null; is_pinned: boolean; is_hearted: boolean; published_at: string | null;
 }
 export interface YoutubeComments { video_id: string; title: string | null; sort: 'top' | 'new'; include_replies: boolean; count: number; comments: YoutubeComment[]; }
 export interface YoutubeCommentsOptions { count?: number; sort?: 'top' | 'new'; replies?: boolean; }
-export interface YoutubeDownloadLink {
-	video_id: string | null; title: string | null; duration: number | null; size: number; size_units: number; content_type: string; filename: string;
-	download_url: string; expires_at: string; quality?: string | null; format?: 'mp3' | 'm4a' | 'opus'; bitrate?: number | null;
-	billing: { base: number; size_unit_cost: number; size_cost: number; total: number };
-}
-export interface YoutubeVideoDownloadOptions { quality?: 'best' | '2160' | '1440' | '1080' | '720' | '480' | '360' | '240' | '144' | number; codec?: 'any' | 'h264'; start?: string | number; end?: string | number; }
-export interface YoutubeAudioDownloadOptions { format?: 'mp3' | 'm4a' | 'opus'; bitrate?: 128 | 192 | 320 | '128' | '192' | '320'; start?: string | number; end?: string | number; }
-
 /** @deprecated Retired APICK voice IDs. Query listGeminiTtsVoices or listOpenAiTtsVoices. */
 export const TTS_VOICE_IDS: readonly [
 	'v2_ann_m_30s_01', 'v2_ann_m_30s_02', 'v2_ann_m_30s_04', 'v2_ann_m_30s_05', 'v2_ann_f_30s_02', 'v2_ann_f_30s_03', 'v2_ann_f_30s_04', 'v2_ann_f_30s_05', 'v2_m_teen_01', 'v2_m_young_01', 'v2_m_mid_01', 'v2_m_senior_01', 'v2_f_young_01', 'v2_f_senior_01'
@@ -666,10 +651,7 @@ export class ApickClient {
 	youtubeChannel(channel: string, options?: { tab?: 'videos' | 'shorts' | 'streams' | 'playlists'; count?: number }): Promise<ApickResult<YoutubeChannelResult>>;
 	youtubePlaylist(url: string, options?: { count?: number }): Promise<ApickResult<YoutubePlaylistResult>>;
 	youtubeHashtag(hashtag: string, options?: { count?: number }): Promise<ApickResult<YoutubeHashtagResult>>;
-	youtubeFormats(url: string): Promise<ApickResult<YoutubeFormats>>;
 	youtubeComments(url: string, options?: YoutubeCommentsOptions): Promise<ApickResult<YoutubeComments>>;
-	downloadYoutubeVideo(url: string, options?: YoutubeVideoDownloadOptions): Promise<ApickResult<YoutubeDownloadLink>>;
-	downloadYoutubeAudio(url: string, options?: YoutubeAudioDownloadOptions): Promise<ApickResult<YoutubeDownloadLink>>;
 	createTtsJob(text: string | GeminiTtsInput, options?: TtsOptions): Promise<ApickResult<TtsJobData>>;
 	createGeminiTtsJob(input:GeminiTtsInput, options?:{idempotencyKey?:string}):Promise<ApickResult<TtsJobData>>;
 	listGeminiTtsVoices():Promise<ApickResult<{voices:GeminiTtsVoice[];complete:boolean;checked_at:string|null}>>;

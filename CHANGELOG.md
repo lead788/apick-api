@@ -1,3 +1,8 @@
+# 4.4.0
+
+- Removed the YouTube download methods `youtubeFormats()`, `downloadYoutubeVideo()` and `downloadYoutubeAudio()` and their result types (`YoutubeFormats`, `YoutubeVideoFormat`, `YoutubeAudioFormat`, `YoutubeDownloadLink`, `YoutubeVideoDownloadOptions`, `YoutubeAudioDownloadOptions`) — the matching endpoints are gone. `youtubeMetadata()`, `youtubeThumbnail()`, `youtubeSubtitleList()`, `youtubeSubtitle()`, `youtubeSearch()`, `youtubeChannel()`, `youtubePlaylist()`, `youtubeHashtag()` and `youtubeComments()` are unchanged.
+- 유튜브 다운로드 메서드 `youtubeFormats()`·`downloadYoutubeVideo()`·`downloadYoutubeAudio()` 와 결과 타입(`YoutubeFormats`, `YoutubeVideoFormat`, `YoutubeAudioFormat`, `YoutubeDownloadLink`, `YoutubeVideoDownloadOptions`, `YoutubeAudioDownloadOptions`)을 제거했습니다(해당 엔드포인트 종료). `youtubeMetadata()`·`youtubeThumbnail()`·`youtubeSubtitleList()`·`youtubeSubtitle()`·`youtubeSearch()`·`youtubeChannel()`·`youtubePlaylist()`·`youtubeHashtag()`·`youtubeComments()` 는 그대로입니다.
+
 # 4.3.1
 
 - Pricing notes (Terms art. 9 amended, effective 2026-11-06): TTS synthesis has a 5-point base fee per job and result-billed collection jobs have a 10-point base fee per job with results (Instagram comments 50). Fractional points are rounded up (0.1 → 1) and every billed use is at least 1 point. No method or type changes.

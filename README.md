@@ -83,10 +83,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `youtubeChannel(channel, options)` | 유튜브 채널 정보·탭 목록 / YouTube channel and tab items | JSON |
 | `youtubePlaylist(url, options)` | 유튜브 재생목록 / YouTube playlist | JSON |
 | `youtubeHashtag(hashtag, options)` | 유튜브 해시태그 영상 / YouTube hashtag videos | JSON |
-| `youtubeFormats(url)` | 다운로드 화질·예상 요금 / Downloadable formats and estimated cost | JSON |
 | `youtubeComments(url, options)` | 유튜브 댓글 / YouTube comments | JSON |
-| `downloadYoutubeVideo(url, options)` | 유튜브 영상 MP4 다운로드 링크(1시간) / YouTube MP4 download link (1 hour) | JSON |
-| `downloadYoutubeAudio(url, options)` | 유튜브 오디오 MP3·M4A·Opus 다운로드 링크(1시간) / YouTube audio download link (1 hour) | JSON |
 | `instagramProfile(usernameOrUrl)` | 인스타그램 공개 프로필 / Instagram public profile | JSON |
 | `instagramPost(url)` | 인스타그램 게시물·릴스 / Instagram post or reel | JSON |
 | `tiktokProfile(usernameOrUrl)` | 틱톡 공개 프로필 / TikTok public profile | JSON |

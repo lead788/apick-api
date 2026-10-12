@@ -20,8 +20,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 45 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 57);
+test('exports a focused catalog of 54 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 54);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -600,13 +600,13 @@ test('implements Amazon, X and collection-job contracts', async () => {
 	assert.equal(requests.length, 13);
 });
 
-test('implements the YouTube search, list, comments, formats and download-link contracts', async () => {
+test('implements the YouTube search, list and comments contracts', async () => {
 	const requests = [];
 	const client = new ApickClient({
 		apiKey: 'key',
 		fetch: async (url, options) => {
 			requests.push({ url, body: options.body });
-			return jsonResponse({ data: { ok: true, download_url: 'https://apick.app/youtube-files/' + 'a'.repeat(32) + '/x.mp4' }, api: { success: true, cost: 32 } });
+			return jsonResponse({ data: { ok: true }, api: { success: true, cost: 32 } });
 		}
 	});
 	const field = (index, name) => requests[index].body.get(name);
@@ -628,30 +628,14 @@ test('implements the YouTube search, list, comments, formats and download-link c
 	await client.youtubeHashtag('#kpop', { count: 3 });
 	assert.ok(requests[4].url.endsWith('/rest/youtube_hashtag'));
 	assert.equal(field(4, 'hashtag'), '#kpop');
-	await client.youtubeFormats('dQw4w9WgXcQ');
-	assert.ok(requests[5].url.endsWith('/rest/youtube_formats'));
 	await client.youtubeComments('dQw4w9WgXcQ', { count: 50, sort: 'new', replies: true });
-	assert.ok(requests[6].url.endsWith('/rest/youtube_comments'));
-	assert.deepEqual([field(6, 'count'), field(6, 'sort'), field(6, 'replies')], ['50', 'new', 'true']);
-
-	const video = await client.downloadYoutubeVideo('dQw4w9WgXcQ', { quality: 720, codec: 'h264', start: '0:30', end: 90 });
-	assert.ok(requests[7].url.endsWith('/rest/download_youtube_video'));
-	assert.deepEqual(['quality', 'codec', 'start', 'end', 'delivery'].map(name => field(7, name)), ['720', 'h264', '0:30', '90', 'link']);
-	assert.match(video.data.download_url, /youtube-files/);
-	assert.equal(video.meta.cost, 32);
-
-	await client.downloadYoutubeAudio('dQw4w9WgXcQ', { format: 'mp3', bitrate: 320 });
-	assert.ok(requests[8].url.endsWith('/rest/youtube_audio_download'));
-	assert.deepEqual(['format', 'bitrate', 'delivery'].map(name => field(8, name)), ['mp3', '320', 'link']);
+	assert.ok(requests[5].url.endsWith('/rest/youtube_comments'));
+	assert.deepEqual([field(5, 'count'), field(5, 'sort'), field(5, 'replies')], ['50', 'new', 'true']);
 
 	assert.throws(() => client.youtubeSearch(''), /query/);
 	assert.throws(() => client.youtubeSearch('a', { count: 51 }), /count/);
 	assert.throws(() => client.youtubeSearch('a', { sort: 'random' }), /sort/);
 	assert.throws(() => client.youtubeChannel('@x', { tab: 'community' }), /tab/);
 	assert.throws(() => client.youtubeComments('dQw4w9WgXcQ', { replies: 'yes' }), /replies/);
-	assert.throws(() => client.downloadYoutubeVideo('dQw4w9WgXcQ', { quality: '1081' }), /quality/);
-	assert.throws(() => client.downloadYoutubeVideo('dQw4w9WgXcQ', { start: 'soon' }), /start/);
-	assert.throws(() => client.downloadYoutubeAudio('dQw4w9WgXcQ', { format: 'wav' }), /format/);
-	assert.throws(() => client.downloadYoutubeAudio('dQw4w9WgXcQ', { bitrate: 256 }), /bitrate/);
-	assert.equal(requests.length, 9);
+	assert.equal(requests.length, 6);
 });

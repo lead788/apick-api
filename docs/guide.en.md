@@ -93,27 +93,6 @@ const job = await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234
 
 Coupang accepts a product number or a product URL (`/vp/products/{id}`), and Naver accepts a brand store product URL (`brand.naver.com/{store}/products/{id}`). LinkedIn accepts profile (`/in/`), company (`/company/`) and job posting (`/jobs/view/`) URLs.
 
-### Collection jobs (lists, comments, search, reviews)
-
-Products that collect many items return a `job_id` immediately. Submitting reserves `maxResults` × unit price; when you read the result, only the results actually returned are charged and the rest is refunded. Failed jobs and missing targets are fully refunded, and results are kept for 72 hours. Comment and review authors are public usernames only.
-
-```js
-const job = await client.createTiktokSearchJob('camping recipes', { maxResults: 10, idempotencyKey: 'camping-0001' });
-const done = await client.waitForScrapeJob(job.data.job_id); // every 10 s, up to 10 min
-console.log(done.data.status, done.data.charged_point, done.data.items);
-```
-
-Result-billed collection jobs are charged per result; from 2026-11-06 a job with at least one result has a base fee (10 points, Instagram comments 50). Jobs with no results or failures are fully refunded.
-
-For a Google Maps place, pass the `place_id` from `googleMapsSearch` to get details, the star distribution and top reviews (up to 10). 20 points per place; text is returned in English.
-
-```js
-const places = await client.googleMapsSearch('cafes near Gangnam station');
-const placeJob = await client.createGoogleMapsPlaceJob(places.data.items[0].place_id);
-const place = await client.waitForScrapeJob(placeJob.data.job_id);
-console.log(place.data.items[0].rating_distribution, place.data.items[0].top_reviews);
-```
-
 ## OCR
 
 OCR accepts PNG and JPEG files up to 50MB.

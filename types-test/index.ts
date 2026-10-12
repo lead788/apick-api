@@ -5,7 +5,7 @@ import ApickClient, {
   SERVICES,
   TTS_VOICE_IDS
 } from '../src/index.js';
-import type { TtsJobData, TtsVoiceId, AmazonReview, GoogleMapsPlace } from '../src/index.js';
+import type { TtsJobData, TtsVoiceId } from '../src/index.js';
 import type { ImageAiJobData, ImageAiResultData, ImageAiPendingData } from '../src/index.js';
 
 const client = new ApickClient('test-key');
@@ -107,11 +107,7 @@ void rank; void places; void igProfile; void igPost; void ttProfile; void news; 
 const amazon = client.amazonProduct("B0BDHWDR12").then((result) => result.data.price);
 const xp = client.xProfile("NASA").then((result) => result.data.recent_posts[0]?.likes);
 const xpost = client.xPost("https://x.com/NASA/status/1").then((result) => result.data.views);
-const searchJob = client.createTiktokSearchJob("캠핑 요리", { maxResults: 10, idempotencyKey: "job-key-0001" }).then((result) => result.data.job_id);
-const reviews = client.waitForScrapeJob<AmazonReview>("a".repeat(32)).then((result) => result.data.items?.[0]?.rating);
-const place = client.createGoogleMapsPlaceJob("ChIJobb671mhfDURrcE4SebLfyw").then((result) => result.data.job_id);
-const placeDone = client.waitForScrapeJob<GoogleMapsPlace>("a".repeat(32)).then((result) => result.data.items?.[0]?.rating_distribution["5"]);
-void amazon; void xp; void xpost; void searchJob; void reviews; void place; void placeDone;
+void amazon; void xp; void xpost;
 const coupang = client.coupangProduct("https://www.coupang.com/vp/products/7812020679").then((result) => result.data.final_price);
 const naverProduct = client.naverShoppingProduct("https://brand.naver.com/pulmuonebynature/products/4995061380").then((result) => result.data.sellers[0]?.final_price);
 const linkedinMe = client.linkedinProfile("https://www.linkedin.com/in/example/").then((result) => result.data.experience[0]?.company);

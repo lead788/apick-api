@@ -93,27 +93,6 @@ const job = await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234
 
 쿠팡은 상품 번호나 상품 주소(`/vp/products/{번호}`)를, 네이버는 브랜드스토어 상품 주소(`brand.naver.com/{스토어}/products/{번호}`)를 받습니다. 링크드인은 프로필(`/in/`)·회사(`/company/`)·채용공고(`/jobs/view/`) 주소를 받습니다.
 
-### 수집 작업(목록·댓글·검색·리뷰)
-
-여러 건을 모으는 상품은 접수 즉시 `job_id` 를 돌려줍니다. 접수 때 `maxResults` × 단가를 예약하고, 결과를 받을 때 실제 결과 건수만 차감한 뒤 나머지는 돌려드립니다. 실패하거나 대상이 없으면 전액 환불되며 결과는 72시간 보관합니다. 댓글·리뷰 작성자는 공개 사용자명만 제공합니다.
-
-```js
-const job = await client.createTiktokSearchJob('캠핑 요리', { maxResults: 10, idempotencyKey: 'camping-0001' });
-const done = await client.waitForScrapeJob(job.data.job_id); // 기본 10초 간격, 최대 10분
-console.log(done.data.status, done.data.charged_point, done.data.items);
-```
-
-결과 건수 과금 수집 작업은 결과 1건당 단가로 정산하며, 2026-11-06부터 결과가 1건 이상이면 작업당 기본요금(10P, 인스타그램 댓글 50P)을 최소액으로 받습니다. 결과가 없거나 실패하면 예약한 포인트를 모두 돌려드립니다.
-
-구글 지도 장소는 `googleMapsSearch` 결과의 `place_id` 로 상세·별점 분포·대표 리뷰(최대 10건)를 받습니다. 건당 20포인트이고 텍스트는 영어로 제공합니다.
-
-```js
-const places = await client.googleMapsSearch('강남역 카페');
-const placeJob = await client.createGoogleMapsPlaceJob(places.data.items[0].place_id);
-const place = await client.waitForScrapeJob(placeJob.data.job_id);
-console.log(place.data.items[0].rating_distribution, place.data.items[0].top_reviews);
-```
-
 ## OCR
 
 PNG와 JPEG를 지원하며 최대 크기는 50MB입니다.

@@ -1,3 +1,10 @@
+# 4.6.0
+
+- Removed the collection-job methods `createInstagramPostsJob()`, `createInstagramCommentsJob()`, `createTiktokSearchJob()`, `createTiktokVideoJob()`, `createTiktokCommentsJob()`, `createAmazonReviewsJob()`, `createGoogleMapsPlaceJob()`, `getScrapeJob()` and `waitForScrapeJob()` and their types (`ScrapeJobProduct`, `ScrapeJobOptions`, `ScrapeJob<T>`) — every request is now a single synchronous call. The synchronous methods (`amazonProduct()`, `xProfile()`, `xPost()`, `googleMapsSearch()`, `youtubeComments()`, …) are unchanged.
+- Results of retired job submissions already accepted are still settled by the server; `apick-mcp` 4.6.0 matches this release.
+- 결과 건수 과금 수집 작업 메서드 `createInstagramPostsJob()`·`createInstagramCommentsJob()`·`createTiktokSearchJob()`·`createTiktokVideoJob()`·`createTiktokCommentsJob()`·`createAmazonReviewsJob()`·`createGoogleMapsPlaceJob()`·`getScrapeJob()`·`waitForScrapeJob()` 과 타입(`ScrapeJobProduct`, `ScrapeJobOptions`, `ScrapeJob<T>`)을 제거했습니다. 모든 요청은 단발 동기 호출만 사용합니다. 동기 메서드(`amazonProduct()`, `xProfile()`, `xPost()`, `googleMapsSearch()`, `youtubeComments()` 등)는 그대로입니다.
+- 이미 접수된 작업의 정산은 서버가 계속 처리합니다. `apick-mcp` 4.6.0 과 같은 계약입니다.
+
 # 4.5.0
 
 - Added `coupangProduct(urlOrProductId)`, `naverShoppingProduct(url)`, `linkedinProfile(url)`, `linkedinCompany(url)` and `linkedinJob(url)` with the matching result types (`CoupangProduct`, `NaverShoppingProduct`, `LinkedinProfile`, `LinkedinCompany`, `LinkedinJob`). Coupang takes a product number or `/vp/products/{id}` URL, Naver takes a brand store product URL (`brand.naver.com/{store}/products/{id}`), and LinkedIn takes profile (`/in/`), company (`/company/`) or job posting (`/jobs/view/`) URLs. Each call is synchronous; failed calls are not charged.

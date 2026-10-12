@@ -20,8 +20,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 59 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 59);
+test('exports a focused catalog of 58 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 58);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -549,14 +549,12 @@ test('implements the Google news, shopping, maps, rank check and Instagram/TikTo
 	assert.equal(requests.length, 8);
 });
 
-test('implements Amazon, X and collection-job contracts', async () => {
+test('implements Amazon and X contracts', async () => {
 	const requests = [];
 	const client = new ApickClient({
 		apiKey: 'key',
 		fetch: async (url, options) => {
 			requests.push({ url, method: options.method, body: options.body, headers: options.headers });
-			if (/\/jobs$/.test(url)) return jsonResponse({ data: { job_id: 'a'.repeat(32), status: 'processing', reserved_point: 15 }, api: { success: true, cost: 15 } }, { status: 202 });
-			if (/scrape_jobs/.test(url)) return jsonResponse({ data: { job_id: 'a'.repeat(32), status: requests.length > 12 ? 'completed' : 'processing', items: [] }, api: { success: true, cost: 0 } });
 			return jsonResponse({ data: { ok: true }, api: { success: true, cost: 20 } });
 		}
 	});
@@ -570,34 +568,7 @@ test('implements Amazon, X and collection-job contracts', async () => {
 	assert.equal(requests[2].body.get('username'), 'NASA');
 	await client.xPost('https://x.com/NASA/status/1');
 	assert.ok(requests[3].url.endsWith('/rest/x_post'));
-	const job = await client.createTiktokSearchJob('캠핑 요리', { maxResults: 3, idempotencyKey: 'job-key-0001' });
-	assert.equal(job.data.job_id, 'a'.repeat(32));
-	assert.ok(requests[4].url.endsWith('/rest/tiktok_search/jobs'));
-	assert.deepEqual(JSON.parse(requests[4].body), { keyword: '캠핑 요리', max_results: 3, idempotency_key: 'job-key-0001' });
-	await client.createInstagramPostsJob('natgeo');
-	assert.deepEqual(JSON.parse(requests[5].body), { username: 'natgeo' });
-	await client.createInstagramCommentsJob('https://www.instagram.com/p/x/', { maxResults: 15 });
-	await client.createTiktokVideoJob('https://www.tiktok.com/@a/video/1', { maxResults: 5 });
-	assert.deepEqual(JSON.parse(requests[7].body), { url: 'https://www.tiktok.com/@a/video/1' });
-	await client.createTiktokCommentsJob('https://www.tiktok.com/@a/video/1');
-	await client.createAmazonReviewsJob('B0BDHWDR12', { maxResults: 100 });
-	assert.ok(requests[9].url.endsWith('/rest/amazon_reviews/jobs'));
-	assert.deepEqual(JSON.parse(requests[9].body), { asin: 'B0BDHWDR12', max_results: 100 });
-	await client.createGoogleMapsPlaceJob('ChIJobb671mhfDURrcE4SebLfyw', { maxResults: 3 });
-	assert.ok(requests[10].url.endsWith('/rest/google_maps_place/jobs'));
-	assert.deepEqual(JSON.parse(requests[10].body), { place_id: 'ChIJobb671mhfDURrcE4SebLfyw' });
-	await client.createGoogleMapsPlaceJob('https://maps.google.com/?cid=43683618384203914');
-	assert.deepEqual(JSON.parse(requests[11].body), { url: 'https://maps.google.com/?cid=43683618384203914' });
-	const status = await client.getScrapeJob('a'.repeat(32));
-	assert.equal(requests[12].method, 'GET');
-	assert.ok(requests[12].url.endsWith('/rest/scrape_jobs/' + 'a'.repeat(32)));
-	assert.equal(status.data.status, 'completed');
-	assert.throws(() => client.getScrapeJob('bad'), /jobId/);
-	assert.throws(() => client.createInstagramCommentsJob('https://www.instagram.com/p/x/', { maxResults: 16 }), /maxResults/);
-	assert.throws(() => client.createTiktokSearchJob('k', { idempotencyKey: 'short' }), /idempotencyKey/);
-	assert.throws(() => client.amazonProduct(''), /urlOrAsin/);
-	assert.throws(() => client.createGoogleMapsPlaceJob(''), /placeIdOrUrl/);
-	assert.equal(requests.length, 13);
+	assert.equal(requests.length, 4);
 });
 
 test('implements the Coupang, Naver brand store and LinkedIn lookup contracts', async () => {

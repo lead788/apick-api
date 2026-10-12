@@ -95,14 +95,6 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `linkedinProfile(url)` | 링크드인 프로필 / LinkedIn profile | JSON |
 | `linkedinCompany(url)` | 링크드인 회사 정보 / LinkedIn company | JSON |
 | `linkedinJob(url)` | 링크드인 채용공고 / LinkedIn job posting | JSON |
-| `createInstagramPostsJob(usernameOrUrl, options)` | 인스타그램 게시물 목록 수집 접수(최대 100) / Instagram posts job | JSON |
-| `createInstagramCommentsJob(url, options)` | 인스타그램 댓글 수집 접수(최대 15) / Instagram comments job | JSON |
-| `createTiktokSearchJob(keyword, options)` | 틱톡 키워드 영상 검색 접수(최대 50) / TikTok keyword search job | JSON |
-| `createTiktokVideoJob(url, options)` | 틱톡 영상 정보 접수 / TikTok video job | JSON |
-| `createTiktokCommentsJob(url, options)` | 틱톡 댓글 수집 접수(최대 100) / TikTok comments job | JSON |
-| `createAmazonReviewsJob(urlOrAsin, options)` | 아마존 리뷰 수집 접수(최대 100) / Amazon reviews job | JSON |
-| `createGoogleMapsPlaceJob(placeIdOrUrl, options)` | 구글 지도 장소 상세·별점 분포·대표 리뷰 접수 / Google Maps place details and top reviews job | JSON |
-| `getScrapeJob(jobId)` / `waitForScrapeJob(jobId, options)` | 수집 작업 상태·결과(무료, 결과 건수로 정산) / Collection job status and results | JSON |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |

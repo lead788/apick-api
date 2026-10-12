@@ -84,7 +84,14 @@ const post = await client.instagramPost('https://www.instagram.com/p/DeHufcWDCjf
 const tiktok = await client.tiktokProfile('https://www.tiktok.com/@tiktok');
 const product = await client.amazonProduct('B0BDHWDR12');
 const x = await client.xProfile('NASA');
+const coupang = await client.coupangProduct('https://www.coupang.com/vp/products/7812020679');
+const naver = await client.naverShoppingProduct('https://brand.naver.com/pulmuonebynature/products/4995061380');
+const profile = await client.linkedinProfile('https://www.linkedin.com/in/example/');
+const company = await client.linkedinCompany('https://www.linkedin.com/company/example/');
+const job = await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234567/');
 ```
+
+쿠팡은 상품 번호나 상품 주소(`/vp/products/{번호}`)를, 네이버는 브랜드스토어 상품 주소(`brand.naver.com/{스토어}/products/{번호}`)를 받습니다. 링크드인은 프로필(`/in/`)·회사(`/company/`)·채용공고(`/jobs/view/`) 주소를 받습니다.
 
 ### 수집 작업(목록·댓글·검색·리뷰)
 

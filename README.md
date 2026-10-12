@@ -90,6 +90,11 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `amazonProduct(urlOrAsin)` | 아마존 상품 정보 / Amazon product | JSON |
 | `xProfile(usernameOrUrl)` | X 공개 프로필·최근 게시물 / X public profile and recent posts | JSON |
 | `xPost(url)` | X 게시물 / X post | JSON |
+| `coupangProduct(urlOrProductId)` | 쿠팡 상품 정보 / Coupang product | JSON |
+| `naverShoppingProduct(url)` | 네이버 브랜드스토어 상품 정보 / Naver brand store product | JSON |
+| `linkedinProfile(url)` | 링크드인 프로필 / LinkedIn profile | JSON |
+| `linkedinCompany(url)` | 링크드인 회사 정보 / LinkedIn company | JSON |
+| `linkedinJob(url)` | 링크드인 채용공고 / LinkedIn job posting | JSON |
 | `createInstagramPostsJob(usernameOrUrl, options)` | 인스타그램 게시물 목록 수집 접수(최대 100) / Instagram posts job | JSON |
 | `createInstagramCommentsJob(url, options)` | 인스타그램 댓글 수집 접수(최대 15) / Instagram comments job | JSON |
 | `createTiktokSearchJob(keyword, options)` | 틱톡 키워드 영상 검색 접수(최대 50) / TikTok keyword search job | JSON |

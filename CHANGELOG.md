@@ -1,3 +1,8 @@
+# 4.5.0
+
+- Added `coupangProduct(urlOrProductId)`, `naverShoppingProduct(url)`, `linkedinProfile(url)`, `linkedinCompany(url)` and `linkedinJob(url)` with the matching result types (`CoupangProduct`, `NaverShoppingProduct`, `LinkedinProfile`, `LinkedinCompany`, `LinkedinJob`). Coupang takes a product number or `/vp/products/{id}` URL, Naver takes a brand store product URL (`brand.naver.com/{store}/products/{id}`), and LinkedIn takes profile (`/in/`), company (`/company/`) or job posting (`/jobs/view/`) URLs. Each call is synchronous; failed calls are not charged.
+- 쿠팡 상품·네이버 브랜드스토어 상품·링크드인 프로필/회사/채용공고 조회 메서드 `coupangProduct()`·`naverShoppingProduct()`·`linkedinProfile()`·`linkedinCompany()`·`linkedinJob()` 과 결과 타입(`CoupangProduct`, `NaverShoppingProduct`, `LinkedinProfile`, `LinkedinCompany`, `LinkedinJob`)을 추가했습니다. 쿠팡은 상품 번호나 `/vp/products/{번호}` 주소, 네이버는 브랜드스토어 상품 주소(`brand.naver.com/{스토어}/products/{번호}`), 링크드인은 프로필(`/in/`)·회사(`/company/`)·채용공고(`/jobs/view/`) 주소를 받습니다. 모두 동기 응답이며 실패한 호출은 과금되지 않습니다.
+
 # 4.4.0
 
 - Removed the YouTube download methods `youtubeFormats()`, `downloadYoutubeVideo()` and `downloadYoutubeAudio()` and their result types (`YoutubeFormats`, `YoutubeVideoFormat`, `YoutubeAudioFormat`, `YoutubeDownloadLink`, `YoutubeVideoDownloadOptions`, `YoutubeAudioDownloadOptions`) — the matching endpoints are gone. `youtubeMetadata()`, `youtubeThumbnail()`, `youtubeSubtitleList()`, `youtubeSubtitle()`, `youtubeSearch()`, `youtubeChannel()`, `youtubePlaylist()`, `youtubeHashtag()` and `youtubeComments()` are unchanged.

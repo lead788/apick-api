@@ -84,7 +84,14 @@ const post = await client.instagramPost('https://www.instagram.com/p/DeHufcWDCjf
 const tiktok = await client.tiktokProfile('https://www.tiktok.com/@tiktok');
 const product = await client.amazonProduct('B0BDHWDR12');
 const x = await client.xProfile('NASA');
+const coupang = await client.coupangProduct('https://www.coupang.com/vp/products/7812020679');
+const naver = await client.naverShoppingProduct('https://brand.naver.com/pulmuonebynature/products/4995061380');
+const profile = await client.linkedinProfile('https://www.linkedin.com/in/example/');
+const company = await client.linkedinCompany('https://www.linkedin.com/company/example/');
+const job = await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234567/');
 ```
+
+Coupang accepts a product number or a product URL (`/vp/products/{id}`), and Naver accepts a brand store product URL (`brand.naver.com/{store}/products/{id}`). LinkedIn accepts profile (`/in/`), company (`/company/`) and job posting (`/jobs/view/`) URLs.
 
 ### Collection jobs (lists, comments, search, reviews)
 

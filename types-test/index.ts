@@ -112,6 +112,12 @@ const reviews = client.waitForScrapeJob<AmazonReview>("a".repeat(32)).then((resu
 const place = client.createGoogleMapsPlaceJob("ChIJobb671mhfDURrcE4SebLfyw").then((result) => result.data.job_id);
 const placeDone = client.waitForScrapeJob<GoogleMapsPlace>("a".repeat(32)).then((result) => result.data.items?.[0]?.rating_distribution["5"]);
 void amazon; void xp; void xpost; void searchJob; void reviews; void place; void placeDone;
+const coupang = client.coupangProduct("https://www.coupang.com/vp/products/7812020679").then((result) => result.data.final_price);
+const naverProduct = client.naverShoppingProduct("https://brand.naver.com/pulmuonebynature/products/4995061380").then((result) => result.data.sellers[0]?.final_price);
+const linkedinMe = client.linkedinProfile("https://www.linkedin.com/in/example/").then((result) => result.data.experience[0]?.company);
+const linkedinCo = client.linkedinCompany("https://www.linkedin.com/company/example/").then((result) => result.data.employees_on_linkedin);
+const linkedinJob = client.linkedinJob("https://www.linkedin.com/jobs/view/4001234567/").then((result) => result.data.applicants);
+void coupang; void naverProduct; void linkedinMe; void linkedinCo; void linkedinJob;
 const youtubeTracks: Promise<ApickResult<YoutubeSubtitleList>> = client.youtubeSubtitleList("dQw4w9WgXcQ");
 const youtubeThumb: Promise<ApickBinaryResult> = client.youtubeThumbnail("dQw4w9WgXcQ");
 const youtubeText: Promise<ApickBinaryResult> = client.youtubeSubtitle("dQw4w9WgXcQ", "en", { format: "srt", type: "auto" });

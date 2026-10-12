@@ -153,6 +153,122 @@ export interface XPost {
 	readonly author: { readonly followers: number | null; readonly is_verified: boolean };
 }
 
+export interface CoupangProduct {
+	readonly product_id: string;
+	readonly url: string;
+	readonly title: string;
+	readonly rating: number | null;
+	readonly reviews: number | null;
+	readonly initial_price: string;
+	readonly final_price: string;
+	readonly discount_rate: number | null;
+	readonly currency: string;
+	readonly seller_name: string;
+	readonly shop_url: string;
+	readonly seller_rating: number | null;
+	readonly seller_reviews: number | null;
+	readonly images: readonly string[];
+	readonly main_image: string;
+	readonly categories: readonly { readonly name: string; readonly url: string }[];
+	readonly root_category: string;
+	readonly root_category_url: string;
+	readonly shipping_details: readonly string[];
+	readonly variations: readonly { readonly name: string; readonly variations: readonly string[] }[];
+	readonly is_in_stock: boolean;
+}
+
+/** 네이버 브랜드스토어 상품. 상품 주소는 `/{스토어}/products/{번호}` 형식만 받는다. */
+export interface NaverShoppingProduct {
+	readonly product_id: string;
+	readonly url: string;
+	readonly title: string;
+	readonly original_price: string;
+	readonly final_price: number | null;
+	readonly discount_rate: number | null;
+	readonly currency: string;
+	readonly description: string;
+	readonly total_reviews: number | null;
+	readonly average_rating: number | null;
+	readonly sold_out: boolean;
+	readonly delivery_fee_type: string;
+	readonly arrival_guarantee: boolean;
+	readonly category_name: string;
+	readonly tags: readonly string[];
+	readonly breadcrumbs: readonly string[];
+	readonly images: readonly string[];
+	readonly sellers: readonly { readonly seller_name: string; readonly final_price: number | null; readonly currency: string; readonly seller_link: string }[];
+	readonly product_information: readonly { readonly label: string; readonly value: string }[];
+}
+
+export interface LinkedinProfile {
+	readonly linkedin_id: string;
+	readonly name: string;
+	readonly first_name: string;
+	readonly last_name: string;
+	readonly position: string;
+	readonly about: string;
+	readonly location: string;
+	readonly country_code: string;
+	readonly followers: number | null;
+	readonly connections: number | null;
+	readonly current_company_name: string;
+	readonly avatar: string;
+	readonly banner_image: string;
+	readonly url: string;
+	readonly is_influencer: boolean;
+	readonly experience: readonly { readonly company: string; readonly title: string; readonly start: string; readonly end: string; readonly location: string }[];
+	readonly education: readonly { readonly school: string; readonly degree: string; readonly start: string; readonly end: string }[];
+	readonly certifications: readonly string[];
+	readonly languages: readonly string[];
+	readonly posts: readonly { readonly title: string; readonly link: string; readonly created_at: string; readonly interaction: string }[];
+}
+
+export interface LinkedinCompany {
+	readonly company_id: string;
+	readonly name: string;
+	readonly about: string;
+	readonly description: string;
+	readonly slogan: string;
+	readonly website: string;
+	readonly industries: string;
+	readonly company_size: string;
+	readonly organization_type: string;
+	readonly founded: number | null;
+	readonly followers: number | null;
+	readonly employees_on_linkedin: number | null;
+	readonly headquarters: string;
+	readonly locations: readonly string[];
+	readonly specialties: string;
+	readonly logo: string;
+	readonly image: string;
+	readonly url: string;
+	readonly funding: Readonly<Record<string, unknown>> | null;
+	readonly updates: readonly { readonly title: string; readonly link: string; readonly date: string; readonly text: string }[];
+}
+
+export interface LinkedinJob {
+	readonly job_posting_id: string;
+	readonly title: string;
+	readonly company_name: string;
+	readonly company_id: string;
+	readonly company_url: string;
+	readonly company_logo: string;
+	readonly location: string;
+	readonly employment_type: string;
+	readonly seniority_level: string;
+	readonly industries: string;
+	readonly summary: string;
+	readonly description_html: string;
+	readonly posted_time: string;
+	readonly posted_date: string;
+	readonly applicants: number | null;
+	readonly apply_link: string;
+	readonly is_easy_apply: boolean;
+	readonly base_salary: Readonly<Record<string, unknown>> | null;
+	readonly salary_standards: string;
+	readonly url: string;
+}
+
 export interface TiktokVideo {
 	readonly video_id: string;
 	readonly url: string;
@@ -633,6 +749,11 @@ export class ApickClient {
 	amazonProduct(urlOrAsin: string): Promise<ApickResult<AmazonProduct>>;
 	xProfile(usernameOrUrl: string): Promise<ApickResult<XProfile>>;
 	xPost(url: string): Promise<ApickResult<XPost>>;
+	coupangProduct(urlOrProductId: string): Promise<ApickResult<CoupangProduct>>;
+	naverShoppingProduct(url: string): Promise<ApickResult<NaverShoppingProduct>>;
+	linkedinProfile(url: string): Promise<ApickResult<LinkedinProfile>>;
+	linkedinCompany(url: string): Promise<ApickResult<LinkedinCompany>>;
+	linkedinJob(url: string): Promise<ApickResult<LinkedinJob>>;
 	createInstagramPostsJob(usernameOrUrl: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<InstagramPost>>>;
 	createInstagramCommentsJob(url: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<SocialComment>>>;
 	createTiktokSearchJob(keyword: string, options?: ScrapeJobOptions): Promise<ApickResult<ScrapeJob<TiktokVideo>>>;

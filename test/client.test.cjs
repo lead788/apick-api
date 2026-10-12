@@ -20,8 +20,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 54 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 54);
+test('exports a focused catalog of 59 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 59);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -598,6 +598,36 @@ test('implements Amazon, X and collection-job contracts', async () => {
 	assert.throws(() => client.amazonProduct(''), /urlOrAsin/);
 	assert.throws(() => client.createGoogleMapsPlaceJob(''), /placeIdOrUrl/);
 	assert.equal(requests.length, 13);
+});
+
+test('implements the Coupang, Naver brand store and LinkedIn lookup contracts', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { ok: true }, api: { success: true, cost: 30 } });
+		}
+	});
+	await client.coupangProduct('7812020679');
+	assert.ok(requests[0].url.endsWith('/rest/coupang_product'));
+	assert.equal(requests[0].body.get('product_id'), '7812020679');
+	await client.coupangProduct('https://www.coupang.com/vp/products/7812020679');
+	assert.equal(requests[1].body.get('url'), 'https://www.coupang.com/vp/products/7812020679');
+	await client.naverShoppingProduct('https://brand.naver.com/pulmuonebynature/products/4995061380');
+	assert.ok(requests[2].url.endsWith('/rest/naver_shopping_product'));
+	assert.equal(requests[2].body.get('url'), 'https://brand.naver.com/pulmuonebynature/products/4995061380');
+	await client.linkedinProfile('https://www.linkedin.com/in/example/');
+	assert.ok(requests[3].url.endsWith('/rest/linkedin_profile'));
+	assert.equal(requests[3].body.get('url'), 'https://www.linkedin.com/in/example/');
+	await client.linkedinCompany('https://www.linkedin.com/company/example/');
+	assert.ok(requests[4].url.endsWith('/rest/linkedin_company'));
+	await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234567/');
+	assert.ok(requests[5].url.endsWith('/rest/linkedin_job'));
+	assert.throws(() => client.coupangProduct(''), /urlOrProductId/);
+	assert.throws(() => client.naverShoppingProduct(''), /url/);
+	assert.throws(() => client.linkedinProfile(''), /url/);
+	assert.equal(requests.length, 6);
 });
 
 test('implements the YouTube search, list and comments contracts', async () => {

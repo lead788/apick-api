@@ -47,6 +47,11 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	amazonProduct: { endpoint: '/rest/amazon_product', timeoutMs: 110_000, output: 'json' },
 	xProfile: { endpoint: '/rest/x_profile', timeoutMs: 110_000, output: 'json' },
 	xPost: { endpoint: '/rest/x_post', timeoutMs: 110_000, output: 'json' },
+	coupangProduct: { endpoint: '/rest/coupang_product', timeoutMs: 110_000, output: 'json' },
+	naverShoppingProduct: { endpoint: '/rest/naver_shopping_product', timeoutMs: 110_000, output: 'json' },
+	linkedinProfile: { endpoint: '/rest/linkedin_profile', timeoutMs: 110_000, output: 'json' },
+	linkedinCompany: { endpoint: '/rest/linkedin_company', timeoutMs: 110_000, output: 'json' },
+	linkedinJob: { endpoint: '/rest/linkedin_job', timeoutMs: 110_000, output: 'json' },
 	getScrapeJob: { endpoint: '/rest/scrape_jobs', timeoutMs: 35_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
@@ -104,6 +109,22 @@ function placeInput(value) {
 function amazonInput(value) {
 	const text = requiredString('urlOrAsin', value, 2048);
 	return /^https?:\/\//i.test(text) ? { url: text } : { asin: text.toUpperCase() };
+}
+
+// 쿠팡 상품 입력: 주소면 url, 상품 번호면 product_id 로 보낸다.
+function coupangInput(value) {
+	const text = requiredString('urlOrProductId', value, 2048);
+	return /^https?:\/\//i.test(text) ? { url: text } : { product_id: text };
+}
+
+// 네이버 브랜드스토어 상품 입력: 상품 주소만 받는다.
+function naverInput(value) {
+	return { url: requiredString('url', value, 2048) };
+}
+
+// LinkedIn 입력: 프로필(/in/), 회사(/company/), 채용공고(/jobs/view/) 주소.
+function linkedinInput(value) {
+	return { url: requiredString('url', value, 2048) };
 }
 
 const SCRAPE_JOB_PRODUCTS = Object.freeze({ instagram_posts: 100, instagram_comments: 15, tiktok_search: 50, tiktok_video: 1, tiktok_comments: 100, amazon_reviews: 100, google_maps_place: 1 });
@@ -672,6 +693,31 @@ class ApickClient {
 
 	xPost(url) {
 		return this._call('xPost', { url: requiredString('url', url, 2048) });
+	}
+
+	// 상품 주소(/vp/products/{번호}) 또는 상품 번호. 처리에 보통 25~40초가 걸린다.
+	coupangProduct(urlOrProductId) {
+		return this._call('coupangProduct', coupangInput(urlOrProductId));
+	}
+
+	// 네이버 브랜드스토어 상품 주소(/{스토어}/products/{번호}). 스마트스토어 직링크는 받지 않는다.
+	naverShoppingProduct(url) {
+		return this._call('naverShoppingProduct', naverInput(url));
+	}
+
+	// LinkedIn 프로필 주소(/in/{아이디}). 처리에 보통 20초 안팎이 걸린다.
+	linkedinProfile(url) {
+		return this._call('linkedinProfile', linkedinInput(url));
+	}
+
+	// LinkedIn 회사 주소(/company/{아이디}).
+	linkedinCompany(url) {
+		return this._call('linkedinCompany', linkedinInput(url));
+	}
+
+	// LinkedIn 채용공고 주소(/jobs/view/{번호}).
+	linkedinJob(url) {
+		return this._call('linkedinJob', linkedinInput(url));
 	}
 
 	// 수집 작업: 접수 즉시 job_id 를 돌려준다. maxResults × 단가를 예약하고 결과를 받을 때 실제 건수만 차감한다.

@@ -26,6 +26,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	validatePhone: { endpoint: '/rest/check_phone_valid', timeoutMs: 20_000, output: 'json' },
 	holidays: { endpoint: '/rest/holiday_info', timeoutMs: 35_000, output: 'json' },
 	searchAddress: { endpoint: '/rest/search_juso', timeoutMs: 20_000, output: 'json' },
+	vehicleModelInfo: { endpoint: '/rest/vehicle_model_info', timeoutMs: 20_000, output: 'json' },
 	ocr: { endpoint: '/rest/ocr', timeoutMs: 35_000, output: 'json' },
 	maskResidentNumber: { endpoint: '/rest/hide_rrn', timeoutMs: 35_000, output: 'binary', filename: 'masked.png' },
 	maskResidenceCard: { endpoint: '/rest/identity_document_residence_card', timeoutMs: 35_000, output: 'json' },
@@ -72,6 +73,8 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestEmployment: { endpoint: '/rest/req_employment', timeoutMs: 35_000, output: 'json' },
 	requestPersonalIncome: { endpoint: '/rest/req_personal_income', timeoutMs: 35_000, output: 'json' },
 	requestNpsJoinHistory: { endpoint: '/rest/req_nps_join_history', timeoutMs: 35_000, output: 'json' },
+	requestNpsDeductionCert: { endpoint: '/rest/req_nps_deduction_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsCareerHistory: { endpoint: '/rest/req_nps_career_history', timeoutMs: 35_000, output: 'json' },
 	requestDrivingLicense: { endpoint: '/rest/req_driving_license', timeoutMs: 35_000, output: 'json' },
 	requestHealthCheckup: { endpoint: '/rest/req_health_checkup', timeoutMs: 35_000, output: 'json' },
 	requestCashReceiptDeduction: { endpoint: '/rest/req_cash_receipt_deduction', timeoutMs: 35_000, output: 'json' },
@@ -259,6 +262,10 @@ function skillInput(value) {
 function optionalSkillText(name, value, maxLength) {
 	if (value === undefined || value === null || value === '') return undefined;
 	return requiredString(name, String(value), maxLength);
+}
+
+function optionalText(name, value, maxLength) {
+	return optionalSkillText(name, value, maxLength);
 }
 
 function numberOrNull(value) {
@@ -560,6 +567,19 @@ class ApickClient {
 		});
 	}
 
+	// 브랜드·차명·연식·등급으로 제원·사양·등급 후보를 조회한다.
+	// 차명(model)을 비우면 브랜드 목록 또는 그 브랜드의 차종 목록을 무료로 돌려준다.
+	// 제원 값은 표준 표기로만 내려간다(연료·구동방식·변속기·차체형상·에너지효율등급, 여러 값은 "+" 연결).
+	vehicleModelInfo(options) {
+		const config = options || {};
+		return this._call('vehicleModelInfo', {
+			maker: optionalText('maker', config.maker, 60),
+			model: optionalText('model', config.model, 60),
+			modelYear: optionalText('modelYear', config.modelYear, 60),
+			trim: optionalText('trim', config.trim, 60)
+		});
+	}
+
 	async ocr(image, options) {
 		const upload = await normalizeImage(image, options);
 		const form = new FormData();
@@ -635,7 +655,6 @@ class ApickClient {
 	googleMapsSearch(keyword) {
 		return this._call('googleMapsSearch', { keyword: requiredString('keyword', keyword, 200) });
 	}
-
 	// keyword 로 구글을 검색했을 때 domain 이 1~100위 중 몇 위인지 확인한다.
 	googleRankCheck(keyword, domain) {
 		return this._call('googleRankCheck', {
@@ -1041,6 +1060,31 @@ class ApickClient {
 
 	getNpsJoinHistory(transactionId) {
 		return this._call('requestNpsJoinHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_join_history' });
+	}
+
+	requestNpsDeductionCert(input) {
+		const payload = dataRequestInput(input);
+		const years = optionalRangeInteger('years', (input || {}).years, 1, 5);
+		if (years !== undefined) payload.years = years;
+		return this._call('requestNpsDeductionCert', payload);
+	}
+
+	getNpsDeductionCert(transactionId) {
+		return this._call('requestNpsDeductionCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_deduction_cert' });
+	}
+
+	requestNpsCareerHistory(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		const from = normalizeYearMonth('from', config.from);
+		const to = normalizeYearMonth('to', config.to);
+		if (from !== undefined) payload.from = from;
+		if (to !== undefined) payload.to = to;
+		return this._call('requestNpsCareerHistory', payload);
+	}
+
+	getNpsCareerHistory(transactionId) {
+		return this._call('requestNpsCareerHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_career_history' });
 	}
 
 	requestDrivingLicense(input) {

@@ -64,6 +64,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `validatePhone(number)` | 전화번호 유효성 / Phone validation | JSON |
 | `holidays(year, month)` | 대한민국 공휴일 / Korean holidays | JSON |
 | `searchAddress(query, options)` | 도로명주소 검색 / Road address search | JSON |
+| `vehicleModelInfo(options)` | 차종별 차량정보 조회 / Vehicle model specifications (값은 표준 표기 / standard notation values) | JSON |
 | `ocr(image, options)` | 이미지 OCR / Image OCR | JSON |
 | `dnsLookup(domain)` | DNS 조회 / DNS lookup | JSON |
 | `geolocate(address)` | 도메인·IP 위치 / Domain and IP location | JSON |
@@ -117,6 +118,8 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestEmployment(input)` / `getEmployment(transactionId)` | 재직·보험료 확인 / Employment & insurance premium check | JSON |
 | `requestPersonalIncome(input)` / `getPersonalIncome(transactionId)` | 금융소득(이자·배당) 조회 / Financial income (interest/dividend) | JSON |
 | `requestNpsJoinHistory(input)` / `getNpsJoinHistory(transactionId)` | 국민연금 가입내역조회 / National Pension join history | JSON |
+| `requestNpsDeductionCert(input)` / `getNpsDeductionCert(transactionId)` | 국민연금 소득공제용 납부확인서 / National Pension payment certificate for income deduction | JSON |
+| `requestNpsCareerHistory(input)` / `getNpsCareerHistory(transactionId)` | 국민연금 경력 이력 조회 / National Pension career history | JSON |
 | `requestDrivingLicense(input)` / `getDrivingLicense(transactionId)` | 운전면허 조회 / Driver's license check | JSON |
 | `requestHealthCheckup(input)` / `getHealthCheckup(transactionId)` | 국가 건강검진 결과 조회 / National health checkup results | JSON |
 | `requestCashReceiptDeduction(input)` / `getCashReceiptDeduction(transactionId)` | 현금영수증 소득공제 내역 / Cash receipt income deductions | JSON |
@@ -402,6 +405,8 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 재직·보험료 확인 / Employment & insurance premium | `requestEmployment` / `getEmployment` | `insuranceYears` (1–3) |
 | 금융소득 조회 / Financial income | `requestPersonalIncome` / `getPersonalIncome` | `incomeYears` (1–5) |
 | 국민연금 가입내역 / NPS join history | `requestNpsJoinHistory` / `getNpsJoinHistory` | `from`, `to` (`YYYY-MM`) |
+| 국민연금 소득공제용 납부확인서 / NPS payment certificate | `requestNpsDeductionCert` / `getNpsDeductionCert` | `years` (1–5) |
+| 국민연금 경력 이력 / NPS career history | `requestNpsCareerHistory` / `getNpsCareerHistory` | `from`, `to` (`YYYY-MM`) |
 | 운전면허 조회 / Driver's license | `requestDrivingLicense` / `getDrivingLicense` | — |
 | 국가 건강검진 결과 / Health checkup | `requestHealthCheckup` / `getHealthCheckup` | — |
 | 현금영수증 소득공제 내역 / Cash receipt deductions | `requestCashReceiptDeduction` / `getCashReceiptDeduction` | `incomeYears` (1–3) |

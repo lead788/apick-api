@@ -371,6 +371,8 @@ export interface DataRequestInput {
 export interface RequestEmploymentInput extends DataRequestInput { insuranceYears?: number; }
 export interface RequestPersonalIncomeInput extends DataRequestInput { incomeYears?: number; }
 export interface RequestNpsJoinHistoryInput extends DataRequestInput { from?: string; to?: string; }
+export interface RequestNpsDeductionCertInput extends DataRequestInput { years?: number; }
+export interface RequestNpsCareerHistoryInput extends DataRequestInput { from?: string; to?: string; }
 export interface RequestDrivingLicenseInput extends DataRequestInput {}
 export interface RequestHealthCheckupInput extends DataRequestInput {}
 export interface RequestCashReceiptDeductionInput extends DataRequestInput { incomeYears?: number; }
@@ -453,6 +455,33 @@ export interface NpsJoinHistoryInfo {
 	가입내역: NpsJoinHistoryEntry[];
 }
 export interface NpsJoinHistoryResultPayload { npsJoinHistory: NpsJoinHistoryInfo; }
+
+export interface NpsDeductionCertYearEntry {
+	발급연도: string; 사업장가입자고지금액: number; 지역가입자등납부금액: number;
+	사업장가입자소급금액: number; 추납보험료납부금액: number; 실업크레딧납부금액: number; 총합계: number;
+}
+export interface NpsDeductionCertInfo {
+	조회기간: { 시작: string; 끝: string };
+	신청인: string;
+	생년월일: string;
+	연도별내역: NpsDeductionCertYearEntry[];
+}
+export interface NpsDeductionCertResultPayload { npsDeductionCert: NpsDeductionCertInfo; }
+
+export interface NpsCareerHistoryEntry {
+	사업장: string; 시작: string; 종료: string;
+	기준소득월액: number; 납부개월: number; 미납개월: number; 납부금액: number;
+}
+export interface NpsCareerHistoryOtherEntry {
+	시작: string; 종료: string; 가입자구분: string; 납부개월: number; 납부금액: number;
+}
+export interface NpsCareerHistoryInfo {
+	조회기간: { 시작: string; 끝: string };
+	합계: { 사업장수: number; 경력건수: number; 사업장납부개월: number; 사업장납부금액: number; 사업장외납부개월: number };
+	경력: NpsCareerHistoryEntry[];
+	사업장외가입: NpsCareerHistoryOtherEntry[];
+}
+export interface NpsCareerHistoryResultPayload { npsCareerHistory: NpsCareerHistoryInfo; }
 
 export interface DrivingLicenseAcquisition {
 	면허종류코드: string; 발급일자: string; 합격일자: string; 발급지역: string; 발급일련번호: string;
@@ -611,11 +640,18 @@ export class ApickBinaryResult {
 }
 
 export const DEFAULT_BASE_URL: 'https://apick.app';
-
 export const SERVICES: Readonly<Record<string, Readonly<{
 	endpoint: string;
 	output: 'json' | 'binary';
 }>>>;
+
+/** Brand, model name, model year and trim — all optional. With no `model` the call returns the brand/model list and is free. */
+export interface VehicleModelInfoOptions {
+	maker?: string;
+	model?: string;
+	modelYear?: string;
+	trim?: string;
+}
 
 export class ApickClient {
 	createVideoJob(model: VideoModel, prompt: string, options?: VideoJobOptions): Promise<ApickResult<VideoJobData>>;
@@ -630,6 +666,8 @@ export class ApickClient {
 	validatePhone(number: string): Promise<ApickResult>;
 	holidays(year: number | string, month: number | string): Promise<ApickResult>;
 	searchAddress(query: string, options?: { page?: number }): Promise<ApickResult>;
+	/** Look up Korean-market vehicle specifications. Values use fixed standard notation (fuel, drive type, transmission, body type, efficiency grade; multiple values joined with `+`). */
+	vehicleModelInfo(options?: VehicleModelInfoOptions): Promise<ApickResult>;
 	ocr(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
 	maskResidentNumber(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options: MaskResidentNumberOptions): Promise<ApickBinaryResult>;
 	maskResidenceCard(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
@@ -700,6 +738,10 @@ export class ApickClient {
 	getPersonalIncome(transactionId: string): Promise<ApickResult<DataRequestResult<PersonalIncomeResultPayload>>>;
 	requestNpsJoinHistory(input: RequestNpsJoinHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getNpsJoinHistory(transactionId: string): Promise<ApickResult<DataRequestResult<NpsJoinHistoryResultPayload>>>;
+	requestNpsDeductionCert(input: RequestNpsDeductionCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsDeductionCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsDeductionCertResultPayload>>>;
+	requestNpsCareerHistory(input: RequestNpsCareerHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsCareerHistory(transactionId: string): Promise<ApickResult<DataRequestResult<NpsCareerHistoryResultPayload>>>;
 	requestDrivingLicense(input: RequestDrivingLicenseInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getDrivingLicense(transactionId: string): Promise<ApickResult<DataRequestResult<DrivingLicenseResultPayload>>>;
 	requestHealthCheckup(input: RequestHealthCheckupInput): Promise<ApickResult<DataRequestAcceptedData>>;

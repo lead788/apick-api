@@ -304,7 +304,7 @@ try {
 
 Sources: [APICK development guide](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 status contract](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
-`authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). `requestCashReceiptDeduction` takes optional `incomeYears` (1-3) and `requestTaxReturnHistory` takes optional `years` (1-10). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
+`authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). `requestNpsDeductionCert` takes optional `years` (1-5) and `requestNpsCareerHistory` takes optional `from`/`to` (`YYYY-MM`). `requestCashReceiptDeduction` takes optional `incomeYears` (1-3) and `requestTaxReturnHistory` takes optional `years` (1-10). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
 
 ## Skills
 

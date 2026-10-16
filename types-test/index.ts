@@ -60,6 +60,7 @@ client.createVideoJob("other", "a boat");
 import type {
   AuthProvider, DataRequestAcceptedData, DataRequestResult,
   EmploymentResultPayload, PersonalIncomeResultPayload, NpsJoinHistoryResultPayload,
+  NpsDeductionCertResultPayload, NpsCareerHistoryResultPayload,
   DrivingLicenseResultPayload, HealthCheckupResultPayload,
   CashReceiptDeductionResultPayload, TaxReturnHistoryResultPayload,
   YoutubeMetadata, YoutubeSubtitleList
@@ -77,6 +78,14 @@ const npsRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.request
   name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", from: "1988-01", to: "2026-09"
 });
 const npsResult: Promise<ApickResult<DataRequestResult<NpsJoinHistoryResultPayload>>> = client.getNpsJoinHistory("a".repeat(32));
+const npsCertRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsDeductionCert({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", years: 5
+});
+const npsCertResult: Promise<ApickResult<DataRequestResult<NpsDeductionCertResultPayload>>> = client.getNpsDeductionCert("a".repeat(32));
+const npsCareerRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsCareerHistory({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", from: "1988-01", to: "2026-09"
+});
+const npsCareerResult: Promise<ApickResult<DataRequestResult<NpsCareerHistoryResultPayload>>> = client.getNpsCareerHistory("a".repeat(32));
 const licenseRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestDrivingLicense({
   name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "pass"
 });

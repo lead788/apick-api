@@ -20,8 +20,8 @@ function jsonResponse(body, options) {
 	});
 }
 
-test('exports a focused catalog of 58 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 58);
+test('exports a focused catalog of 61 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 61);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -391,6 +391,25 @@ test('implements the remaining four simple-auth data products with product-speci
 	await npsClient.getNpsJoinHistory(txId);
 	assert.ok(nps.requests[1].url.endsWith('/rest/get_nps_join_history'));
 	assert.throws(() => npsClient.requestNpsJoinHistory({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss', from: '1988-1' }), /from/);
+
+	const npsCert = fetchStub();
+	const npsCertClient = new ApickClient({ apiKey: 'key', fetch: npsCert.fetch });
+	await npsCertClient.requestNpsDeductionCert({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss', years: 5 });
+	assert.ok(npsCert.requests[0].url.endsWith('/rest/req_nps_deduction_cert'));
+	assert.equal(npsCert.requests[0].options.body.get('years'), '5');
+	await npsCertClient.getNpsDeductionCert(txId);
+	assert.ok(npsCert.requests[1].url.endsWith('/rest/get_nps_deduction_cert'));
+	assert.throws(() => npsCertClient.requestNpsDeductionCert({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss', years: 6 }), /years/);
+
+	const npsCareer = fetchStub();
+	const npsCareerClient = new ApickClient({ apiKey: 'key', fetch: npsCareer.fetch });
+	await npsCareerClient.requestNpsCareerHistory({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss', from: '1988-01', to: '2026-09' });
+	assert.ok(npsCareer.requests[0].url.endsWith('/rest/req_nps_career_history'));
+	assert.equal(npsCareer.requests[0].options.body.get('from'), '1988-01');
+	assert.equal(npsCareer.requests[0].options.body.get('to'), '2026-09');
+	await npsCareerClient.getNpsCareerHistory(txId);
+	assert.ok(npsCareer.requests[1].url.endsWith('/rest/get_nps_career_history'));
+	assert.throws(() => npsCareerClient.requestNpsCareerHistory({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss', to: '2026-9' }), /to/);
 
 	const license = fetchStub();
 	const licenseClient = new ApickClient({ apiKey: 'key', fetch: license.fetch });

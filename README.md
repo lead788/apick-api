@@ -64,7 +64,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `validatePhone(number)` | 전화번호 유효성 / Phone validation | JSON |
 | `holidays(year, month)` | 대한민국 공휴일 / Korean holidays | JSON |
 | `searchAddress(query, options)` | 도로명주소 검색 / Road address search | JSON |
-| `vehicleModelInfo(options)` | 차종별 차량정보 조회 / Vehicle model specifications (표기가 달라도 가장 비슷한 차종 / closest match when spelled differently · 값은 표준 표기 / standard notation values) | JSON |
+| `vehicleModelInfo(options)` | 차종별 차량정보 조회 / Vehicle model specifications for cars and motorcycles/scooters (승용차·이륜차 / 표기가 달라도 가장 비슷한 차종 / closest match when spelled differently · 값은 표준 표기 / standard notation values) | JSON |
 | `ocr(image, options)` | 이미지 OCR / Image OCR | JSON |
 | `dnsLookup(domain)` | DNS 조회 / DNS lookup | JSON |
 | `geolocate(address)` | 도메인·IP 위치 / Domain and IP location | JSON |

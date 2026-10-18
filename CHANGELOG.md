@@ -1,3 +1,8 @@
+# 4.8.1
+
+- `vehicleModelInfo(options)` also covers motorcycles and scooters alongside passenger cars; the `차체형상` value adds 스쿠터, 언더본, 네이키드, 스포츠바이크, 투어링바이크, 크루저, 어드벤처, 오프로드 and 클래식바이크. Request and response shapes are unchanged.
+- `vehicleModelInfo(options)` 가 승용차에 더해 오토바이·스쿠터 같은 이륜차도 조회합니다. `차체형상` 값에 스쿠터·언더본·네이키드·스포츠바이크·투어링바이크·크루저·어드벤처·오프로드·클래식바이크가 추가됩니다. 요청·응답 형식은 바뀌지 않았습니다.
+
 # 4.8.0
 
 - `vehicleModelInfo(options)` now finds the closest model when the brand, model name or trim is written differently (`아반테`/`아반떼`, `K5 하이브리드`/`K5`, `520i`/`5시리즈`). A high-confidence match returns the specification plus `추천` (`자동선택: true`, `대안`); a low-confidence match returns `추천.대안` only and is not billed. When the requested trim has no specification, the response keeps the same model's base specification and adds `제원.등급후보` and `안내` instead of silently returning a different trim.

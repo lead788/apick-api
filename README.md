@@ -505,3 +505,13 @@ Set `APICK_API_KEY` in the environment. 원격 MCP는 업로드된 자료를 처
 
 
 TTS: [Gemini·ChatGPT·정규화 / engines and normalization](docs/tts.md). `createOpenAiTtsJob`, `listOpenAiTtsVoices`, `getTtsOptions`를 포함한 최신 계약입니다.
+
+## 차량 자유문 검색 / Vehicle free-text search
+
+차명에 등급·연식·좌석을 함께 넣을 수 있습니다(`파나메라 gts 4인승 19년식`, `PANAMERA GTS 19년`). 입력한 연식·등급을 우선하며 좌석 수는 실제 제원과 일치해야 합니다. 근접 연식을 선택하면 반환 연식과 안내를 확인하세요. 지정 등급을 찾지 못하거나 확신이 낮으면 제원 없이 무료 후보만 반환하며, 유사 차량이 전혀 없으면 없음 오류로 응답하고 과금하지 않습니다. 별도 연식·등급과 문장 조건이 충돌하면 입력 오류입니다.
+
+Put the model, trim, year and seat count in model (for example, PANAMERA GTS 19년). Matching prioritizes the supplied year and trim, and the seat count must match the specification. Check the returned year and notice when a nearby year is selected. Unmatched trims and low-confidence matches return suggestions without specifications or charges; no similar vehicle returns a no-result error without charging. Conflicting explicit and free-text constraints are rejected.
+
+```js
+await client.vehicleModelInfo({ model: "파나메라 gts 4인승 19년식" });
+```

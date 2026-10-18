@@ -20,6 +20,19 @@ function jsonResponse(body, options) {
 	});
 }
 
+test('vehicle free-text queries preserve all supplied constraints and zero-cost results', async () => {
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
+		requests.push({ url, body: Object.fromEntries(options.body) });
+		return jsonResponse({ data: { 추천: { 자동선택: false, 대안: [] } }, api: { success: true, cost: 0 } });
+	} });
+	await client.vehicleModelInfo({ model: '파나메라 gts 4인승 19년식' });
+	await client.vehicleModelInfo({ model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
+	assert.equal(requests[0].url, 'https://api.example.test/rest/vehicle_model_info');
+	assert.deepEqual(requests[0].body, { model: '파나메라 gts 4인승 19년식' });
+	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
+});
+
 test('exports a focused catalog of 61 named services', () => {
 	assert.equal(Object.keys(SERVICES).length, 61);
 	for (const name of Object.keys(SERVICES)) {

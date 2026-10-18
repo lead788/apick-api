@@ -648,7 +648,9 @@ export const SERVICES: Readonly<Record<string, Readonly<{
 /** Brand, model name, model year and trim — all optional. With no `model` the call returns the brand/model list and is free. */
 export interface VehicleModelInfoOptions {
 	maker?: string;
+	/** 차명과 등급·연식·좌석을 함께 입력할 수 있습니다. Free text, e.g. PANAMERA GTS 19년. */
 	model?: string;
+	/** 2자리 또는 4자리 연식. Two or four digits; must agree with the year in model. */
 	modelYear?: string;
 	trim?: string;
 }

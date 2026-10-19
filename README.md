@@ -508,10 +508,16 @@ TTS: [Gemini·ChatGPT·정규화 / engines and normalization](docs/tts.md). `cre
 
 ## 차량 자유문 검색 / Vehicle free-text search
 
-차명에 등급·연식·좌석을 함께 넣을 수 있습니다(`파나메라 gts 4인승 19년식`, `PANAMERA GTS 19년`). 입력한 연식·등급을 우선하며 좌석 수는 실제 제원과 일치해야 합니다. 근접 연식을 선택하면 반환 연식과 안내를 확인하세요. 지정 등급을 찾지 못하거나 확신이 낮으면 제원 없이 무료 후보만 반환하며, 유사 차량이 전혀 없으면 없음 오류로 응답하고 과금하지 않습니다. 별도 연식·등급과 문장 조건이 충돌하면 입력 오류입니다.
+차명에 등급·연식·좌석을 함께 넣을 수 있습니다(`파나메라 gts 4인승 19년식`, `PANAMERA GTS 19년`). 입력한 연식·등급을 우선하며 좌석 수는 확인 가능한 차량 사양과 일치해야 합니다. 근접 연식을 선택하면 반환 연식과 안내를 확인하세요. 지정 등급을 찾지 못하거나 확신이 낮으면 제원 없이 무료 후보만 반환하며, 유사 차량이 전혀 없으면 없음 오류로 응답하고 과금하지 않습니다. 별도 연식·등급과 문장 조건이 충돌하면 입력 오류입니다.
 
-Put the model, trim, year and seat count in model (for example, PANAMERA GTS 19년). Matching prioritizes the supplied year and trim, and the seat count must match the specification. Check the returned year and notice when a nearby year is selected. Unmatched trims and low-confidence matches return suggestions without specifications or charges; no similar vehicle returns a no-result error without charging. Conflicting explicit and free-text constraints are rejected.
+Put the model, trim, year and seat count in model (for example, PANAMERA GTS 19년). Matching prioritizes the supplied year and trim, and the seat count must be identifiable and consistent with the available specification. Check the returned year and notice when a nearby year is selected. Unmatched trims and low-confidence matches return suggestions without specifications or charges; no similar vehicle returns a no-result error without charging. Conflicting explicit and free-text constraints are rejected.
 
 ```js
 await client.vehicleModelInfo({ model: "파나메라 gts 4인승 19년식" });
 ```
+
+### 차량정보 안내 / Vehicle information notices
+
+차량정보는 공백·대소문자가 다른 동일 등급을 우선해 찾으며 연식·사양이 다른 차량은 구분합니다. 기존 `안내`에서 연식·사양 대체, 사양 충돌, 국내 출시 여부 확인 보류, 일부 제원의 추가 검증 상태를 확인할 수 있습니다. 국내 미출시가 확인된 차량은 해외 자료 기준이며 100% 정확성을 보장하지 않는다는 안내가 추가됩니다. 반환된 연식·등급과 안내를 확인하세요. 입력·응답 구조와 과금 방식은 유지됩니다.
+
+Vehicle information prioritizes the same trim across spacing and case variations while distinguishing model years and specifications. The existing `안내` notice can describe year/specification substitutions, conflicting specifications, unverified Korean-market availability, or specifications still under review. Confirmed non-Korean-market vehicles receive an additional notice that overseas data does not guarantee 100% accuracy. Check the returned year, trim and notices. Request/response shapes and billing behavior remain unchanged.

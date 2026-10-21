@@ -90,6 +90,8 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestPensionCreditCert: { endpoint: '/rest/req_pension_credit_cert', timeoutMs: 60_000, output: 'json' },
 	requestFactCert: { endpoint: '/rest/req_fact_cert', timeoutMs: 60_000, output: 'json' },
 	requestTaxClearanceCert: { endpoint: '/rest/req_tax_clearance_cert', timeoutMs: 60_000, output: 'json' },
+	requestIncomeCertBundle: { endpoint: '/rest/req_income_cert_bundle', timeoutMs: 60_000, output: 'json' },
+	requestBusinessCertBundle: { endpoint: '/rest/req_business_cert_bundle', timeoutMs: 60_000, output: 'json' },
 	requestResidentRegistration: { endpoint: '/rest/req_resident_registration', timeoutMs: 35_000, output: 'json' },
 	requestResidentRegistrationCho: { endpoint: '/rest/req_resident_registration_cho', timeoutMs: 35_000, output: 'json' },
 	requestGov24Bundle: { endpoint: '/rest/req_gov24_bundle', timeoutMs: 35_000, output: 'json' }
@@ -262,6 +264,10 @@ const PENSION_CREDIT_CERT_OPTIONS = Object.freeze(['year', 'use_purpose', 'submi
 const FACT_CERT_OPTIONS = Object.freeze(['year', 'start_month', 'end_month', 'itrf_cd', 'issuance', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
 const TAX_CLEARANCE_CERT_OPTIONS = Object.freeze(['cert_type', 'year', 'start_month', 'end_month', 'itrf_cd', 'issuance', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
 
+// 증빙서류 묶음. 승인 한 번으로 담긴 증명을 함께 발급하며 담긴 증명이 같은 발급 입력을 공유한다.
+const INCOME_CERT_BUNDLE_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit_to', 'delivery', 'format', 'amount_open_yn', 'income_source_open_yn', 'withholding_all_print_yn', 'address_open_yn', 'resno_open_yn', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const BUSINESS_CERT_BUNDLE_OPTIONS = Object.freeze(['year', 'period', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address', 'bind_id']);
+
 function hometaxCertInput(input, keys) {
 	const config = input || {};
 	const payload = dataRequestInput(config);
@@ -271,6 +277,20 @@ function hometaxCertInput(input, keys) {
 		payload[key] = String(value);
 	});
 	if (payload.format === undefined) payload.format = 'both';
+	return payload;
+}
+
+// 사업자 증빙서류 묶음은 대표자 본인 확인을 받는다. bind_id 가 없으면 agreed=true 가 있어야
+// 서버가 접수하므로, 빠진 요청은 서버를 부르기 전에 막는다.
+function businessCertBundleInput(input) {
+	const config = input || {};
+	const payload = hometaxCertInput(config, BUSINESS_CERT_BUNDLE_OPTIONS);
+	payload.business_no = normalizeBusinessNumber(config.business_no);
+	if (config.agreed === true) payload.agreed = 'true';
+	else if (config.agreed !== undefined && config.agreed !== false) throw new TypeError('agreed must be a boolean.');
+	if (!payload.bind_id && payload.agreed !== 'true') {
+		throw new TypeError('agreed must be true when bind_id is not provided.');
+	}
 	return payload;
 }
 
@@ -1224,6 +1244,26 @@ class ApickClient {
 
 	getTaxClearanceCert(transactionId) {
 		return this._call('requestTaxClearanceCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tax_clearance_cert' });
+	}
+
+	// 소득 증빙서류 통합발급. 소득금액증명·연금보험료등 소득세액 공제확인서를 승인 한 번으로 발급한다.
+	// 결과는 result.incomeAmountCert·result.pensionCreditCert 로 나뉘어 온다. 접수 20P, 최초 결과 84P.
+	requestIncomeCertBundle(input) {
+		return this._call('requestIncomeCertBundle', hometaxCertInput(input, INCOME_CERT_BUNDLE_OPTIONS));
+	}
+
+	getIncomeCertBundle(transactionId) {
+		return this._call('requestIncomeCertBundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_income_cert_bundle' });
+	}
+
+	// 사업자 증빙서류 통합발급. 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명을 함께 발급한다.
+	// 결과는 result.businessRegistrationCert·vatTaxBaseCert·financialStatementCert 로 나뉜다. 최초 결과 126P.
+	requestBusinessCertBundle(input) {
+		return this._call('requestBusinessCertBundle', businessCertBundleInput(input));
+	}
+
+	getBusinessCertBundle(transactionId) {
+		return this._call('requestBusinessCertBundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_business_cert_bundle' });
 	}
 
 	// 주민등록표 등본·초본 발급. 건당 80P 정액이고 결과에 PDF 원본(base64)·해시가 함께 온다.

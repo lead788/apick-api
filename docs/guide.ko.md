@@ -330,6 +330,17 @@ const cert = await client.requestIncomeAmountCert({
 const issuedCert = await pollDataResult(id => client.getIncomeAmountCert(id), cert);
 ```
 
+증빙서류 묶음 `requestIncomeCertBundle`(소득금액증명·연금보험료등 소득세액 공제확인서)과 `requestBusinessCertBundle`(사업자등록증명·부가가치세 과세표준증명·표준재무제표증명)은 승인 한 번으로 담긴 증명을 함께 발급합니다. 발급 입력은 단건 증명과 같고 결과는 증명마다 `result.incomeAmountCert`처럼 섹션이 따로 옵니다. 최초 결과는 84P·126P입니다. 사업자 묶음은 `business_no`와 대표자 본인 확인(`agreed: true` 또는 이전 응답의 `bind_id`)이 필요합니다. 일부 증명만 발급되면 `status`가 `PARTIAL_SUCCESS`이며 결과 단가는 그대로 청구되니 섹션이 비었는지 확인하세요.
+
+```js
+const incomeDocs = await client.requestIncomeCertBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  year: '2025', use_purpose: '99', submit_to: '99', delivery: '06', format: 'json'
+});
+const incomeResult = await pollDataResult(id => client.getIncomeCertBundle(id), incomeDocs);
+console.log(incomeResult.data.result.incomeAmountCert?.문서확인번호, incomeResult.data.result.pensionCreditCert?.문서확인번호);
+```
+
 ## Skills
 
 검수를 거친 Skill 을 검색하고 실행합니다. Skill 마다 입력 형식(`input_schema`)·결과 형식(`output_schema`)·기본 금액(`price_points`)이 정해져 있으며, 결과가 약속한 형식으로 반환된 실행만 차감됩니다.

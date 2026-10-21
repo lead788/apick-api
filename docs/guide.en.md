@@ -327,6 +327,17 @@ const cert = await client.requestIncomeAmountCert({
 const issuedCert = await pollDataResult(id => client.getIncomeAmountCert(id), cert);
 ```
 
+The certificate bundles `requestIncomeCertBundle` (income amount and pension credit certificates) and `requestBusinessCertBundle` (business registration, VAT tax base and standard financial statement certificates) issue every included certificate after one approval. They take the same issue inputs as the single certificates, and each certificate has its own result section such as `result.incomeAmountCert`. The first result costs 84P and 126P. The business bundle needs `business_no` and representative consent (`agreed: true` or a `bind_id` from a previous response). With `PARTIAL_SUCCESS` some certificates were not issued and the bundle price still applies, so check for empty sections.
+
+```js
+const incomeDocs = await client.requestIncomeCertBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  year: '2025', use_purpose: '99', submit_to: '99', delivery: '06', format: 'json'
+});
+const incomeResult = await pollDataResult(id => client.getIncomeCertBundle(id), incomeDocs);
+console.log(incomeResult.data.result.incomeAmountCert?.문서확인번호, incomeResult.data.result.pensionCreditCert?.문서확인번호);
+```
+
 ## Skills
 
 Search and run reviewed Skills. Each Skill fixes its input format (`input_schema`), output format (`output_schema`) and base amount (`price_points`). A run is charged only when a result in the promised format is returned.

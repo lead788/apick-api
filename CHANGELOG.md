@@ -1,3 +1,8 @@
+# 4.10.0
+
+- 증빙서류 통합발급 묶음 2종을 추가했습니다. `requestIncomeCertBundle()`·`getIncomeCertBundle()`은 소득금액증명과 연금보험료등 소득세액 공제확인서를, `requestBusinessCertBundle()`·`getBusinessCertBundle()`은 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명을 휴대폰 승인 한 번으로 함께 발급합니다. 접수 20P, 최초 결과는 84P·126P입니다. 사업자 묶음은 `business_no`와 대표자 본인 확인(`agreed: true` 또는 `bind_id`)이 없으면 서버를 부르기 전에 `TypeError`를 던집니다.
+- Added two certificate bundles: `requestIncomeCertBundle()`/`getIncomeCertBundle()` (income amount and pension credit certificates) and `requestBusinessCertBundle()`/`getBusinessCertBundle()` (business registration, VAT tax base and standard financial statement certificates), issued after a single phone approval. 20P on acceptance, 84P/126P on the first result. The business bundle throws a `TypeError` before calling the server when `business_no` or representative consent (`agreed: true` or `bind_id`) is missing.
+
 # 2026-10-19 서버 동작 안내 / Server behavior notes
 
 - 차량정보는 공백·대소문자가 다른 동일 등급을 우선해 찾으며 연식·사양이 다른 차량은 구분합니다. 기존 `안내`에서 연식·사양 대체, 사양 충돌, 국내 출시 여부 확인 보류, 일부 제원의 추가 검증 상태를 확인할 수 있습니다. 국내 미출시가 확인된 차량은 해외 자료 기준이며 100% 정확성을 보장하지 않는다는 안내가 추가됩니다. 반환된 연식·등급과 안내를 확인하세요. 입력·응답 구조와 과금 방식은 유지됩니다.

@@ -436,6 +436,32 @@ export interface RequestFactCertInput extends HometaxCertificateOptions {
 	itrf_cd?: string;
 	issuance?: '1' | '2';
 }
+/** 소득 증빙서류 통합발급 입력. `year`·`use_purpose`·`submit_to`·`delivery` 가 필수다. */
+export interface RequestIncomeCertBundleInput extends HometaxCertificateOptions {
+	year: string;
+	use_purpose: string;
+	submit_to: string;
+	delivery: '06' | '10' | '04' | '12';
+	amount_open_yn?: 'Y' | 'N';
+	income_source_open_yn?: 'Y' | 'N';
+	withholding_all_print_yn?: 'Y' | 'N';
+	address_open_yn?: 'Y' | 'N';
+	resno_open_yn?: 'Y' | 'N';
+}
+/**
+ * 사업자 증빙서류 통합발급 입력. `business_no` 와 발급 입력이 필수이고,
+ * `bind_id` 가 없으면 대표자 본인 확인 동의 `agreed: true` 가 있어야 접수된다.
+ */
+export interface RequestBusinessCertBundleInput extends HometaxCertificateOptions {
+	business_no: string;
+	year: string;
+	use_purpose: string;
+	submit_to: string;
+	delivery: '06' | '10' | '04' | '12';
+	period?: '1' | '2' | 'all';
+	agreed?: boolean;
+	bind_id?: string;
+}
 export interface RequestTaxClearanceCertInput extends RequestFactCertInput {
 	cert_type?: 'B0006' | 'B0010';
 }
@@ -619,6 +645,17 @@ export interface ResidentRegistrationInfo {
 export interface ResidentRegistrationResultPayload { residentRegistration: ResidentRegistrationInfo; }
 export interface ResidentRegistrationChoResultPayload { residentRegistrationCho: ResidentRegistrationInfo; }
 /** 통합 조회는 고른 상품의 섹션만 담는다. 섹션 키는 상품 키의 camelCase 다. */
+/** 소득 증빙서류 통합발급 결과. 증명마다 섹션이 따로 오며 일부만 발급되면 status 가 PARTIAL_SUCCESS 다. */
+export type IncomeCertBundleResultPayload = Record<string, unknown> & {
+	incomeAmountCert?: HometaxCertificateResultPayload;
+	pensionCreditCert?: HometaxCertificateResultPayload;
+};
+/** 사업자 증빙서류 통합발급 결과. 성공 응답에 다음 조회에 쓸 `bind_id` 가 함께 올 수 있다. */
+export type BusinessCertBundleResultPayload = Record<string, unknown> & {
+	businessRegistrationCert?: HometaxCertificateResultPayload;
+	vatTaxBaseCert?: HometaxCertificateResultPayload;
+	financialStatementCert?: HometaxCertificateResultPayload;
+};
 export type Gov24BundleResultPayload = Record<string, unknown> & {
 	residentRegistration?: ResidentRegistrationInfo;
 	residentRegistrationCho?: ResidentRegistrationInfo;
@@ -862,6 +899,10 @@ export class ApickClient {
 	getFactCert(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxCertificateResultPayload>>>;
 	requestTaxClearanceCert(input: RequestTaxClearanceCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getTaxClearanceCert(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxCertificateResultPayload>>>;
+	requestIncomeCertBundle(input: RequestIncomeCertBundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getIncomeCertBundle(transactionId: string): Promise<ApickResult<DataRequestResult<IncomeCertBundleResultPayload>>>;
+	requestBusinessCertBundle(input: RequestBusinessCertBundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getBusinessCertBundle(transactionId: string): Promise<ApickResult<DataRequestResult<BusinessCertBundleResultPayload>>>;
 	requestResidentRegistration(input: RequestResidentRegistrationInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getResidentRegistration(transactionId: string): Promise<ApickResult<DataRequestResult<ResidentRegistrationResultPayload>>>;
 	requestResidentRegistrationCho(input: RequestResidentRegistrationChoInput): Promise<ApickResult<DataRequestAcceptedData>>;

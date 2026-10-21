@@ -34,8 +34,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 68 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 68);
+test('exports a focused catalog of 70 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 70);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -574,6 +574,52 @@ test('implements Hometax certificate issuance contracts', async () => {
 	assert.throws(() => client.requestIncomeAmountCert({ ...cert }), /name/);
 	assert.throws(() => client.getIncomeAmountCert('Z'.repeat(32)), /transactionId/);
 	assert.equal(requests.length, 8);
+});
+
+test('implements certificate bundle issuance contracts', async () => {
+	const txId = 'c'.repeat(32);
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { transactionId: txId, product: 'x', status: 'AUTH_REQUESTED', resultAvailable: false, charged: true, sources: [], message: '', success: 1 }, api: { success: true, cost: 20 } });
+		}
+	});
+	const base = { name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao' };
+	const cert = { year: '2025', use_purpose: '99', submit_to: '99', delivery: '06' };
+
+	await client.requestIncomeCertBundle({ ...base, ...cert, format: 'json', amount_open_yn: 'Y' });
+	assert.ok(requests[0].url.endsWith('/rest/req_income_cert_bundle'));
+	assert.equal(requests[0].body.get('year'), '2025');
+	assert.equal(requests[0].body.get('format'), 'json');
+	assert.equal(requests[0].body.get('amount_open_yn'), 'Y');
+	assert.equal(requests[0].body.get('agreed'), null);
+	await client.getIncomeCertBundle(txId);
+	assert.ok(requests[1].url.endsWith('/rest/get_income_cert_bundle'));
+	assert.equal(requests[1].body.get('transactionId'), txId);
+
+	await client.requestBusinessCertBundle({ ...base, ...cert, business_no: '123-45-67890', period: 'all', agreed: true });
+	assert.ok(requests[2].url.endsWith('/rest/req_business_cert_bundle'));
+	assert.equal(requests[2].body.get('business_no'), '1234567890');
+	assert.equal(requests[2].body.get('period'), 'all');
+	assert.equal(requests[2].body.get('agreed'), 'true');
+	// 형식을 고르지 않으면 둘 다(PDF·JSON) 받는다.
+	assert.equal(requests[2].body.get('format'), 'both');
+	// 이전 결과의 bind_id 가 있으면 동의 없이 접수한다.
+	await client.requestBusinessCertBundle({ ...base, ...cert, business_no: '1234567890', bind_id: 'bind_0001' });
+	assert.equal(requests[3].body.get('bind_id'), 'bind_0001');
+	assert.equal(requests[3].body.get('agreed'), null);
+	await client.getBusinessCertBundle(txId);
+	assert.ok(requests[4].url.endsWith('/rest/get_business_cert_bundle'));
+
+	// 대표자 확인·사업자등록번호가 빠지면 서버 호출 전에 막는다.
+	assert.throws(() => client.requestBusinessCertBundle({ ...base, ...cert, business_no: '1234567890' }), /agreed/);
+	assert.throws(() => client.requestBusinessCertBundle({ ...base, ...cert, business_no: '1234567890', agreed: 'yes' }), /agreed/);
+	assert.throws(() => client.requestBusinessCertBundle({ ...base, ...cert, business_no: '12345', agreed: true }), /businessNumber/);
+	assert.throws(() => client.requestIncomeCertBundle({ ...cert }), /name/);
+	assert.throws(() => client.getBusinessCertBundle('Z'.repeat(32)), /transactionId/);
+	assert.equal(requests.length, 5);
 });
 
 test('implements the YouTube metadata, thumbnail and subtitle contracts', async () => {

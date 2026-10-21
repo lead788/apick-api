@@ -131,6 +131,8 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestPensionCreditCert(input)` / `getPensionCreditCert(transactionId)` | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | PDF·JSON |
 | `requestFactCert(input)` / `getFactCert(transactionId)` | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | PDF·JSON |
 | `requestTaxClearanceCert(input)` / `getTaxClearanceCert(transactionId)` | 납세증명서 발급 / Tax clearance certificate | PDF·JSON |
+| `requestIncomeCertBundle(input)` / `getIncomeCertBundle(transactionId)` | 소득 증빙서류 통합발급 / Income certificate bundle | PDF·JSON |
+| `requestBusinessCertBundle(input)` / `getBusinessCertBundle(transactionId)` | 사업자 증빙서류 통합발급 / Business certificate bundle | PDF·JSON |
 | `searchSkills(options)` / `getSkill(skillId)` | Skill 검색·상세 / Search and inspect Skills | JSON |
 | `getSkillPerformance()` | 시험 방법·표본 수·기계 검사·품질 점수 / Measured results and methods | JSON |
 | `quoteSkill(skillId, input, options)` | Skill 견적(무료) / Quote a run (free) | JSON |
@@ -444,9 +446,24 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | `requestPensionCreditCert` / `getPensionCreditCert` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `address_open_yn`, `resno_open_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
 | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | `requestFactCert` / `getFactCert` | `use_purpose`, `submit_to`, `delivery`, `itrf_cd` (필수 / required), `year`, `start_month`, `end_month`, `issuance`, `engl_yn`, `format` |
 | 납세증명서 발급 / Tax clearance certificate | `requestTaxClearanceCert` / `getTaxClearanceCert` | `cert_type`(`B0006` 납세증명서·`B0010` 해외이주용), `use_purpose`, `submit_to`, `delivery`, `itrf_cd` (필수 / required), `year`, `start_month`, `end_month`, `issuance`, `format` |
+| 소득 증빙서류 통합발급 / Income certificate bundle | `requestIncomeCertBundle` / `getIncomeCertBundle` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `amount_open_yn`, `income_source_open_yn`, `withholding_all_print_yn`, `address_open_yn`, `resno_open_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
+| 사업자 증빙서류 통합발급 / Business certificate bundle | `requestBusinessCertBundle` / `getBusinessCertBundle` | `business_no`, `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `agreed: true` 또는 `bind_id` (둘 중 하나 필수 / one required), `period`, `engl_yn`, `format`, `quantity`, `email`, `fax_no`, `wallet_address` |
 
 홈택스 민원증명 4종은 발급 1건 60P 정액이고 `format` 으로 응답을 고릅니다(`pdf`·`json`·`both`, 기본 `both`). `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드` 가 함께 오며, 표 구조에 따라 필드가 비어 있을 수 있습니다. 구조화 값의 정본은 결과 본문(`문서확인번호`·`귀속연도` 등)입니다.
 The four Hometax certificates cost a flat 60P per issuance. `format` selects the response (`pdf`, `json`, or `both`; default `both`). With `json`/`both` the parsed PDF fields arrive in `PDF데이터.필드`; some fields may be empty depending on the table layout. The structured values in the result body (`문서확인번호`, `귀속연도`, …) are authoritative.
+
+증빙서류 묶음 2종은 휴대폰 승인 한 번으로 담긴 증명을 함께 발급합니다. 소득 묶음은 소득금액증명·연금보험료등 소득세액 공제확인서(결과 `result.incomeAmountCert`·`result.pensionCreditCert`), 사업자 묶음은 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명(결과 `result.businessRegistrationCert`·`result.vatTaxBaseCert`·`result.financialStatementCert`)입니다. 접수 20P, 최초 결과는 84P·126P로 개별 발급 합계보다 30% 쌉니다. 사업자 묶음은 대표자 본인 확인을 받으므로 `agreed: true` 또는 이전 응답의 `bind_id`(같은 계정·같은 사업자등록번호, 90일)를 보내야 하며, 빠지면 SDK가 호출 전에 `TypeError` 를 던집니다. 일부 증명만 발급되면 `status` 가 `PARTIAL_SUCCESS` 이고 결과 단가는 그대로 청구됩니다.
+The two certificate bundles issue every included certificate after a single phone approval. Acceptance is 20P and the first result is 84P (income) or 126P (business), 30% below issuing each certificate separately. The business bundle requires representative consent: send `agreed: true` or a `bind_id` from a previous response (same account and business number, valid for 90 days); the SDK throws a `TypeError` before calling the server when both are missing. If only some certificates are issued, `status` is `PARTIAL_SUCCESS` and the bundle result price still applies.
+
+```js
+const bundle = await client.requestBusinessCertBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  business_no: '1234567890', year: '2025', period: 'all',
+  use_purpose: '99', submit_to: '99', delivery: '06', format: 'json', agreed: true
+});
+const issued = await pollDataResult(id => client.getBusinessCertBundle(id), bundle);
+const { businessRegistrationCert, vatTaxBaseCert, financialStatementCert } = issued.data.result;
+```
 
 ## 오류 처리 / Error handling
 

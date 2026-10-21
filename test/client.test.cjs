@@ -34,8 +34,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 70 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 70);
+test('exports a focused catalog of 76 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 76);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -781,6 +781,45 @@ test('implements the Coupang, Naver brand store and LinkedIn lookup contracts', 
 	assert.throws(() => client.naverShoppingProduct(''), /url/);
 	assert.throws(() => client.linkedinProfile(''), /url/);
 	assert.equal(requests.length, 6);
+});
+
+test('looks up a court auction case', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { result: 1, success: 1, count: 0, items: [] }, api: { success: true, cost: 60 } });
+		}
+	});
+	await client.courtAuction('2025타경104697', '서울중앙지방법원');
+	assert.ok(requests[0].url.endsWith('/rest/court_auction'));
+	assert.equal(requests[0].body.get('case_no'), '2025타경104697');
+	assert.equal(requests[0].body.get('court'), '서울중앙지방법원');
+	await client.courtAuction('2025타경104697', 'B000210');
+	assert.equal(requests[1].body.get('court'), 'B000210');
+	assert.throws(() => client.courtAuction('', '서울중앙지방법원'), /caseNo/);
+	assert.throws(() => client.courtAuction('2025타경104697', ''), /court/);
+	assert.equal(requests.length, 2);
+});
+
+test('verifies a registry document issue number', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { verified: true, status: 'confirmed', kind: 'realestate', message: 'ok' }, api: { success: true, cost: 60 } });
+		}
+	});
+	await client.registryDocVerify('2024-1234-5678');
+	assert.ok(requests[0].url.endsWith('/rest/registry_doc_verify'));
+	assert.equal(requests[0].body.get('issue_no'), '2024-1234-5678');
+	assert.equal(requests[0].body.get('kind'), null);
+	await client.registryDocVerify('202412345678', { kind: 'corporate' });
+	assert.equal(requests[1].body.get('kind'), 'corporate');
+	assert.throws(() => client.registryDocVerify(''), /issueNo/);
+	assert.equal(requests.length, 2);
 });
 
 test('implements the YouTube search, list and comments contracts', async () => {

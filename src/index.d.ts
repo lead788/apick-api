@@ -246,6 +246,57 @@ export interface LinkedinCompany {
 	readonly updates: readonly { readonly title: string; readonly link: string; readonly date: string; readonly text: string }[];
 }
 
+export interface CourtAuctionItem {
+	readonly itemNo: number | null;
+	readonly address: string;
+	readonly propertyKind: string;
+	readonly appraisedPrice: number | null;
+	readonly minimumPrice: number | null;
+	readonly failedCount: number;
+	readonly saleDate: string;
+	readonly saleTime: string;
+	readonly depositRate: number | null;
+}
+
+export interface CourtAuction {
+	readonly result: number;
+	readonly msg: string;
+	readonly success: number;
+	readonly case: {
+		readonly caseNo: string;
+		readonly court: string;
+		readonly caseName: string;
+		readonly receivedAt: string;
+		readonly claimAmount: number | null;
+		readonly judgeDept: string;
+		readonly judgeDeptTel: string;
+		readonly executorTel: string;
+		readonly auctionStatus: string;
+		readonly completedAt: string;
+		readonly suspended: boolean;
+		readonly suspensionReason: string;
+	};
+	readonly items: readonly CourtAuctionItem[];
+	readonly saleSchedule: readonly {
+		readonly saleDate: string;
+		readonly saleTime: string;
+		readonly items: readonly { readonly itemNo: number | null; readonly minimumPrice: number | null }[];
+	}[];
+	readonly claimDeadline: string;
+	readonly relatedCases: readonly { readonly caseNo: string; readonly court: string; readonly kind: string }[];
+	readonly count: number;
+}
+
+export interface RegistryDocVerify {
+	readonly verified: boolean;
+	readonly status: 'confirmed' | 'not_found' | 'count_exhausted' | 'invalid_format' | 'not_opened' | 'unknown';
+	readonly message: string;
+	readonly kind: 'realestate' | 'corporate' | 'movable';
+	readonly document: string | null;
+	readonly issued_date: string | null;
+	readonly registry_office: string | null;
+}
+
 export interface LinkedinJob {
 	readonly job_posting_id: string;
 	readonly title: string;
@@ -835,6 +886,8 @@ export class ApickClient {
 	linkedinProfile(url: string): Promise<ApickResult<LinkedinProfile>>;
 	linkedinCompany(url: string): Promise<ApickResult<LinkedinCompany>>;
 	linkedinJob(url: string): Promise<ApickResult<LinkedinJob>>;
+	courtAuction(caseNo: string, court: string): Promise<ApickResult<CourtAuction>>;
+	registryDocVerify(issueNo: string, options?: { readonly kind?: 'realestate' | 'corporate' | 'movable' }): Promise<ApickResult<RegistryDocVerify>>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
 	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;

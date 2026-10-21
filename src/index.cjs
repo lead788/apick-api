@@ -60,6 +60,8 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	linkedinProfile: { endpoint: '/rest/linkedin_profile', timeoutMs: 110_000, output: 'json' },
 	linkedinCompany: { endpoint: '/rest/linkedin_company', timeoutMs: 110_000, output: 'json' },
 	linkedinJob: { endpoint: '/rest/linkedin_job', timeoutMs: 110_000, output: 'json' },
+	courtAuction: { endpoint: '/rest/court_auction', timeoutMs: 45_000, output: 'json' },
+	registryDocVerify: { endpoint: '/rest/registry_doc_verify', timeoutMs: 30_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
 	youtubeThumbnail: { endpoint: '/rest/youtube_thumbnail', timeoutMs: 60_000, output: 'binary', filename: 'thumbnail.jpg' },
@@ -92,6 +94,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestTaxClearanceCert: { endpoint: '/rest/req_tax_clearance_cert', timeoutMs: 60_000, output: 'json' },
 	requestIncomeCertBundle: { endpoint: '/rest/req_income_cert_bundle', timeoutMs: 60_000, output: 'json' },
 	requestBusinessCertBundle: { endpoint: '/rest/req_business_cert_bundle', timeoutMs: 60_000, output: 'json' },
+	requestBusinessRegistrationCert: { endpoint: '/rest/req_business_registration_cert', timeoutMs: 60_000, output: 'json' },
+	requestVatTaxBaseCert: { endpoint: '/rest/req_vat_tax_base_cert', timeoutMs: 60_000, output: 'json' },
+	requestFinancialStatementCert: { endpoint: '/rest/req_financial_statement_cert', timeoutMs: 60_000, output: 'json' },
+	requestClosureCert: { endpoint: '/rest/req_closure_cert', timeoutMs: 60_000, output: 'json' },
 	requestResidentRegistration: { endpoint: '/rest/req_resident_registration', timeoutMs: 35_000, output: 'json' },
 	requestResidentRegistrationCho: { endpoint: '/rest/req_resident_registration_cho', timeoutMs: 35_000, output: 'json' },
 	requestGov24Bundle: { endpoint: '/rest/req_gov24_bundle', timeoutMs: 35_000, output: 'json' }
@@ -263,6 +269,10 @@ const INCOME_AMOUNT_CERT_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit
 const PENSION_CREDIT_CERT_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit_to', 'delivery', 'format', 'address_open_yn', 'resno_open_yn', 'quantity', 'email', 'fax_no', 'wallet_address']);
 const FACT_CERT_OPTIONS = Object.freeze(['year', 'start_month', 'end_month', 'itrf_cd', 'issuance', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
 const TAX_CLEARANCE_CERT_OPTIONS = Object.freeze(['cert_type', 'year', 'start_month', 'end_month', 'itrf_cd', 'issuance', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const BUSINESS_REGISTRATION_CERT_OPTIONS = Object.freeze(['business_no', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const VAT_TAX_BASE_CERT_OPTIONS = Object.freeze(['business_no', 'year', 'period', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const FINANCIAL_STATEMENT_CERT_OPTIONS = Object.freeze(['business_no', 'year', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const CLOSURE_CERT_OPTIONS = Object.freeze(['business_no', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
 
 // 증빙서류 묶음. 승인 한 번으로 담긴 증명을 함께 발급하며 담긴 증명이 같은 발급 입력을 공유한다.
 const INCOME_CERT_BUNDLE_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit_to', 'delivery', 'format', 'amount_open_yn', 'income_source_open_yn', 'withholding_all_print_yn', 'address_open_yn', 'resno_open_yn', 'quantity', 'email', 'fax_no', 'wallet_address']);
@@ -802,6 +812,22 @@ class ApickClient {
 		return this._call('linkedinJob', linkedinInput(url));
 	}
 
+	// 법원 경매사건. 사건번호와 법원(이름 또는 법원 코드)이 함께 필요하다.
+	courtAuction(caseNo, court) {
+		return this._call('courtAuction', {
+			case_no: requiredString('caseNo', caseNo, 64),
+			court: requiredString('court', court, 64)
+		});
+	}
+
+	// 등기사항증명서 등 발급확인. issueNo 는 증명서에 인쇄된 발급확인번호 12자리다.
+	registryDocVerify(issueNo, options) {
+		const config = options || {};
+		const input = { issue_no: requiredString('issueNo', issueNo, 32) };
+		if (config.kind !== undefined) input.kind = requiredString('kind', config.kind, 16);
+		return this._call('registryDocVerify', input);
+	}
+
 	screenshot(url) {
 		return this._call('screenshot', { url: normalizeUrl(url) });
 	}
@@ -1264,6 +1290,39 @@ class ApickClient {
 
 	getBusinessCertBundle(transactionId) {
 		return this._call('requestBusinessCertBundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_business_cert_bundle' });
+	}
+
+	// 사업자 단위 증명. business_no 는 증명 대상 사업자등록번호 10자리다.
+	requestBusinessRegistrationCert(input) {
+		return this._call('requestBusinessRegistrationCert', hometaxCertInput(input, BUSINESS_REGISTRATION_CERT_OPTIONS));
+	}
+
+	getBusinessRegistrationCert(transactionId) {
+		return this._call('requestBusinessRegistrationCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_business_registration_cert' });
+	}
+
+	requestVatTaxBaseCert(input) {
+		return this._call('requestVatTaxBaseCert', hometaxCertInput(input, VAT_TAX_BASE_CERT_OPTIONS));
+	}
+
+	getVatTaxBaseCert(transactionId) {
+		return this._call('requestVatTaxBaseCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_vat_tax_base_cert' });
+	}
+
+	requestFinancialStatementCert(input) {
+		return this._call('requestFinancialStatementCert', hometaxCertInput(input, FINANCIAL_STATEMENT_CERT_OPTIONS));
+	}
+
+	getFinancialStatementCert(transactionId) {
+		return this._call('requestFinancialStatementCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_financial_statement_cert' });
+	}
+
+	requestClosureCert(input) {
+		return this._call('requestClosureCert', hometaxCertInput(input, CLOSURE_CERT_OPTIONS));
+	}
+
+	getClosureCert(transactionId) {
+		return this._call('requestClosureCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_closure_cert' });
 	}
 
 	// 주민등록표 등본·초본 발급. 건당 80P 정액이고 결과에 PDF 원본(base64)·해시가 함께 온다.

@@ -317,6 +317,16 @@ const bundle = await client.requestGov24Bundle({
 const issued = await pollDataResult(id => client.getGov24Bundle(id), bundle);
 ```
 
+Hometax certificates are issued with `requestIncomeAmountCert` (income amount), `requestPensionCreditCert` (pension credit), `requestFactCert` (tax payment fact) and `requestTaxClearanceCert` (tax clearance) at a flat 60P per issuance. Every call issues for the authenticated person and requires `year`, `use_purpose`, `submit_to` and `delivery`; `format` (`pdf`, `json` or `both`, default `both`) selects the response. With `json`/`both` the parsed PDF fields arrive in `PDF데이터.필드`, and some fields may be empty depending on the table layout. The values in the result body such as `문서확인번호` and `귀속연도` are authoritative.
+
+```js
+const cert = await client.requestIncomeAmountCert({
+  name: 'Hong Gildong', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  year: '2025', use_purpose: '99', submit_to: '99', delivery: '06', format: 'both'
+});
+const issuedCert = await pollDataResult(id => client.getIncomeAmountCert(id), cert);
+```
+
 ## Skills
 
 Search and run reviewed Skills. Each Skill fixes its input format (`input_schema`), output format (`output_schema`) and base amount (`price_points`). A run is charged only when a result in the promised format is returned.

@@ -86,6 +86,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestHealthCheckup: { endpoint: '/rest/req_health_checkup', timeoutMs: 35_000, output: 'json' },
 	requestCashReceiptDeduction: { endpoint: '/rest/req_cash_receipt_deduction', timeoutMs: 35_000, output: 'json' },
 	requestTaxReturnHistory: { endpoint: '/rest/req_tax_return_history', timeoutMs: 35_000, output: 'json' },
+	requestIncomeAmountCert: { endpoint: '/rest/req_income_amount_cert', timeoutMs: 60_000, output: 'json' },
+	requestPensionCreditCert: { endpoint: '/rest/req_pension_credit_cert', timeoutMs: 60_000, output: 'json' },
+	requestFactCert: { endpoint: '/rest/req_fact_cert', timeoutMs: 60_000, output: 'json' },
+	requestTaxClearanceCert: { endpoint: '/rest/req_tax_clearance_cert', timeoutMs: 60_000, output: 'json' },
 	requestResidentRegistration: { endpoint: '/rest/req_resident_registration', timeoutMs: 35_000, output: 'json' },
 	requestResidentRegistrationCho: { endpoint: '/rest/req_resident_registration_cho', timeoutMs: 35_000, output: 'json' },
 	requestGov24Bundle: { endpoint: '/rest/req_gov24_bundle', timeoutMs: 35_000, output: 'json' }
@@ -249,6 +253,25 @@ function dataRequestInput(input) {
 		phone: normalizeKoreanMobile(config.phone),
 		authProvider: normalizeAuthProvider(config.authProvider)
 	};
+}
+
+// 홈택스 민원증명. 발급 조건은 REST 필드명 그대로 보낸다(서버가 최상위 평면 이름을 읽는다).
+// 공통 인증 입력(name·birthDate·phone·authProvider)은 dataRequestInput 이 만든다.
+const INCOME_AMOUNT_CERT_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit_to', 'delivery', 'format', 'engl_yn', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const PENSION_CREDIT_CERT_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit_to', 'delivery', 'format', 'address_open_yn', 'resno_open_yn', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const FACT_CERT_OPTIONS = Object.freeze(['year', 'start_month', 'end_month', 'itrf_cd', 'issuance', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
+const TAX_CLEARANCE_CERT_OPTIONS = Object.freeze(['cert_type', 'year', 'start_month', 'end_month', 'itrf_cd', 'issuance', 'submit_to', 'delivery', 'format', 'quantity', 'email', 'fax_no', 'wallet_address']);
+
+function hometaxCertInput(input, keys) {
+	const config = input || {};
+	const payload = dataRequestInput(config);
+	keys.forEach(function (key) {
+		const value = config[key];
+		if (value === undefined || value === null || value === '') return;
+		payload[key] = String(value);
+	});
+	if (payload.format === undefined) payload.format = 'both';
+	return payload;
 }
 
 // 주민등록표 발급은 주민등록 주소지(시도·시군구)로 처리기관을 정한다. 서버가 이 값을 필수로 본다.
@@ -1167,6 +1190,40 @@ class ApickClient {
 
 	getTaxReturnHistory(transactionId) {
 		return this._call('requestTaxReturnHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tax_return_history' });
+	}
+
+	// 홈택스 민원증명 발급. 신청인 본인명의이고 발급 1건 60P 정액이다.
+	// 응답은 format(pdf·json·both)으로 고른다. json 이면 발급된 PDF를 파싱한 PDF데이터가 함께 온다.
+	requestIncomeAmountCert(input) {
+		return this._call('requestIncomeAmountCert', hometaxCertInput(input, INCOME_AMOUNT_CERT_OPTIONS));
+	}
+
+	getIncomeAmountCert(transactionId) {
+		return this._call('requestIncomeAmountCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_income_amount_cert' });
+	}
+
+	requestPensionCreditCert(input) {
+		return this._call('requestPensionCreditCert', hometaxCertInput(input, PENSION_CREDIT_CERT_OPTIONS));
+	}
+
+	getPensionCreditCert(transactionId) {
+		return this._call('requestPensionCreditCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_pension_credit_cert' });
+	}
+
+	requestFactCert(input) {
+		return this._call('requestFactCert', hometaxCertInput(input, FACT_CERT_OPTIONS));
+	}
+
+	getFactCert(transactionId) {
+		return this._call('requestFactCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_fact_cert' });
+	}
+
+	requestTaxClearanceCert(input) {
+		return this._call('requestTaxClearanceCert', hometaxCertInput(input, TAX_CLEARANCE_CERT_OPTIONS));
+	}
+
+	getTaxClearanceCert(transactionId) {
+		return this._call('requestTaxClearanceCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tax_clearance_cert' });
 	}
 
 	// 주민등록표 등본·초본 발급. 건당 80P 정액이고 결과에 PDF 원본(base64)·해시가 함께 온다.

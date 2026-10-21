@@ -526,6 +526,56 @@ test('implements resident registration and the selectable Government24 bundle', 
 	assert.equal(requests.length, 7);
 });
 
+test('implements Hometax certificate issuance contracts', async () => {
+	const txId = 'f'.repeat(32);
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { transactionId: txId, product: 'x', status: 'AUTH_REQUESTED', resultAvailable: false, charged: true, sources: [], message: '', success: 1 }, api: { success: true, cost: 20 } });
+		}
+	});
+	const base = { name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao' };
+	const cert = { year: '2025', use_purpose: '99', submit_to: '99', delivery: '06' };
+
+	await client.requestIncomeAmountCert({ ...base, ...cert });
+	assert.ok(requests[0].url.endsWith('/rest/req_income_amount_cert'));
+	assert.equal(requests[0].body.get('year'), '2025');
+	assert.equal(requests[0].body.get('use_purpose'), '99');
+	assert.equal(requests[0].body.get('delivery'), '06');
+	// 형식을 고르지 않으면 둘 다(PDF·JSON) 받는다.
+	assert.equal(requests[0].body.get('format'), 'both');
+	await client.getIncomeAmountCert(txId);
+	assert.ok(requests[1].url.endsWith('/rest/get_income_amount_cert'));
+	assert.equal(requests[1].body.get('transactionId'), txId);
+
+	await client.requestPensionCreditCert({ ...base, ...cert, format: 'json', address_open_yn: 'N' });
+	assert.ok(requests[2].url.endsWith('/rest/req_pension_credit_cert'));
+	assert.equal(requests[2].body.get('format'), 'json');
+	assert.equal(requests[2].body.get('address_open_yn'), 'N');
+	await client.getPensionCreditCert(txId);
+	assert.ok(requests[3].url.endsWith('/rest/get_pension_credit_cert'));
+
+	await client.requestFactCert({ ...base, ...cert, itrf_cd: '99', start_month: '01', end_month: '12', issuance: '1' });
+	assert.ok(requests[4].url.endsWith('/rest/req_fact_cert'));
+	assert.equal(requests[4].body.get('itrf_cd'), '99');
+	assert.equal(requests[4].body.get('start_month'), '01');
+	await client.getFactCert(txId);
+	assert.ok(requests[5].url.endsWith('/rest/get_fact_cert'));
+
+	await client.requestTaxClearanceCert({ ...base, ...cert, cert_type: 'B0006', itrf_cd: '99' });
+	assert.ok(requests[6].url.endsWith('/rest/req_tax_clearance_cert'));
+	assert.equal(requests[6].body.get('cert_type'), 'B0006');
+	await client.getTaxClearanceCert(txId);
+	assert.ok(requests[7].url.endsWith('/rest/get_tax_clearance_cert'));
+
+	// 인증 공통 입력이 빠지면 서버 호출 전에 막는다.
+	assert.throws(() => client.requestIncomeAmountCert({ ...cert }), /name/);
+	assert.throws(() => client.getIncomeAmountCert('Z'.repeat(32)), /transactionId/);
+	assert.equal(requests.length, 8);
+});
+
 test('implements the YouTube metadata, thumbnail and subtitle contracts', async () => {
 	const requests = [];
 	const client = new ApickClient({

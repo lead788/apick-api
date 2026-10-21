@@ -127,6 +127,10 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestResidentRegistration(input)` / `getResidentRegistration(transactionId)` | 주민등록표등본 발급 / Resident registration certificate | JSON |
 | `requestResidentRegistrationCho(input)` / `getResidentRegistrationCho(transactionId)` | 주민등록표초본 발급 / Resident registration certificate (cho) | JSON |
 | `requestGov24Bundle(input)` / `getGov24Bundle(transactionId)` | 정부24 통합 조회 / Selectable Government24 bundle | JSON |
+| `requestIncomeAmountCert(input)` / `getIncomeAmountCert(transactionId)` | 소득금액증명 발급 / Income amount certificate | PDF·JSON |
+| `requestPensionCreditCert(input)` / `getPensionCreditCert(transactionId)` | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | PDF·JSON |
+| `requestFactCert(input)` / `getFactCert(transactionId)` | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | PDF·JSON |
+| `requestTaxClearanceCert(input)` / `getTaxClearanceCert(transactionId)` | 납세증명서 발급 / Tax clearance certificate | PDF·JSON |
 | `searchSkills(options)` / `getSkill(skillId)` | Skill 검색·상세 / Search and inspect Skills | JSON |
 | `getSkillPerformance()` | 시험 방법·표본 수·기계 검사·품질 점수 / Measured results and methods | JSON |
 | `quoteSkill(skillId, input, options)` | Skill 견적(무료) / Quote a run (free) | JSON |
@@ -316,7 +320,7 @@ The four document-specific methods return JSON. `maskResidentNumber` returns PNG
 
 ## 간편인증 기반 데이터 조회 / Simple-auth data lookups
 
-본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·정부24 통합 조회)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
+본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·정부24 통합 조회·홈택스 민원증명)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
 
 Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup, cash receipts, tax returns, resident registration certificates, and the Government24 bundle) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
 
@@ -436,6 +440,13 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 주민등록표등본 발급 / Resident registration certificate | `requestResidentRegistration` / `getResidentRegistration` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
 | 주민등록표초본 발급 / Resident registration certificate (cho) | `requestResidentRegistrationCho` / `getResidentRegistrationCho` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
 | 정부24 통합 조회 / Selectable Government24 bundle | `requestGov24Bundle` / `getGov24Bundle` | `products` (필수 / required), 등본·초본 선택 시 `sido`·`sigungu` (필수 / required when either resident certificate is selected) |
+| 소득금액증명 발급 / Income amount certificate | `requestIncomeAmountCert` / `getIncomeAmountCert` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `engl_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
+| 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | `requestPensionCreditCert` / `getPensionCreditCert` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `address_open_yn`, `resno_open_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
+| 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | `requestFactCert` / `getFactCert` | `use_purpose`, `submit_to`, `delivery`, `itrf_cd` (필수 / required), `year`, `start_month`, `end_month`, `issuance`, `engl_yn`, `format` |
+| 납세증명서 발급 / Tax clearance certificate | `requestTaxClearanceCert` / `getTaxClearanceCert` | `cert_type`(`B0006` 납세증명서·`B0010` 해외이주용), `use_purpose`, `submit_to`, `delivery`, `itrf_cd` (필수 / required), `year`, `start_month`, `end_month`, `issuance`, `format` |
+
+홈택스 민원증명 4종은 발급 1건 60P 정액이고 `format` 으로 응답을 고릅니다(`pdf`·`json`·`both`, 기본 `both`). `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드` 가 함께 오며, 표 구조에 따라 필드가 비어 있을 수 있습니다. 구조화 값의 정본은 결과 본문(`문서확인번호`·`귀속연도` 등)입니다.
+The four Hometax certificates cost a flat 60P per issuance. `format` selects the response (`pdf`, `json`, or `both`; default `both`). With `json`/`both` the parsed PDF fields arrive in `PDF데이터.필드`; some fields may be empty depending on the table layout. The structured values in the result body (`문서확인번호`, `귀속연도`, …) are authoritative.
 
 ## 오류 처리 / Error handling
 

@@ -408,6 +408,59 @@ export interface RequestGov24BundleInput extends DataRequestInput {
 	includeHousehold?: 'Y' | 'N';
 }
 
+/**
+ * 홈택스 민원증명 발급 조건. 신청인 본인명의 발급이고 발급 1건 60P 정액이다.
+ * `format` 은 응답 형식이고, `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터` 가 함께 온다.
+ * 코드 값(`use_purpose`·`submit_to`·`itrf_cd`)은 정부 공통코드다.
+ */
+export interface HometaxCertificateOptions extends DataRequestInput {
+	year?: string;
+	use_purpose?: string;
+	submit_to?: string;
+	delivery?: '06' | '10' | '04' | '12';
+	format?: 'pdf' | 'json' | 'both';
+	engl_yn?: 'Y' | 'N';
+	quantity?: number;
+	email?: string;
+	fax_no?: string;
+	wallet_address?: string;
+}
+export interface RequestIncomeAmountCertInput extends HometaxCertificateOptions {}
+export interface RequestPensionCreditCertInput extends HometaxCertificateOptions {
+	address_open_yn?: 'Y' | 'N';
+	resno_open_yn?: 'Y' | 'N';
+}
+export interface RequestFactCertInput extends HometaxCertificateOptions {
+	start_month?: string;
+	end_month?: string;
+	itrf_cd?: string;
+	issuance?: '1' | '2';
+}
+export interface RequestTaxClearanceCertInput extends RequestFactCertInput {
+	cert_type?: 'B0006' | 'B0010';
+}
+/** 발급 PDF를 열어 글자를 뽑고 라벨 기준으로 만든 값. 필드는 비어 있을 수 있다. */
+export interface HometaxPdfData {
+	사용가능: boolean;
+	페이지수: number;
+	필드: Record<string, string | number>;
+	텍스트: string;
+	사유?: string;
+}
+/** 홈택스 민원증명 결과. `format` 이 json·both 이면 `발급문서`(base64)와 `PDF데이터` 가 함께 온다. */
+export interface HometaxCertificateResultPayload {
+	문서확인번호: string;
+	귀속연도?: string;
+	소득금액?: string;
+	응답형식?: 'pdf' | 'json' | 'both';
+	발급문서?: string;
+	문서파일명?: string;
+	문서해시?: string;
+	문서크기?: number;
+	PDF데이터?: HometaxPdfData;
+	[key: string]: unknown;
+}
+
 export type DataRequestStatus =
 	| 'AUTH_REQUESTED' | 'AUTH_WAITING' | 'AUTH_COMPLETED' | 'AUTH_REJECTED' | 'AUTH_EXPIRED'
 	| 'COLLECTING' | 'COLLECTED' | 'PARTIAL_SUCCESS' | 'SUCCESS' | 'FAILED';
@@ -801,6 +854,14 @@ export class ApickClient {
 	getCashReceiptDeduction(transactionId: string): Promise<ApickResult<DataRequestResult<CashReceiptDeductionResultPayload>>>;
 	requestTaxReturnHistory(input: RequestTaxReturnHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getTaxReturnHistory(transactionId: string): Promise<ApickResult<DataRequestResult<TaxReturnHistoryResultPayload>>>;
+	requestIncomeAmountCert(input: RequestIncomeAmountCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getIncomeAmountCert(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxCertificateResultPayload>>>;
+	requestPensionCreditCert(input: RequestPensionCreditCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getPensionCreditCert(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxCertificateResultPayload>>>;
+	requestFactCert(input: RequestFactCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getFactCert(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxCertificateResultPayload>>>;
+	requestTaxClearanceCert(input: RequestTaxClearanceCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getTaxClearanceCert(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxCertificateResultPayload>>>;
 	requestResidentRegistration(input: RequestResidentRegistrationInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getResidentRegistration(transactionId: string): Promise<ApickResult<DataRequestResult<ResidentRegistrationResultPayload>>>;
 	requestResidentRegistrationCho(input: RequestResidentRegistrationChoInput): Promise<ApickResult<DataRequestAcceptedData>>;

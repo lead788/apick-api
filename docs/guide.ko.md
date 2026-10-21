@@ -320,6 +320,16 @@ const bundle = await client.requestGov24Bundle({
 const issued = await pollDataResult(id => client.getGov24Bundle(id), bundle);
 ```
 
+홈택스 민원증명은 `requestIncomeAmountCert`(소득금액증명), `requestPensionCreditCert`(연금보험료등 소득세액 공제확인서), `requestFactCert`(납부내역증명), `requestTaxClearanceCert`(납세증명서)로 발급하며 발급 1건은 60P입니다. 모두 본인명의 발급이고 `year`·`use_purpose`·`submit_to`·`delivery`가 필수이며 `format`(`pdf`·`json`·`both`, 기본 `both`)으로 응답을 고릅니다. `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드`가 함께 오고, 표 구조에 따라 일부 필드는 비어 있을 수 있습니다. 결과 본문의 `문서확인번호`·`귀속연도` 같은 값이 정본입니다.
+
+```js
+const cert = await client.requestIncomeAmountCert({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  year: '2025', use_purpose: '99', submit_to: '99', delivery: '06', format: 'both'
+});
+const issuedCert = await pollDataResult(id => client.getIncomeAmountCert(id), cert);
+```
+
 ## Skills
 
 검수를 거친 Skill 을 검색하고 실행합니다. Skill 마다 입력 형식(`input_schema`)·결과 형식(`output_schema`)·기본 금액(`price_points`)이 정해져 있으며, 결과가 약속한 형식으로 반환된 실행만 차감됩니다.

@@ -10,7 +10,8 @@ const {
 	ApickBinaryResult,
 	SERVICES,
 	TTS_VOICE_IDS,
-	AUTH_PROVIDERS
+	AUTH_PROVIDERS,
+	GOV24_BUNDLE_PRODUCTS
 } = require('../src/index.cjs');
 
 function jsonResponse(body, options) {
@@ -33,8 +34,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 61 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 61);
+test('exports a focused catalog of 68 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 68);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -470,6 +471,59 @@ test('implements cash-receipt deduction and tax-return history with their year o
 	for (const value of [0, 11, 2.5]) assert.throws(() => client.requestTaxReturnHistory({ ...input, years: value }), /years/);
 	assert.throws(() => client.getTaxReturnHistory('D'.repeat(32)), /transactionId/);
 	assert.equal(requests.length, 5);
+});
+
+test('implements resident registration and the selectable Government24 bundle', async () => {
+	const txId = 'e'.repeat(32);
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { transactionId: txId, product: 'x', status: 'AUTH_REQUESTED', resultAvailable: false, charged: true, sources: [], message: '', success: 1 }, api: { success: true, cost: 20 } });
+		}
+	});
+	const base = { name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao' };
+	const address = { sido: '서울특별시', sigungu: '구로구' };
+
+	assert.ok(GOV24_BUNDLE_PRODUCTS.includes('resident_registration'));
+	assert.ok(GOV24_BUNDLE_PRODUCTS.includes('resident_registration_cho'));
+
+	await client.requestResidentRegistration({ ...base, ...address, includeHousehold: 'N' });
+	assert.ok(requests[0].url.endsWith('/rest/req_resident_registration'));
+	assert.equal(requests[0].body.get('sido'), '서울특별시');
+	assert.equal(requests[0].body.get('sigungu'), '구로구');
+	assert.equal(requests[0].body.get('includeHousehold'), 'N');
+	await client.getResidentRegistration(txId);
+	assert.ok(requests[1].url.endsWith('/rest/get_resident_registration'));
+	assert.equal(requests[1].body.get('transactionId'), txId);
+
+	await client.requestResidentRegistrationCho({ ...base, ...address });
+	assert.ok(requests[2].url.endsWith('/rest/req_resident_registration_cho'));
+	await client.getResidentRegistrationCho(txId);
+	assert.ok(requests[3].url.endsWith('/rest/get_resident_registration_cho'));
+
+	// 등본·초본을 고르면 주소지가 함께 가고, 선택 상품 단가가 합산된다.
+	await client.requestGov24Bundle({ ...base, products: ['resident_registration', 'resident_registration_cho'], ...address });
+	assert.ok(requests[4].url.endsWith('/rest/req_gov24_bundle'));
+	assert.equal(requests[4].body.get('products'), 'resident_registration,resident_registration_cho');
+	assert.equal(requests[4].body.get('sido'), '서울특별시');
+
+	// 등본·초본을 고르지 않으면 주소지를 보내지 않는다.
+	await client.requestGov24Bundle({ ...base, products: 'driving_license', sido: '서울특별시', sigungu: '구로구' });
+	assert.equal(requests[5].body.get('products'), 'driving_license');
+	assert.equal(requests[5].body.get('sido'), null);
+	await client.getGov24Bundle(txId);
+	assert.ok(requests[6].url.endsWith('/rest/get_gov24_bundle'));
+
+	assert.throws(() => client.requestResidentRegistration(base), /sido/);
+	assert.throws(() => client.requestResidentRegistration({ ...base, sido: '서울특별시' }), /sigungu/);
+	assert.throws(() => client.requestResidentRegistration({ ...base, ...address, includeHousehold: 'yes' }), /includeHousehold/);
+	assert.throws(() => client.requestGov24Bundle({ ...base, products: [] }), /products/);
+	assert.throws(() => client.requestGov24Bundle({ ...base, products: ['unknown_product'] }), /unsupported key/);
+	assert.throws(() => client.requestGov24Bundle({ ...base, products: 'resident_registration' }), /sido/);
+	assert.throws(() => client.getGov24Bundle('E'.repeat(32)), /transactionId/);
+	assert.equal(requests.length, 7);
 });
 
 test('implements the YouTube metadata, thumbnail and subtitle contracts', async () => {

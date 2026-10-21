@@ -124,6 +124,9 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestHealthCheckup(input)` / `getHealthCheckup(transactionId)` | 국가 건강검진 결과 조회 / National health checkup results | JSON |
 | `requestCashReceiptDeduction(input)` / `getCashReceiptDeduction(transactionId)` | 현금영수증 소득공제 내역 / Cash receipt income deductions | JSON |
 | `requestTaxReturnHistory(input)` / `getTaxReturnHistory(transactionId)` | 국세 신고내역 조회 / National tax return history | JSON |
+| `requestResidentRegistration(input)` / `getResidentRegistration(transactionId)` | 주민등록표등본 발급 / Resident registration certificate | JSON |
+| `requestResidentRegistrationCho(input)` / `getResidentRegistrationCho(transactionId)` | 주민등록표초본 발급 / Resident registration certificate (cho) | JSON |
+| `requestGov24Bundle(input)` / `getGov24Bundle(transactionId)` | 정부24 통합 조회 / Selectable Government24 bundle | JSON |
 | `searchSkills(options)` / `getSkill(skillId)` | Skill 검색·상세 / Search and inspect Skills | JSON |
 | `getSkillPerformance()` | 시험 방법·표본 수·기계 검사·품질 점수 / Measured results and methods | JSON |
 | `quoteSkill(skillId, input, options)` | Skill 견적(무료) / Quote a run (free) | JSON |
@@ -313,9 +316,9 @@ The four document-specific methods return JSON. `maskResidentNumber` returns PNG
 
 ## 간편인증 기반 데이터 조회 / Simple-auth data lookups
 
-본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
+본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·정부24 통합 조회)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
 
-Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup, cash receipts, tax returns) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
+Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup, cash receipts, tax returns, resident registration certificates, and the Government24 bundle) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
 
 아래 함수는 7종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
 
@@ -392,6 +395,25 @@ try {
 ```
 <!-- simple-auth-usage:end -->
 
+### 정부24 통합 조회 / Government24 bundle
+
+```js
+const bundle = await apick.requestGov24Bundle({
+  name: '홍길동',
+  birthDate: '19900101',
+  phone: '01011112222',
+  authProvider: 'kakao',
+  // 고른 상품만 인증·조회합니다. 등본 80P, 초본 80P로 선택한 상품 단가를 합산합니다.
+  products: ['resident_registration', 'resident_registration_cho'],
+  sido: '서울특별시',
+  sigungu: '구로구'
+});
+const issued = await pollDataResult(id => apick.getGov24Bundle(id), bundle);
+const pdfBase64 = issued.data.result.residentRegistration['발급문서'];
+```
+
+`GOV24_BUNDLE_PRODUCTS` lists the 13 selectable product keys. Selecting only `driving_license` (or any non-resident product) does not require `sido`/`sigungu`. / `GOV24_BUNDLE_PRODUCTS` lists the 13 selectable keys; the address is required only when a resident registration certificate is selected.
+
 근거: [APICK 개발가이드](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 상태 계약](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
 지원 간편인증 방식(`authProvider`) 13종은 `AUTH_PROVIDERS`로 제공됩니다: `kakao`, `naver`, `toss`, `pass`, `samsung`, `kb`, `shinhan`, `hana`, `woori`, `ibk`, `nh`, `kakaobank`, `banksalad`.
@@ -411,6 +433,9 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 국가 건강검진 결과 / Health checkup | `requestHealthCheckup` / `getHealthCheckup` | — |
 | 현금영수증 소득공제 내역 / Cash receipt deductions | `requestCashReceiptDeduction` / `getCashReceiptDeduction` | `incomeYears` (1–3) |
 | 국세 신고내역 조회 / Tax return history | `requestTaxReturnHistory` / `getTaxReturnHistory` | `years` (1–10) |
+| 주민등록표등본 발급 / Resident registration certificate | `requestResidentRegistration` / `getResidentRegistration` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
+| 주민등록표초본 발급 / Resident registration certificate (cho) | `requestResidentRegistrationCho` / `getResidentRegistrationCho` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
+| 정부24 통합 조회 / Selectable Government24 bundle | `requestGov24Bundle` / `getGov24Bundle` | `products` (필수 / required), 등본·초본 선택 시 `sido`·`sigungu` (필수 / required when either resident certificate is selected) |
 
 ## 오류 처리 / Error handling
 

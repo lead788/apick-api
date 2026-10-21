@@ -233,7 +233,7 @@ console.log(result.data.result.fields);
 
 ## 간편인증 데이터 조회
 
-재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
+재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·정부24 통합 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
 
 아래 함수는 7종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
 
@@ -308,6 +308,17 @@ try {
 근거: [APICK 개발가이드](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 상태 계약](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
 `authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestNpsDeductionCert`는 `years`(1~5), `requestNpsCareerHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestCashReceiptDeduction`은 `incomeYears`(1~3), `requestTaxReturnHistory`는 `years`(1~10) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
+
+주민등록표등본·초본은 `requestResidentRegistration()`·`requestResidentRegistrationCho()`로 발급하며 주민등록 주소지 `sido`·`sigungu`가 필수입니다. 발급 1건은 80P이고 결과의 `발급문서`는 PDF 원본의 base64, `문서해시`는 그 SHA-256입니다. 정부24 통합 조회 `requestGov24Bundle()`은 `products`에 고른 상품만 한 번의 인증으로 조회하며, 과금은 고른 상품 단가의 합입니다. 선택 가능한 13개 키는 `GOV24_BUNDLE_PRODUCTS`로 제공하고 `sido`·`sigungu`는 등본·초본을 고를 때만 필요합니다.
+
+```js
+const bundle = await client.requestGov24Bundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  products: ['resident_registration', 'resident_registration_cho'],
+  sido: '서울특별시', sigungu: '구로구'
+});
+const issued = await pollDataResult(id => client.getGov24Bundle(id), bundle);
+```
 
 ## Skills
 

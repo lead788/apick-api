@@ -16,6 +16,13 @@ const AUTH_PROVIDERS = Object.freeze([
 	'kakao', 'naver', 'toss', 'pass', 'samsung', 'kb', 'shinhan', 'hana', 'woori', 'ibk', 'nh', 'kakaobank', 'banksalad'
 ]);
 const AUTH_PROVIDER_SET = new Set(AUTH_PROVIDERS);
+// 정부24 통합 조회에서 고를 수 있는 상품 키. 서버 공개 목록과 같다.
+const GOV24_BUNDLE_PRODUCTS = Object.freeze([
+	'resident_registration', 'resident_registration_cho', 'driving_license', 'health_checkup',
+	'police_penalty', 'parking_fine_target', 'mortgage_loan', 'housing_refund_balance',
+	'housing_pension_balance', 'housing_loan_stage', 'mortgage_application', 'confirm_verify', 'power_bill'
+]);
+const GOV24_BUNDLE_PRODUCT_SET = new Set(GOV24_BUNDLE_PRODUCTS);
 
 const SERVICE_DEFINITIONS = Object.freeze({
 	businessDetails: { endpoint: '/rest/biz_detail', timeoutMs: 50_000, output: 'json' },
@@ -78,7 +85,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestDrivingLicense: { endpoint: '/rest/req_driving_license', timeoutMs: 35_000, output: 'json' },
 	requestHealthCheckup: { endpoint: '/rest/req_health_checkup', timeoutMs: 35_000, output: 'json' },
 	requestCashReceiptDeduction: { endpoint: '/rest/req_cash_receipt_deduction', timeoutMs: 35_000, output: 'json' },
-	requestTaxReturnHistory: { endpoint: '/rest/req_tax_return_history', timeoutMs: 35_000, output: 'json' }
+	requestTaxReturnHistory: { endpoint: '/rest/req_tax_return_history', timeoutMs: 35_000, output: 'json' },
+	requestResidentRegistration: { endpoint: '/rest/req_resident_registration', timeoutMs: 35_000, output: 'json' },
+	requestResidentRegistrationCho: { endpoint: '/rest/req_resident_registration_cho', timeoutMs: 35_000, output: 'json' },
+	requestGov24Bundle: { endpoint: '/rest/req_gov24_bundle', timeoutMs: 35_000, output: 'json' }
 });
 
 const SERVICES = Object.freeze(Object.fromEntries(
@@ -239,6 +249,40 @@ function dataRequestInput(input) {
 		phone: normalizeKoreanMobile(config.phone),
 		authProvider: normalizeAuthProvider(config.authProvider)
 	};
+}
+
+// 주민등록표 발급은 주민등록 주소지(시도·시군구)로 처리기관을 정한다. 서버가 이 값을 필수로 본다.
+function residentAddressInput(config) {
+	return {
+		sido: requiredString('sido', config.sido, 40),
+		sigungu: requiredString('sigungu', config.sigungu, 40)
+	};
+}
+
+// 등본·초본의 선택 입력. Y/N 은 서버가 그대로 해석하므로 다른 값은 보내지 않는다.
+function residentOptionsInput(config, payload) {
+	const purposeCd = optionalText('purposeCd', config.purposeCd, 8);
+	if (purposeCd !== undefined) payload.purposeCd = purposeCd;
+	const submitTarget = optionalText('submitTarget', config.submitTarget, 100);
+	if (submitTarget !== undefined) payload.submitTarget = submitTarget;
+	const includeAddressHistory = optionalChoice('includeAddressHistory', config.includeAddressHistory, ['Y', 'N']);
+	if (includeAddressHistory !== undefined) payload.includeAddressHistory = includeAddressHistory;
+	const includeHousehold = optionalChoice('includeHousehold', config.includeHousehold, ['Y', 'N']);
+	if (includeHousehold !== undefined) payload.includeHousehold = includeHousehold;
+	return payload;
+}
+
+// 통합 조회는 고른 상품 키를 쉼표로 이어 보낸다. 서버는 배열과 쉼표 문자열을 모두 받는다.
+function gov24BundleProductsInput(value) {
+	const list = Array.isArray(value) ? value : String(value === undefined || value === null ? '' : value).split(',');
+	const keys = list.map(function(item) { return String(item).trim(); }).filter(Boolean);
+	if (!keys.length) throw new TypeError('products must select at least one product key.');
+	keys.forEach(function(key) {
+		if (!GOV24_BUNDLE_PRODUCT_SET.has(key)) {
+			throw new RangeError(`products contains an unsupported key: ${key}.`);
+		}
+	});
+	return Array.from(new Set(keys)).join(',');
 }
 
 const SKILL_CATEGORIES = Object.freeze(['data', 'ai', 'dev', 'document', 'marketing', 'finance', 'productivity', 'video', 'etc']);
@@ -1125,6 +1169,47 @@ class ApickClient {
 		return this._call('requestTaxReturnHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tax_return_history' });
 	}
 
+	// 주민등록표 등본·초본 발급. 건당 80P 정액이고 결과에 PDF 원본(base64)·해시가 함께 온다.
+	requestResidentRegistration(input) {
+		const config = input || {};
+		const payload = Object.assign(dataRequestInput(config), residentAddressInput(config));
+		residentOptionsInput(config, payload);
+		return this._call('requestResidentRegistration', payload);
+	}
+
+	getResidentRegistration(transactionId) {
+		return this._call('requestResidentRegistration', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_resident_registration' });
+	}
+
+	requestResidentRegistrationCho(input) {
+		const config = input || {};
+		const payload = Object.assign(dataRequestInput(config), residentAddressInput(config));
+		residentOptionsInput(config, payload);
+		return this._call('requestResidentRegistrationCho', payload);
+	}
+
+	getResidentRegistrationCho(transactionId) {
+		return this._call('requestResidentRegistrationCho', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_resident_registration_cho' });
+	}
+
+	// 정부24 통합 조회. 한 번의 인증으로 고른 상품만 조회하고, 단가는 고른 상품의 합으로 정해진다.
+	requestGov24Bundle(input) {
+		const config = input || {};
+		const products = gov24BundleProductsInput(config.products);
+		const payload = dataRequestInput(config);
+		payload.products = products;
+		// 등본·초본을 고를 때만 주민등록 주소지가 필요하다.
+		if (products.split(',').some(function(key) { return key.indexOf('resident_registration') === 0; })) {
+			Object.assign(payload, residentAddressInput(config));
+			residentOptionsInput(config, payload);
+		}
+		return this._call('requestGov24Bundle', payload);
+	}
+
+	getGov24Bundle(transactionId) {
+		return this._call('requestGov24Bundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_gov24_bundle' });
+	}
+
 	// Skills: 요청·응답이 모두 JSON 이고 data·api 봉투 없이 응답 항목이 최상위에 온다.
 	// 오류는 { error: { code, message, details } } 형식이며 code 를 serviceCode 로 돌려준다.
 	async _skills(method, path, options) {
@@ -1314,6 +1399,7 @@ module.exports = {
 	SERVICES,
 	TTS_VOICE_IDS,
 	AUTH_PROVIDERS,
+	GOV24_BUNDLE_PRODUCTS,
 	SKILL_CATEGORIES,
 	SKILL_SORTS,
 	DEFAULT_BASE_URL

@@ -359,6 +359,12 @@ export interface MaskResidentNumberOptions extends OcrOptions {
 export const AUTH_PROVIDERS: readonly [
 	'kakao', 'naver', 'toss', 'pass', 'samsung', 'kb', 'shinhan', 'hana', 'woori', 'ibk', 'nh', 'kakaobank', 'banksalad'
 ];
+/** 정부24 통합 조회에서 고를 수 있는 상품 키. */
+export const GOV24_BUNDLE_PRODUCTS: readonly [
+	'resident_registration', 'resident_registration_cho', 'driving_license', 'health_checkup',
+	'police_penalty', 'parking_fine_target', 'mortgage_loan', 'housing_refund_balance',
+	'housing_pension_balance', 'housing_loan_stage', 'mortgage_application', 'confirm_verify', 'power_bill'
+];
 export type AuthProvider = typeof AUTH_PROVIDERS[number];
 
 /** 간편인증 기반 조회 상품(재직·소득·연금·면허·건강검진 등)의 공통 입력. */
@@ -377,6 +383,30 @@ export interface RequestDrivingLicenseInput extends DataRequestInput {}
 export interface RequestHealthCheckupInput extends DataRequestInput {}
 export interface RequestCashReceiptDeductionInput extends DataRequestInput { incomeYears?: number; }
 export interface RequestTaxReturnHistoryInput extends DataRequestInput { years?: number; }
+/** 주민등록표 발급 공통 입력. `sido`·`sigungu` 는 주민등록 주소지다. */
+export interface ResidentRegistrationOptions {
+	sido: string;
+	sigungu: string;
+	purposeCd?: string;
+	submitTarget?: string;
+	includeAddressHistory?: 'Y' | 'N';
+	includeHousehold?: 'Y' | 'N';
+}
+export interface RequestResidentRegistrationInput extends DataRequestInput, ResidentRegistrationOptions {}
+export interface RequestResidentRegistrationChoInput extends DataRequestInput, ResidentRegistrationOptions {}
+/**
+ * 정부24 통합 조회 입력. `products` 로 조회할 상품 키를 고른다.
+ * 등본·초본을 고르면 `sido`·`sigungu` 가 필요하다.
+ */
+export interface RequestGov24BundleInput extends DataRequestInput {
+	products: string[] | string;
+	sido?: string;
+	sigungu?: string;
+	purposeCd?: string;
+	submitTarget?: string;
+	includeAddressHistory?: 'Y' | 'N';
+	includeHousehold?: 'Y' | 'N';
+}
 
 export type DataRequestStatus =
 	| 'AUTH_REQUESTED' | 'AUTH_WAITING' | 'AUTH_COMPLETED' | 'AUTH_REJECTED' | 'AUTH_EXPIRED'
@@ -521,6 +551,25 @@ export interface TaxReturnHistoryInfo {
 	신고내역: TaxReturnEntry[];
 }
 export interface TaxReturnHistoryResultPayload { taxReturnHistory: TaxReturnHistoryInfo; }
+
+/** 주민등록표 등본·초본 발급 결과. `발급문서` 는 PDF 원본의 base64 다. */
+export interface ResidentRegistrationInfo {
+	문서확인번호: string;
+	발급일자: string;
+	성명: string;
+	발급문서: string;
+	문서파일명: string;
+	문서해시?: string;
+	문서크기?: number;
+	조회결과?: string;
+}
+export interface ResidentRegistrationResultPayload { residentRegistration: ResidentRegistrationInfo; }
+export interface ResidentRegistrationChoResultPayload { residentRegistrationCho: ResidentRegistrationInfo; }
+/** 통합 조회는 고른 상품의 섹션만 담는다. 섹션 키는 상품 키의 camelCase 다. */
+export type Gov24BundleResultPayload = Record<string, unknown> & {
+	residentRegistration?: ResidentRegistrationInfo;
+	residentRegistrationCho?: ResidentRegistrationInfo;
+};
 
 export interface YoutubeThumbnail { url: string; width: number; height: number; }
 export interface YoutubeChapter { title: string; start_time: number | null; end_time: number | null; }
@@ -752,6 +801,12 @@ export class ApickClient {
 	getCashReceiptDeduction(transactionId: string): Promise<ApickResult<DataRequestResult<CashReceiptDeductionResultPayload>>>;
 	requestTaxReturnHistory(input: RequestTaxReturnHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getTaxReturnHistory(transactionId: string): Promise<ApickResult<DataRequestResult<TaxReturnHistoryResultPayload>>>;
+	requestResidentRegistration(input: RequestResidentRegistrationInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getResidentRegistration(transactionId: string): Promise<ApickResult<DataRequestResult<ResidentRegistrationResultPayload>>>;
+	requestResidentRegistrationCho(input: RequestResidentRegistrationChoInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getResidentRegistrationCho(transactionId: string): Promise<ApickResult<DataRequestResult<ResidentRegistrationChoResultPayload>>>;
+	requestGov24Bundle(input: RequestGov24BundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getGov24Bundle(transactionId: string): Promise<ApickResult<DataRequestResult<Gov24BundleResultPayload>>>;
 	searchSkills(options?: SkillSearchOptions): Promise<ApickResult<SkillPage<SkillSummary>>>;
 	/** Public measured results and methods; model scores are not accuracy guarantees. */
 	getSkillPerformance(): Promise<ApickResult<SkillPerformanceReport>>;

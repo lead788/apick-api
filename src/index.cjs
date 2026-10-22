@@ -199,7 +199,12 @@ function bidQueryInput(options) {
 		input[key] = digits;
 	}
 	if (config.bidNtceNo !== undefined) {
-		input.bidNtceNo = requiredString('bidNtceNo', config.bidNtceNo, 20).replace(/[^0-9]/g, '');
+		const bidNtceNo = requiredString('bidNtceNo', config.bidNtceNo, 20);
+		// 기관별 번호체계가 다르므로 접두사를 제한하거나 식별자를 변형하지 않는다.
+		if (bidNtceNo !== config.bidNtceNo || !/^[A-Za-z0-9]+$/.test(bidNtceNo) || !/[0-9]/.test(bidNtceNo)) {
+			throw new TypeError('bidNtceNo must contain only ASCII letters and digits, including at least one digit; whitespace, separators and notice-order suffixes are not supported.');
+		}
+		input.bidNtceNo = bidNtceNo;
 	}
 	if (config.indstrytyCd !== undefined) {
 		input.indstrytyCd = requiredString('indstrytyCd', config.indstrytyCd, 10).replace(/[^0-9]/g, '');

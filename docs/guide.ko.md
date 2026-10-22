@@ -116,7 +116,7 @@ await client.ocr(bytes, {
 현재 목소리는 `listGeminiTtsVoices()`와 `listOpenAiTtsVoices()`로 조회합니다. 기존 `TTS_VOICE_IDS`는 폐기된 목소리입니다.
 
 
-정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + AI 원가 × 환율 × 1.4입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
+정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + 실제 AI 사용료입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
 
 ```js
 const screenshot = await client.screenshot('https://example.com');

@@ -1209,7 +1209,7 @@ export interface SkillSummary {
 export interface SkillDetail extends SkillSummary {
 	description: string; billing_rule: 'validated_result' | 'subagent_usage'; limits: SkillLimits | null;
 	delivery?: 'installed_agent'; installation?: {package:string;command:string;api_key_env:string;guide:string;usage:string};
-	billing?: {markup_percent:number;installation_points:number;base_points:number;complete_cache_points:number;quota:null};
+	billing?: {installation_points:number;base_points:number;complete_cache_points:number;quota:null};
 	input_schema: Record<string, unknown>; output_schema: Record<string, unknown>;
 	examples: unknown[]; stats: Record<string, unknown> | null; published_at: string | null;
 }

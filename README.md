@@ -310,9 +310,9 @@ if (job.data.status === 'completed') {
 
 Submission reserves an upper bound; successful completion settles actual charges. Disconnects do not cancel billing. Explicit cancellation settles work already performed. MP3 and ASS each allow one completed download; interrupted downloads can be retried.
 
-정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + AI 원가 × 환율 × 1.4입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
+정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + 실제 AI 사용료입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
 
-Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus actual AI cost × the pinned exchange rate × 1.4. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
+Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus the actual AI usage fee. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
 
 ## 신분증 마스킹 / Identity masking
 
@@ -566,9 +566,9 @@ if (status.data.status === "completed") {
 
 ## 서브에이전트 / Subagent
 
-설치형 `apick-agent` 상품은 `apick-subagent` 스킬 패키지와 전용 REST·MCP를 사용합니다. 설치비·도입비·구독료 없이 원가 +40%(2026-11-06부터 분석 원가는 시간대와 관계없이 혼잡 시간대 단가 기준 20%, 자료 선별 원가는 40%)(소수점 올림, 2026-11-06부터 AI 사용 작업 기본 5P), 승인된 동일 결과 캐시 1P, 충전 잔액 외 상품 한도 없음. [연동 가이드](https://apick.app/dev_guide/subagent).
+설치형 `apick-agent` 상품은 `apick-subagent` 스킬 패키지와 전용 REST·MCP를 사용합니다. 설치비·도입비·구독료 없이 성공한 작업만 사용량대로 정산(소수점 올림, 2026-11-06부터 AI 사용 작업 기본 5P), 승인된 동일 결과 캐시 1P, 충전 잔액 외 상품 한도 없음. [연동 가이드](https://apick.app/dev_guide/subagent).
 
-The installed `apick-agent` product uses the `apick-subagent` skill package and dedicated REST/MCP interfaces. No installation, setup or subscription fee. Confirmed cost plus 40% (from 2026-11-06, analysis cost is based on the peak-hour rate regardless of time with 20% added; source-selection cost stays at 40%) (fractions rounded up, 5-point base fee for AI jobs from 2026-11-06); approved identical cache reuse costs 1 point, with no product quota beyond prepaid balance. [Integration guide](https://apick.app/dev_guide/subagent).
+The installed `apick-agent` product uses the `apick-subagent` skill package and dedicated REST/MCP interfaces. No installation, setup or subscription fee. Successful work is billed by actual usage (fractions rounded up, 5-point base fee for AI jobs from 2026-11-06); approved identical cache reuse costs 1 point, with no product quota beyond prepaid balance. [Integration guide](https://apick.app/dev_guide/subagent).
 
 ```sh
 npx -y apick-mcp --server subagent

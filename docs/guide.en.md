@@ -116,7 +116,7 @@ await client.ocr(bytes, {
 Query `listGeminiTtsVoices()` and `listOpenAiTtsVoices()` for current voices; legacy `TTS_VOICE_IDS` are retired.
 
 
-Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus actual AI cost × the pinned exchange rate × 1.4. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
+Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus the actual AI usage fee. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
 
 ```js
 const screenshot = await client.screenshot('https://example.com');

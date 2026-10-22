@@ -1,3 +1,9 @@
+# 4.12.1
+
+- 요금 안내 문구를 정리했습니다. 모델별 판매 단가, 실제 사용량 기준, 기본요금·소수점 올림, 견적 API처럼 청구되는 결과만 적습니다. 에이전트 상품 응답 타입에서 더 이상 내려오지 않는 요금 필드 하나를 뺐습니다. 요금과 동작은 바뀌지 않습니다.
+
+- Billing notes now describe only what you are charged: per-model rates, actual usage, base fees, rounding and the quote API. Removed one billing field from the agent product type that the server no longer returns. Prices and behaviour are unchanged.
+
 # 4.12.0
 
 - 입찰·부동산 분석 4종을 SDK에 추가했습니다. `bidNotice(options)`·`bidAward(options)` 는 공공기관 입찰공고의 예산구간·발주기관·업종 분포와 마감 임박도, 낙찰률 분포·업체 집중도를 분석합니다. `rtmsTrade(lawdCd, dealYmd, options)` 는 매매 실거래의 ㎡당 중위가·면적/가격/층 분포·시세 이탈 거래를, `rtmsRent(lawdCd, dealYmd, options)` 는 전세 비중·보증금/월세 분포·매매 대비 전세가율을 계산합니다. 응답은 `summary`·`distribution`·`insights` 중심이며 원본 목록(`items`·`totalCount`)은 제공하지 않습니다.

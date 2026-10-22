@@ -34,8 +34,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 76 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 76);
+test('exports a focused catalog of 80 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 80);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);

@@ -61,6 +61,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	linkedinCompany: { endpoint: '/rest/linkedin_company', timeoutMs: 110_000, output: 'json' },
 	linkedinJob: { endpoint: '/rest/linkedin_job', timeoutMs: 110_000, output: 'json' },
 	courtAuction: { endpoint: '/rest/court_auction', timeoutMs: 45_000, output: 'json' },
+	bidNotice: { endpoint: '/rest/bid_notice', timeoutMs: 45_000, output: 'json' },
+	bidAward: { endpoint: '/rest/bid_award', timeoutMs: 45_000, output: 'json' },
+	rtmsTrade: { endpoint: '/rest/rtms_trade', timeoutMs: 45_000, output: 'json' },
+	rtmsRent: { endpoint: '/rest/rtms_rent', timeoutMs: 45_000, output: 'json' },
 	registryDocVerify: { endpoint: '/rest/registry_doc_verify', timeoutMs: 30_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
@@ -171,6 +175,57 @@ function normalizeBusinessNumber(value) {
 		throw new TypeError('businessNumber must contain exactly 10 digits.');
 	}
 	return normalized;
+}
+
+const BID_BIZ_TYPES = ['물품', '공사', '용역', '외자'];
+const RTMS_PROPERTY_TYPES = ['apt', 'rh', 'sh', 'offi'];
+
+// 입찰공고·낙찰 조회 입력. bizType·기간·공고번호·업종코드·페이지를 정규화한다.
+function bidQueryInput(options) {
+	const config = options || {};
+	const input = {};
+	if (config.bizType !== undefined) {
+		if (!BID_BIZ_TYPES.includes(config.bizType)) {
+			throw new TypeError('bizType must be one of 물품, 공사, 용역, 외자.');
+		}
+		input.bizType = config.bizType;
+	}
+	for (const key of ['startDate', 'endDate']) {
+		if (config[key] === undefined) continue;
+		const digits = requiredString(key, config[key], 12).replace(/[^0-9]/g, '');
+		if (digits.length !== 8 && digits.length !== 12) {
+			throw new TypeError(`${key} must be YYYYMMDD or YYYYMMDDHHMM.`);
+		}
+		input[key] = digits;
+	}
+	if (config.bidNtceNo !== undefined) {
+		input.bidNtceNo = requiredString('bidNtceNo', config.bidNtceNo, 20).replace(/[^0-9]/g, '');
+	}
+	if (config.indstrytyCd !== undefined) {
+		input.indstrytyCd = requiredString('indstrytyCd', config.indstrytyCd, 10).replace(/[^0-9]/g, '');
+	}
+	if (config.pageNo !== undefined) input.pageNo = positiveInteger('pageNo', config.pageNo);
+	if (config.numOfRows !== undefined) input.numOfRows = positiveInteger('numOfRows', config.numOfRows);
+	return input;
+}
+
+// 실거래 분석 입력. 지역코드 5자리와 계약년월 6자리를 요구한다.
+function rtmsQueryInput(lawdCd, dealYmd, options) {
+	const code = requiredString('lawdCd', lawdCd, 5).replace(/[^0-9]/g, '');
+	if (!/^\d{5}$/.test(code)) throw new TypeError('lawdCd must contain exactly 5 digits.');
+	const month = requiredString('dealYmd', dealYmd, 6).replace(/[^0-9]/g, '');
+	if (!/^\d{6}$/.test(month)) throw new TypeError('dealYmd must be YYYYMM.');
+	const config = options || {};
+	const input = { lawdCd: code, dealYmd: month };
+	if (config.propertyType !== undefined) {
+		if (!RTMS_PROPERTY_TYPES.includes(config.propertyType)) {
+			throw new TypeError('propertyType must be one of apt, rh, sh, offi.');
+		}
+		input.propertyType = config.propertyType;
+	}
+	if (config.pageNo !== undefined) input.pageNo = positiveInteger('pageNo', config.pageNo);
+	if (config.numOfRows !== undefined) input.numOfRows = positiveInteger('numOfRows', config.numOfRows);
+	return input;
 }
 
 function normalizeUrl(value) {
@@ -826,6 +881,26 @@ class ApickClient {
 		const input = { issue_no: requiredString('issueNo', issueNo, 32) };
 		if (config.kind !== undefined) input.kind = requiredString('kind', config.kind, 16);
 		return this._call('registryDocVerify', input);
+	}
+
+	// 입찰공고 분석. bizType 미지정 시 용역이며, 기간은 최대 31일이다.
+	bidNotice(options) {
+		return this._call('bidNotice', bidQueryInput(options));
+	}
+
+	// 낙찰 경쟁 분석. 입력은 bidNotice 와 같다.
+	bidAward(options) {
+		return this._call('bidAward', bidQueryInput(options));
+	}
+
+	// 매매 실거래 분석. 지역코드 5자리와 계약년월 6자리가 필요하다.
+	rtmsTrade(lawdCd, dealYmd, options) {
+		return this._call('rtmsTrade', rtmsQueryInput(lawdCd, dealYmd, options));
+	}
+
+	// 전월세 실거래 분석. 같은 단지 매매가로 전세가율을 계산해 돌려준다.
+	rtmsRent(lawdCd, dealYmd, options) {
+		return this._call('rtmsRent', rtmsQueryInput(lawdCd, dealYmd, options));
 	}
 
 	screenshot(url) {

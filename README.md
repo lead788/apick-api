@@ -97,6 +97,10 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `linkedinCompany(url)` | 링크드인 회사 정보 / LinkedIn company | JSON |
 | `linkedinJob(url)` | 링크드인 채용공고 / LinkedIn job posting | JSON |
 | `courtAuction(caseNo, court)` | 법원 경매사건 조회 / Court auction case | JSON |
+| `bidNotice(options)` | 입찰 공고 분석 / Bid notice analytics | JSON |
+| `bidAward(options)` | 낙찰 경쟁 분석 / Bid award analytics | JSON |
+| `rtmsTrade(lawdCd, dealYmd, options)` | 매매 시장 분석 / Sale market analytics | JSON |
+| `rtmsRent(lawdCd, dealYmd, options)` | 전월세 시장 분석 / Rent market analytics | JSON |
 | `registryDocVerify(issueNo, options)` | 등기·증명서 발급확인 / Registry certificate verification | JSON |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
@@ -467,6 +471,9 @@ Court auction lookup is synchronous. A case number belongs to one court, so pass
 
 등기·증명서 발급확인 `registryDocVerify(issueNo, options)` 는 증명서에 인쇄된 발급확인번호 12자리(하이픈·공백 허용)와 문서 종류 `options.kind`(`realestate` 기본, `corporate`, `movable`)를 받습니다. 응답은 `verified`·`status`·`message`·`document`·`issued_date`·`registry_office` 이며 증명서 원문은 포함되지 않습니다. 발급일로부터 3개월 이내 발급분만 확인됩니다.
 `registryDocVerify(issueNo, options)` verifies the 12-character verification number printed on an issued registration certificate (hyphens and spaces are accepted); `options.kind` selects `realestate` (default), `corporate` or `movable`. The result carries `verified`, `status`, `message`, `document`, `issued_date` and `registry_office` — never the certificate itself — and only certificates issued within the last three months can be verified.
+
+입찰·부동산 4종은 원본 목록이 아니라 **분석 결과**를 돌려줍니다. `bidNotice(options)`·`bidAward(options)` 는 업무구분·기간·공고번호를 받고 `summary`·`distribution`·`insights` 를, 낙찰은 여기에 `competitors`·`low_rate` 를 더합니다. `rtmsTrade(lawdCd, dealYmd, options)` 는 ㎡당 중위가와 면적·가격·층 분포, 단지별 시세, 직거래·해제 비중, 시세 이탈 거래를, `rtmsRent` 는 전세 비중, 보증금·월세 분포, 보증금 대비 연월세 비율, 갱신 비중과 같은 단지 매매 대비 전세가율을 계산합니다. `items`·`totalCount` 같은 원본 목록은 제공하지 않습니다.
+The four bid and real-estate methods return **analytics**, not raw lists. `bidNotice(options)` and `bidAward(options)` take a business type, period or notice number and return `summary`, `distribution` and `insights`; awards add `competitors` and `low_rate`. `rtmsTrade(lawdCd, dealYmd, options)` returns median price per square metre, area/price/floor bands, per-complex medians, direct-deal and cancellation shares and price outliers, while `rtmsRent` computes jeonse share, deposit and monthly-rent bands, annual rent to deposit ratio, renewal share and the jeonse ratio against same-complex sale prices. Raw lists such as `items` and `totalCount` are not returned.
 
 증빙서류 묶음 2종은 휴대폰 승인 한 번으로 담긴 증명을 함께 발급합니다. 소득 묶음은 소득금액증명·연금보험료등 소득세액 공제확인서(결과 `result.incomeAmountCert`·`result.pensionCreditCert`), 사업자 묶음은 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명(결과 `result.businessRegistrationCert`·`result.vatTaxBaseCert`·`result.financialStatementCert`)입니다. 접수 20P, 최초 결과는 84P·126P로 개별 발급 합계보다 30% 쌉니다. 사업자 묶음은 대표자 본인 확인을 받으므로 `agreed: true` 또는 이전 응답의 `bind_id`(같은 계정·같은 사업자등록번호, 90일)를 보내야 하며, 빠지면 SDK가 호출 전에 `TypeError` 를 던집니다. 일부 증명만 발급되면 `status` 가 `PARTIAL_SUCCESS` 이고 결과 단가는 그대로 청구됩니다.
 The two certificate bundles issue every included certificate after a single phone approval. Acceptance is 20P and the first result is 84P (income) or 126P (business), 30% below issuing each certificate separately. The business bundle requires representative consent: send `agreed: true` or a `bind_id` from a previous response (same account and business number, valid for 90 days); the SDK throws a `TypeError` before calling the server when both are missing. If only some certificates are issued, `status` is `PARTIAL_SUCCESS` and the bundle result price still applies.

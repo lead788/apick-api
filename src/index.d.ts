@@ -297,6 +297,137 @@ export interface RegistryDocVerify {
 	readonly registry_office: string | null;
 }
 
+export interface BidQueryOptions {
+	readonly bizType?: '물품' | '공사' | '용역' | '외자';
+	readonly startDate?: string;
+	readonly endDate?: string;
+	readonly bidNtceNo?: string;
+	readonly indstrytyCd?: string;
+	readonly pageNo?: number;
+	readonly numOfRows?: number;
+}
+
+export interface RtmsQueryOptions {
+	readonly propertyType?: 'apt' | 'rh' | 'sh' | 'offi';
+	readonly pageNo?: number;
+	readonly numOfRows?: number;
+}
+
+export interface DistributionEntry {
+	readonly name?: string;
+	readonly band?: string;
+	readonly count: number;
+	readonly share_pct: number;
+}
+
+export interface BidSummary {
+	readonly total: number;
+	readonly agency_count: number;
+	readonly industry_count: number;
+	readonly budget_total: number | null;
+	readonly budget_median: number | null;
+	readonly closing_within_3d: number;
+	readonly closed: number;
+	readonly first_close_at: string | null;
+	readonly last_close_at: string | null;
+}
+
+export interface BidPosting {
+	readonly bid_no: string;
+	readonly bid_name: string;
+	readonly agency: string;
+	readonly notice_at: string | null;
+	readonly close_at: string | null;
+	readonly days_left: number | null;
+	readonly urgency: string;
+	readonly budget: number | null;
+	readonly budget_band: string;
+	readonly industry: string;
+	readonly method: string;
+}
+
+export interface BidNotice {
+	readonly summary: BidSummary;
+	readonly distribution: {
+		readonly by_agency: readonly DistributionEntry[];
+		readonly by_industry: readonly DistributionEntry[];
+		readonly by_method: readonly DistributionEntry[];
+		readonly by_budget_band: readonly DistributionEntry[];
+		readonly by_urgency: readonly DistributionEntry[];
+	};
+	readonly deadlines: readonly BidPosting[];
+	readonly largest: readonly BidPosting[];
+	readonly insights: readonly string[];
+}
+
+export interface BidAward {
+	readonly summary: {
+		readonly total: number;
+		readonly winner_count: number;
+		readonly avg_success_rate: number | null;
+		readonly median_success_rate: number | null;
+		readonly success_rate_stdev: number | null;
+		readonly avg_participants: number | null;
+		readonly rate_sample: number;
+		readonly winner_concentration_hhi: number | null;
+		readonly success_amount_total: number | null;
+	};
+	readonly distribution: {
+		readonly by_winner: readonly DistributionEntry[];
+		readonly by_agency: readonly DistributionEntry[];
+		readonly by_rate_band: readonly DistributionEntry[];
+	};
+	readonly competitors: readonly { readonly name: string; readonly wins: number; readonly share_pct: number; readonly amount_total: number | null }[];
+	readonly low_rate: readonly BidPosting[];
+	readonly insights: readonly string[];
+}
+
+export interface RtmsTrade {
+	readonly summary: {
+		readonly total: number;
+		readonly complex_count: number;
+		readonly median_amount: number | null;
+		readonly median_price_per_sqm: number | null;
+		readonly avg_price_per_sqm: number | null;
+		readonly direct_deal_share_pct: number | null;
+		readonly canceled_count: number;
+		readonly median_area: number | null;
+		readonly median_build_year: number | null;
+	};
+	readonly distribution: {
+		readonly by_complex: readonly DistributionEntry[];
+		readonly by_area_band: readonly DistributionEntry[];
+		readonly by_amount_band: readonly DistributionEntry[];
+		readonly by_floor: readonly DistributionEntry[];
+	};
+	readonly complexes: readonly Readonly<Record<string, unknown>>[];
+	readonly anomalies: readonly Readonly<Record<string, unknown>>[];
+	readonly insights: readonly string[];
+}
+
+export interface RtmsRent {
+	readonly summary: {
+		readonly total: number;
+		readonly complex_count: number;
+		readonly jeonse_count: number;
+		readonly jeonse_share_pct: number | null;
+		readonly median_deposit: number | null;
+		readonly median_monthly_rent: number | null;
+		readonly median_deposit_per_sqm: number | null;
+		readonly avg_annual_rent_to_deposit_pct: number | null;
+		readonly renewal_share_pct: number | null;
+	};
+	readonly distribution: {
+		readonly by_complex: readonly DistributionEntry[];
+		readonly by_deposit_band: readonly DistributionEntry[];
+		readonly by_monthly_band: readonly DistributionEntry[];
+		readonly by_contract_type: readonly DistributionEntry[];
+	};
+	readonly complexes: readonly Readonly<Record<string, unknown>>[];
+	readonly jeonse_ratio: Readonly<Record<string, unknown>> | null;
+	readonly insights: readonly string[];
+}
+
 export interface LinkedinJob {
 	readonly job_posting_id: string;
 	readonly title: string;
@@ -888,6 +1019,10 @@ export class ApickClient {
 	linkedinJob(url: string): Promise<ApickResult<LinkedinJob>>;
 	courtAuction(caseNo: string, court: string): Promise<ApickResult<CourtAuction>>;
 	registryDocVerify(issueNo: string, options?: { readonly kind?: 'realestate' | 'corporate' | 'movable' }): Promise<ApickResult<RegistryDocVerify>>;
+	bidNotice(options: BidQueryOptions): Promise<ApickResult<BidNotice>>;
+	bidAward(options: BidQueryOptions): Promise<ApickResult<BidAward>>;
+	rtmsTrade(lawdCd: string, dealYmd: string, options?: RtmsQueryOptions): Promise<ApickResult<RtmsTrade>>;
+	rtmsRent(lawdCd: string, dealYmd: string, options?: RtmsQueryOptions): Promise<ApickResult<RtmsRent>>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
 	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;

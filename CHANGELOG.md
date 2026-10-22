@@ -1,3 +1,9 @@
+# 4.12.0
+
+- 입찰·부동산 분석 4종을 SDK에 추가했습니다. `bidNotice(options)`·`bidAward(options)` 는 공공기관 입찰공고의 예산구간·발주기관·업종 분포와 마감 임박도, 낙찰률 분포·업체 집중도를 분석합니다. `rtmsTrade(lawdCd, dealYmd, options)` 는 매매 실거래의 ㎡당 중위가·면적/가격/층 분포·시세 이탈 거래를, `rtmsRent(lawdCd, dealYmd, options)` 는 전세 비중·보증금/월세 분포·매매 대비 전세가율을 계산합니다. 응답은 `summary`·`distribution`·`insights` 중심이며 원본 목록(`items`·`totalCount`)은 제공하지 않습니다.
+
+- Added four bid and real-estate analytics methods. `bidNotice(options)` and `bidAward(options)` analyse public-sector bid notices (budget, agency and industry distributions, closing urgency) and award results (success-rate bands, winner concentration). `rtmsTrade(lawdCd, dealYmd, options)` covers median price per square metre, area/price/floor bands and price outliers, while `rtmsRent(lawdCd, dealYmd, options)` computes jeonse share, deposit and monthly-rent bands and the jeonse ratio against sale prices. Responses centre on `summary`, `distribution` and `insights`; raw lists (`items`, `totalCount`) are not returned.
+
 # 4.11.0
 
 - 증빙서류 통합발급 묶음 2종을 추가했습니다. `requestIncomeCertBundle()`·`getIncomeCertBundle()`은 소득금액증명과 연금보험료등 소득세액 공제확인서를, `requestBusinessCertBundle()`·`getBusinessCertBundle()`은 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명을 휴대폰 승인 한 번으로 함께 발급합니다. 접수 20P, 최초 결과는 84P·126P입니다. 사업자 묶음은 `business_no`와 대표자 본인 확인(`agreed: true` 또는 `bind_id`)이 없으면 서버를 부르기 전에 `TypeError`를 던집니다.

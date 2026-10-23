@@ -1,3 +1,9 @@
+# 4.13.2
+
+- 등기 접수 예시를 서버 동작에 맞췄습니다. 열람이 끝나 `completed`가 된 뒤 PDF가 준비되므로 `pdf_state`가 `ready`일 때 `downloadRegistryPdf()`를 부릅니다. 준비 중에 받으면 HTTP 202(`REGISTRY_PDF_PREPARING`, 0P)입니다. 메서드와 엔드포인트는 바뀌지 않습니다.
+
+- The registry example now waits for `pdf_state: ready` after `completed` before calling `downloadRegistryPdf()`; downloading while the PDF is prepared returns HTTP 202 (`REGISTRY_PDF_PREPARING`, no charge). Methods and endpoints are unchanged.
+
 # 4.13.1
 
 - 요금 안내 문구를 서버와 맞췄습니다. `README.md`·`docs/subagent.md`·`docs/tts.md`에서 시행일(2026-11-06)과 소수점 올림 표기를 뺐습니다. 요금과 메서드·타입은 바뀌지 않았습니다.

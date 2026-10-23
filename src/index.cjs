@@ -16,7 +16,7 @@ const AUTH_PROVIDERS = Object.freeze([
 	'kakao', 'naver', 'toss', 'pass', 'samsung', 'kb', 'shinhan', 'hana', 'woori', 'ibk', 'nh', 'kakaobank', 'banksalad'
 ]);
 const AUTH_PROVIDER_SET = new Set(AUTH_PROVIDERS);
-// 정부24 통합 조회에서 고를 수 있는 상품 키. 서버 공개 목록과 같다.
+// 민원서류 통합 조회에서 고를 수 있는 상품 키. 서버 공개 목록과 같다.
 const GOV24_BUNDLE_PRODUCTS = Object.freeze([
 	'resident_registration', 'resident_registration_cho', 'driving_license', 'health_checkup',
 	'police_penalty', 'parking_fine_target', 'mortgage_loan', 'housing_refund_balance',
@@ -66,6 +66,31 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	rtmsTrade: { endpoint: '/rest/rtms_trade', timeoutMs: 45_000, output: 'json' },
 	rtmsRent: { endpoint: '/rest/rtms_rent', timeoutMs: 45_000, output: 'json' },
 	registryDocVerify: { endpoint: '/rest/registry_doc_verify', timeoutMs: 30_000, output: 'json' },
+	corpFinance: { endpoint: '/rest/corp_finance', timeoutMs: 35_000, output: 'json' },
+	buildingRegister: { endpoint: '/rest/bldrgst', timeoutMs: 35_000, output: 'json' },
+	appReviews: { endpoint: '/rest/app_reviews', timeoutMs: 35_000, output: 'json' },
+	vehicleEmission: { endpoint: '/rest/vehicle_emission', timeoutMs: 25_000, output: 'json' },
+	vehicleRecall: { endpoint: '/rest/vehicle_recall', timeoutMs: 45_000, output: 'json' },
+	hipassUnpaid: { endpoint: '/rest/hipass_unpaid', timeoutMs: 30_000, output: 'json' },
+	vehicleTaxCalc: { endpoint: '/rest/vehicle_tax_calc', timeoutMs: 15_000, output: 'json' },
+	// 공간정보는 배열·GeoJSON 객체를 그대로 보내도록 JSON 본문을 쓴다.
+	geoStandardize: { endpoint: '/rest/geo_standardize', timeoutMs: 30_000, output: 'json', json: true },
+	geoBatchGeocode: { endpoint: '/rest/geo_batch_geocode', timeoutMs: 35_000, output: 'json', json: true },
+	geoReverse: { endpoint: '/rest/geo_reverse', timeoutMs: 25_000, output: 'json', json: true },
+	geoAddressSearch: { endpoint: '/rest/geo_address_search', timeoutMs: 30_000, output: 'json', json: true },
+	geoPlaceSearch: { endpoint: '/rest/geo_place_search', timeoutMs: 30_000, output: 'json', json: true },
+	geoAdminCode: { endpoint: '/rest/geo_admin_code', timeoutMs: 25_000, output: 'json', json: true },
+	geoCompareAddress: { endpoint: '/rest/geo_compare_address', timeoutMs: 35_000, output: 'json', json: true },
+	geoMeasure: { endpoint: '/rest/geo_measure', timeoutMs: 25_000, output: 'json', json: true },
+	geoGeojsonAnalyze: { endpoint: '/rest/geo_geojson_analyze', timeoutMs: 25_000, output: 'json', json: true },
+	geoAddressQuality: { endpoint: '/rest/geo_address_quality', timeoutMs: 35_000, output: 'json', json: true },
+	geoAddressAutocomplete: { endpoint: '/rest/geo_address_autocomplete', timeoutMs: 25_000, output: 'json', json: true },
+	geoDistrictBoundary: { endpoint: '/rest/geo_district_boundary', timeoutMs: 35_000, output: 'json', json: true },
+	geoNeighborhood: { endpoint: '/rest/geo_neighborhood', timeoutMs: 35_000, output: 'json', json: true },
+	registryRealestateSearch: { endpoint: '/rest/registry_realestate_search', timeoutMs: 125_000, output: 'json' },
+	registryCorporateSearch: { endpoint: '/rest/registry_corporate_search', timeoutMs: 125_000, output: 'json' },
+	createRegistryRealestateJob: { endpoint: '/rest/registry_realestate_jobs', timeoutMs: 50_000, output: 'json' },
+	createRegistryCorporateJob: { endpoint: '/rest/registry_corporate_jobs', timeoutMs: 50_000, output: 'json' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
 	youtubeThumbnail: { endpoint: '/rest/youtube_thumbnail', timeoutMs: 60_000, output: 'binary', filename: 'thumbnail.jpg' },
@@ -297,6 +322,44 @@ function compact(payload) {
 	return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
 }
 
+// 선택 입력 객체를 받아 정해진 키만 남긴다. 값은 서버가 검증하므로 여기서는 객체 모양만 본다.
+function pickOptions(name, options, keys) {
+	if (options === undefined || options === null) return {};
+	if (typeof options !== 'object' || Array.isArray(options)) throw new TypeError(`${name} must be an object.`);
+	return compact(Object.fromEntries(keys.map(key => [key, options[key]])));
+}
+
+function nonEmptyList(name, value, max) {
+	if (!Array.isArray(value) || value.length === 0) throw new TypeError(`${name} must be a non-empty array.`);
+	if (value.length > max) throw new RangeError(`${name} must not have more than ${max} items.`);
+	return value;
+}
+
+// 차량번호는 공백을 빼고 보낸다. 형식(예: 12가3456)은 서버가 확인한다.
+function carNumber(name, value) {
+	return requiredString(name, value, 16).replace(/\s+/g, '');
+}
+
+function registryCorporateTarget(input) {
+	const config = input || {};
+	const corp = config.corpRegNo === undefined || config.corpRegNo === '' ? '' : requiredString('corpRegNo', config.corpRegNo, 20).replace(/[^0-9]/g, '');
+	const biz = config.bizNo === undefined || config.bizNo === '' ? '' : requiredString('bizNo', config.bizNo, 20).replace(/[^0-9]/g, '');
+	if (!corp && !biz) throw new TypeError('corpRegNo or bizNo is required.');
+	return corp ? { corp_reg_no: corp } : { biz_no: biz };
+}
+
+function registryJobId(jobId) {
+	const id = requiredString('jobId', jobId, 64);
+	if (!/^[A-Za-z0-9_-]{8,64}$/.test(id)) throw new TypeError('jobId is invalid.');
+	return id;
+}
+
+function geoTarget(input, name) {
+	const config = input || {};
+	if (typeof config === 'string') return { address: requiredString(name, config, 300) };
+	return pickOptions(name, config, ['address', 'x', 'y', 'point', 'pnu', 'addrType', 'includeZipcode', 'radius', 'categories', 'limit']);
+}
+
 function optionalRangeInteger(name, value, min, max) {
 	if (value === undefined || value === null || value === '') return undefined;
 	const number = Number(value);
@@ -318,7 +381,7 @@ function dataRequestInput(input) {
 	};
 }
 
-// 홈택스 민원증명. 발급 조건은 REST 필드명 그대로 보낸다(서버가 최상위 평면 이름을 읽는다).
+// 세무 민원증명. 발급 조건은 REST 필드명 그대로 보낸다(서버가 최상위 평면 이름을 읽는다).
 // 공통 인증 입력(name·birthDate·phone·authProvider)은 dataRequestInput 이 만든다.
 const INCOME_AMOUNT_CERT_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit_to', 'delivery', 'format', 'engl_yn', 'quantity', 'email', 'fax_no', 'wallet_address']);
 const PENSION_CREDIT_CERT_OPTIONS = Object.freeze(['year', 'use_purpose', 'submit_to', 'delivery', 'format', 'address_open_yn', 'resno_open_yn', 'quantity', 'email', 'fax_no', 'wallet_address']);
@@ -900,7 +963,210 @@ class ApickClient {
 
 	// 전월세 실거래 분석. 같은 단지 매매가로 전세가율을 계산해 돌려준다.
 	rtmsRent(lawdCd, dealYmd, options) {
-		return this._call('rtmsRent', rtmsQueryInput(lawdCd, dealYmd, options));
+		const input = rtmsQueryInput(lawdCd, dealYmd, options);
+		// includeTrade=false 면 매매가 비교(전세가율) 없이 임대 분석만 받는다.
+		if (options && options.includeTrade !== undefined) input.includeTrade = options.includeTrade === false ? 'false' : 'true';
+		return this._call('rtmsRent', input);
+	}
+
+	// 기업 재무정보. 법인등록번호 13자리(하이픈 허용)와 선택 사업연도·항목·연결 구분.
+	corpFinance(crno, options) {
+		return this._call('corpFinance', Object.assign(
+			{ crno: requiredString('crno', crno, 20) },
+			pickOptions('options', options, ['bizYear', 'type', 'scope'])
+		));
+	}
+
+	// 건축물대장. pnu 또는 sigunguCd·bjdongCd·bun(·ji)으로 지번을 지정하고 type 으로 대장 종류를 고른다.
+	buildingRegister(options) {
+		const input = pickOptions('options', options, ['pnu', 'sigunguCd', 'bjdongCd', 'platGbCd', 'bun', 'ji', 'type', 'startDate', 'endDate', 'dongNm', 'hoNm', 'flrNo', 'pageNo', 'numOfRows']);
+		if (!input.pnu && !(input.sigunguCd && input.bjdongCd)) throw new TypeError('pnu or sigunguCd and bjdongCd are required.');
+		return this._call('buildingRegister', input);
+	}
+
+	// 앱스토어 리뷰. appId 는 숫자 앱 ID다.
+	appReviews(appId, options) {
+		return this._call('appReviews', Object.assign(
+			{ appId: requiredString('appId', String(appId == null ? '' : appId), 20) },
+			pickOptions('options', options, ['country', 'page'])
+		));
+	}
+
+	// 배출가스 인증정보. 차량번호가 아니라 배출가스인증번호를 받는다.
+	vehicleEmission(certNo) {
+		return this._call('vehicleEmission', { cert_no: requiredString('certNo', certNo, 40) });
+	}
+
+	// 자동차 리콜 대상 여부. carNo 와 vin 중 하나만 보낸다. 리콜 대상이 아니면 과금되지 않는다.
+	vehicleRecall(input) {
+		const config = input || {};
+		const hasCar = config.carNo !== undefined && config.carNo !== null && config.carNo !== '';
+		const hasVin = config.vin !== undefined && config.vin !== null && config.vin !== '';
+		if (hasCar === hasVin) throw new TypeError('Provide exactly one of carNo or vin.');
+		return this._call('vehicleRecall', hasCar
+			? { car_no: carNumber('carNo', config.carNo) }
+			: { vin: requiredString('vin', config.vin, 17).replace(/\s+/g, '').toUpperCase() });
+	}
+
+	// 하이패스 미납 여부. 미납이 없으면 과금되지 않는다.
+	hipassUnpaid(carNo) {
+		return this._call('hipassUnpaid', { car_no: carNumber('carNo', carNo) });
+	}
+
+	// 자동차세 계산(비영업용 승용). cc 는 배기량, carAgeYears 는 차령(년)이다.
+	vehicleTaxCalc(cc, options) {
+		const config = options || {};
+		if (cc === undefined || cc === null || cc === '') throw new TypeError('cc is required.');
+		return this._call('vehicleTaxCalc', compact({
+			cc: optionalRangeInteger('cc', cc, 50, 10000),
+			car_age_years: optionalRangeInteger('carAgeYears', config.carAgeYears, 0, 40),
+			year: optionalRangeInteger('year', config.year, 2000, 2100)
+		}));
+	}
+
+	// 주소 표준화·코드 변환. 주소 문자열 또는 { address | pnu, addrType, includeZipcode }.
+	geoStandardize(input) {
+		const body = geoTarget(input, 'input');
+		if (!body.address && !body.pnu) throw new TypeError('address or pnu is required.');
+		return this._call('geoStandardize', body);
+	}
+
+	// 대량 주소 좌표 변환(최대 50건).
+	geoBatchGeocode(addresses, options) {
+		return this._call('geoBatchGeocode', Object.assign(
+			{ addresses: nonEmptyList('addresses', addresses, 50) },
+			pickOptions('options', options, ['addrType', 'dedupe'])
+		));
+	}
+
+	// 좌표→주소·행정구역. { x, y } 또는 { point: '경도,위도' }.
+	geoReverse(input) {
+		return this._call('geoReverse', pickOptions('input', input, ['x', 'y', 'point']));
+	}
+
+	geoAddressSearch(query, options) {
+		return this._call('geoAddressSearch', Object.assign(
+			{ query: requiredString('query', query, 200) },
+			pickOptions('options', options, ['category', 'page', 'size'])
+		));
+	}
+
+	// 장소 검색. 기준점(origin 또는 x·y)을 주면 거리순으로 정렬한다.
+	geoPlaceSearch(query, options) {
+		return this._call('geoPlaceSearch', Object.assign(
+			{ query: requiredString('query', query, 200) },
+			pickOptions('options', options, ['origin', 'x', 'y', 'radius', 'sort', 'page', 'size'])
+		));
+	}
+
+	// 행정구역 코드. 주소 문자열 또는 { address | x·y | point, addrType, includeZipcode }.
+	geoAdminCode(input) {
+		return this._call('geoAdminCode', geoTarget(input, 'input'));
+	}
+
+	geoCompareAddress(addressA, addressB, options) {
+		return this._call('geoCompareAddress', Object.assign(
+			{ addressA: requiredString('addressA', addressA, 300), addressB: requiredString('addressB', addressB, 300) },
+			pickOptions('options', options, ['addrType'])
+		));
+	}
+
+	// 좌표 거리·면적. coordinates 는 ['경도,위도', ...] 또는 [[경도, 위도], ...](2~200개).
+	geoMeasure(coordinates, options) {
+		return this._call('geoMeasure', Object.assign(
+			{ coordinates: nonEmptyList('coordinates', coordinates, 200) },
+			pickOptions('options', options, ['mode', 'unit', 'matrix'])
+		));
+	}
+
+	// GeoJSON 면적·포함 분석. 본문은 1MB 이하여야 한다.
+	geoGeojsonAnalyze(geojson, options) {
+		if (!geojson || (typeof geojson !== 'object' && typeof geojson !== 'string')) throw new TypeError('geojson must be an object or a JSON string.');
+		return this._call('geoGeojsonAnalyze', Object.assign(
+			{ geojson },
+			pickOptions('options', options, ['simplify', 'point', 'x', 'y', 'includeGeometry'])
+		));
+	}
+
+	// 주소 품질 진단(최대 20건).
+	geoAddressQuality(addresses, options) {
+		return this._call('geoAddressQuality', Object.assign(
+			{ addresses: nonEmptyList('addresses', addresses, 20) },
+			pickOptions('options', options, ['addrType'])
+		));
+	}
+
+	geoAddressAutocomplete(query, options) {
+		return this._call('geoAddressAutocomplete', Object.assign(
+			{ query: requiredString('query', query, 200) },
+			pickOptions('options', options, ['category', 'size'])
+		));
+	}
+
+	// 행정구역 경계·면적. query 는 이름(예: 강남구) 또는 코드(예: 11680).
+	geoDistrictBoundary(query, options) {
+		return this._call('geoDistrictBoundary', Object.assign(
+			{ query: requiredString('query', String(query == null ? '' : query), 100) },
+			pickOptions('options', options, ['level', 'simplify', 'includeGeometry'])
+		));
+	}
+
+	// 주변 생활시설. 기준 주소 문자열 또는 { address | x·y | point, radius, categories, limit }.
+	geoNeighborhood(input) {
+		return this._call('geoNeighborhood', geoTarget(input, 'input'));
+	}
+
+	// 부동산 등기 검색. 주소(도로명·지번) 또는 부동산고유번호 14자리. 결과가 없으면 과금되지 않는다.
+	registryRealestateSearch(query) {
+		return this._call('registryRealestateSearch', { query: requiredString('query', query, 200) });
+	}
+
+	// 법인 등기 검색. corpRegNo(법인등록번호 13자리) 또는 bizNo(사업자등록번호 10자리) 중 하나.
+	registryCorporateSearch(input) {
+		return this._call('registryCorporateSearch', registryCorporateTarget(input));
+	}
+
+	// 부동산 등기 열람·발급 접수. 접수 즉시 job_id 를 돌려주며 getRegistryJob 으로 상태를 확인한다.
+	// 같은 요청을 다시 보낼 수 있게 idempotencyKey 를 넣어 두는 것을 권장한다.
+	createRegistryRealestateJob(options) {
+		const config = options || {};
+		if (!config.query && !config.pin) throw new TypeError('query or pin is required.');
+		return this._call('createRegistryRealestateJob', compact({
+			query: config.query === undefined ? undefined : requiredString('query', config.query, 200),
+			pin: config.pin === undefined ? undefined : requiredString('pin', config.pin, 20),
+			index: optionalRangeInteger('index', config.index, 1, 100),
+			usage: config.usage,
+			record_scope: config.recordScope,
+			include_cancelled: config.includeCancelled === undefined ? undefined : String(Boolean(config.includeCancelled)),
+			publish_resident_no: config.publishResidentNo === undefined ? undefined : String(Boolean(config.publishResidentNo)),
+			idempotency_key: config.idempotencyKey === undefined ? undefined : requiredString('idempotencyKey', config.idempotencyKey, 128)
+		}));
+	}
+
+	// 법인 등기 열람·발급 접수.
+	createRegistryCorporateJob(options) {
+		const config = options || {};
+		return this._call('createRegistryCorporateJob', Object.assign(registryCorporateTarget(config), compact({
+			usage: config.usage,
+			idempotency_key: config.idempotencyKey === undefined ? undefined : requiredString('idempotencyKey', config.idempotencyKey, 128)
+		})));
+	}
+
+	// 등기 작업 상태. 조회는 무료다.
+	getRegistryJob(jobId) {
+		return this._call('createRegistryRealestateJob', null, null, { endpoint: '/rest/registry_jobs/' + registryJobId(jobId), method: 'GET', timeoutMs: 35_000 });
+	}
+
+	// 완료된 등기 작업의 PDF. 전송이 끝난 다운로드만 과금된다.
+	downloadRegistryPdf(jobId) {
+		const id = registryJobId(jobId);
+		return this._call('createRegistryRealestateJob', null, null, {
+			endpoint: '/rest/registry_jobs/' + id + '?download=1',
+			method: 'GET',
+			output: 'binary',
+			filename: 'registry-' + id + '.pdf',
+			timeoutMs: 65_000
+		});
 	}
 
 	screenshot(url) {
@@ -1313,7 +1579,7 @@ class ApickClient {
 		return this._call('requestTaxReturnHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tax_return_history' });
 	}
 
-	// 홈택스 민원증명 발급. 신청인 본인명의이고 발급 1건 60P 정액이다.
+	// 세무 민원증명 발급. 신청인 본인명의이고 발급 1건 60P 정액이다.
 	// 응답은 format(pdf·json·both)으로 고른다. json 이면 발급된 PDF를 파싱한 PDF데이터가 함께 온다.
 	requestIncomeAmountCert(input) {
 		return this._call('requestIncomeAmountCert', hometaxCertInput(input, INCOME_AMOUNT_CERT_OPTIONS));
@@ -1423,7 +1689,7 @@ class ApickClient {
 		return this._call('requestResidentRegistrationCho', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_resident_registration_cho' });
 	}
 
-	// 정부24 통합 조회. 한 번의 인증으로 고른 상품만 조회하고, 단가는 고른 상품의 합으로 정해진다.
+	// 민원서류 통합 조회. 한 번의 인증으로 고른 상품만 조회하고, 단가는 고른 상품의 합으로 정해진다.
 	requestGov24Bundle(input) {
 		const config = input || {};
 		const products = gov24BundleProductsInput(config.products);

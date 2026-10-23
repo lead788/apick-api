@@ -1,3 +1,19 @@
+# 4.13.0
+
+- 신규 API 메서드 26개를 추가했습니다(서비스 목록 104개).
+  - 공간정보 13종: `geoStandardize`·`geoBatchGeocode`·`geoReverse`·`geoAddressSearch`·`geoPlaceSearch`·`geoAdminCode`·`geoCompareAddress`·`geoMeasure`·`geoGeojsonAnalyze`·`geoAddressQuality`·`geoAddressAutocomplete`·`geoDistrictBoundary`·`geoNeighborhood`. JSON 본문으로 보내 주소 목록·좌표 배열·GeoJSON 객체를 그대로 넘깁니다.
+  - 차량: `vehicleEmission(certNo)`, `vehicleRecall({ carNo | vin })`(리콜 대상이 아니면 0P), `hipassUnpaid(carNo)`(미납이 없으면 0P), `vehicleTaxCalc(cc, { carAgeYears, year })`.
+  - 기업·부동산: `corpFinance(crno, options)`, `buildingRegister(options)`, `appReviews(appId, options)`.
+  - 등기: `registryRealestateSearch(query)`, `registryCorporateSearch({ corpRegNo | bizNo })`, `createRegistryRealestateJob(options)`, `createRegistryCorporateJob(options)`, `getRegistryJob(jobId)`, `downloadRegistryPdf(jobId)`.
+- `rtmsRent(lawdCd, dealYmd, { includeTrade: false })`로 같은 단지 매매가 비교(전세가율) 없이 임대 분석만 받을 수 있습니다.
+- 서버 변경: 위 API와 입찰·부동산 분석의 입력 오류는 HTTP 400, 공간정보에서 위치·주소·장소를 찾지 못한 경우는 404로 응답합니다. 본문의 `data.error`와 과금(0P)은 그대로입니다.
+- 문서의 상품 이름을 서버 공개 명칭에 맞췄습니다(`민원서류 통합 조회`, `세무 민원증명`). 메서드 이름과 엔드포인트는 바뀌지 않습니다.
+
+- Added 26 methods (104 listed services): 13 geo methods sent as JSON bodies, vehicle emission/recall/unpaid-toll/tax methods (recall and unpaid-toll checks are free when nothing is found), `corpFinance`, `buildingRegister`, `appReviews`, and registry search, job, status and PDF download methods.
+- `rtmsRent(..., { includeTrade: false })` skips the same-complex sale comparison.
+- Server change: input errors for these APIs and the bid/real-estate analytics now return HTTP 400, and geo lookups that find no location, address or place return 404. `data.error` and the 0P charge are unchanged.
+- Product names in the docs now match the server (`민원서류 통합 조회`, `세무 민원증명`). Method names and endpoints are unchanged.
+
 # 4.12.1
 
 - 요금 안내 문구를 정리했습니다. 모델별 판매 단가, 실제 사용량 기준, 기본요금·소수점 올림, 견적 API처럼 청구되는 결과만 적습니다. 에이전트 상품 응답 타입에서 더 이상 내려오지 않는 요금 필드 하나를 뺐습니다. 요금과 동작은 바뀌지 않습니다.
@@ -36,14 +52,14 @@
 # 4.9.1
 
 - Added `requestIncomeAmountCert(input)` / `getIncomeAmountCert(transactionId)`, `requestPensionCreditCert()` / `getPensionCreditCert()`, `requestFactCert()` / `getFactCert()` and `requestTaxClearanceCert()` / `getTaxClearanceCert()` for `POST /rest/req_*` and `POST /rest/get_*`. All four issue a Hometax certificate for the authenticated person at a flat 60P per issuance and require `year`, `use_purpose`, `submit_to` and `delivery`. `format` (`pdf`, `json` or `both`; default `both`) selects the response; with `json`/`both` the issued PDF is parsed into `PDF데이터.필드`. The structured values in the result body are authoritative and parsed fields may be empty depending on the table layout. Certificates that need a registered business (business registration, VAT tax base, financial statements) are not part of this release.
-- 홈택스 민원증명 4종을 추가했습니다. 소득금액증명 `requestIncomeAmountCert()`·`getIncomeAmountCert()`, 연금보험료등 소득세액 공제확인서 `requestPensionCreditCert()`·`getPensionCreditCert()`, 납부내역증명 `requestFactCert()`·`getFactCert()`, 납세증명서 `requestTaxClearanceCert()`·`getTaxClearanceCert()` 이며 `POST /rest/req_*`·`POST /rest/get_*` 를 씁니다. 모두 신청인 본인명의 발급이고 발급 1건은 60P 정액이며 `year`·`use_purpose`·`submit_to`·`delivery` 가 필수입니다. `format`(`pdf`·`json`·`both`, 기본 `both`)으로 응답을 고르고 `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드` 가 함께 옵니다. 구조화 값은 결과 본문이 정본이고 표 구조에 따라 파싱 필드가 비어 있을 수 있습니다. 사업자 세적이 필요한 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명은 이번 배포에 포함하지 않았습니다.
+- 세무 민원증명 4종을 추가했습니다. 소득금액증명 `requestIncomeAmountCert()`·`getIncomeAmountCert()`, 연금보험료등 소득세액 공제확인서 `requestPensionCreditCert()`·`getPensionCreditCert()`, 납부내역증명 `requestFactCert()`·`getFactCert()`, 납세증명서 `requestTaxClearanceCert()`·`getTaxClearanceCert()` 이며 `POST /rest/req_*`·`POST /rest/get_*` 를 씁니다. 모두 신청인 본인명의 발급이고 발급 1건은 60P 정액이며 `year`·`use_purpose`·`submit_to`·`delivery` 가 필수입니다. `format`(`pdf`·`json`·`both`, 기본 `both`)으로 응답을 고르고 `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드` 가 함께 옵니다. 구조화 값은 결과 본문이 정본이고 표 구조에 따라 파싱 필드가 비어 있을 수 있습니다. 사업자 세적이 필요한 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명은 이번 배포에 포함하지 않았습니다.
 
 # 4.9.0
 
 - Added `requestResidentRegistration(input)` / `getResidentRegistration(transactionId)` for `POST /rest/req_resident_registration` and `POST /rest/get_resident_registration`, and `requestResidentRegistrationCho(input)` / `getResidentRegistrationCho(transactionId)` for the 초본 variant. Both require the registered address (`sido`, `sigungu`) and optionally take `purposeCd`, `submitTarget`, `includeAddressHistory` and `includeHousehold` (`Y`/`N`). Each issued copy costs 80P and the result includes the original PDF as base64 (`발급문서`) with its filename, SHA-256 (`문서해시`) and byte size (`문서크기`).
 - Added `requestGov24Bundle(input)` / `getGov24Bundle(transactionId)` for `POST /rest/req_gov24_bundle` and `POST /rest/get_gov24_bundle` — one simple-auth approval for the selectable Government24 products. `products` picks any subset of the 13 keys exported as `GOV24_BUNDLE_PRODUCTS`; the bill is the sum of the selected products (resident registration 80P each) and unselected products are never verified or collected. `sido`/`sigungu` are required only when a resident registration certificate is selected. Result sections use camelCase keys (`residentRegistration`, `residentRegistrationCho`, …).
 - `requestResidentRegistration()`·`getResidentRegistration()`(`POST /rest/req_resident_registration`·`POST /rest/get_resident_registration`)와 초본용 `requestResidentRegistrationCho()`·`getResidentRegistrationCho()`를 추가했습니다. 주민등록 주소지 `sido`·`sigungu`가 필수이고 `purposeCd`·`submitTarget`·`includeAddressHistory`·`includeHousehold`(`Y`/`N`)를 선택으로 받습니다. 발급 1건은 80P이며 결과에는 PDF 원본 base64(`발급문서`)와 파일명·SHA-256(`문서해시`)·바이트 크기(`문서크기`)가 함께 옵니다.
-- 정부24 통합 조회 `requestGov24Bundle()`·`getGov24Bundle()`(`POST /rest/req_gov24_bundle`·`POST /rest/get_gov24_bundle`)를 추가했습니다. 간편인증 1회로 `products`에 고른 상품만 조회하며, 선택 가능한 13개 키는 `GOV24_BUNDLE_PRODUCTS`로 제공합니다. 과금은 고른 상품 단가의 합(등본·초본 각 80P)이고 고르지 않은 상품은 인증·수집하지 않습니다. `sido`·`sigungu`는 등본·초본을 고를 때만 필요합니다. 결과 섹션 키는 camelCase(`residentRegistration`, `residentRegistrationCho` 등)입니다.
+- 민원서류 통합 조회 `requestGov24Bundle()`·`getGov24Bundle()`(`POST /rest/req_gov24_bundle`·`POST /rest/get_gov24_bundle`)를 추가했습니다. 간편인증 1회로 `products`에 고른 상품만 조회하며, 선택 가능한 13개 키는 `GOV24_BUNDLE_PRODUCTS`로 제공합니다. 과금은 고른 상품 단가의 합(등본·초본 각 80P)이고 고르지 않은 상품은 인증·조회하지 않습니다. `sido`·`sigungu`는 등본·초본을 고를 때만 필요합니다. 결과 섹션 키는 camelCase(`residentRegistration`, `residentRegistrationCho` 등)입니다.
 
 # 4.8.1
 

@@ -102,6 +102,20 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `rtmsTrade(lawdCd, dealYmd, options)` | 매매 시장 분석 / Sale market analytics | JSON |
 | `rtmsRent(lawdCd, dealYmd, options)` | 전월세 시장 분석 / Rent market analytics | JSON |
 | `registryDocVerify(issueNo, options)` | 등기·증명서 발급확인 / Registry certificate verification | JSON |
+| `corpFinance(crno, options)` | 기업 재무정보 / Corporate financial statements | JSON |
+| `buildingRegister(options)` | 건축물대장 / Building register | JSON |
+| `registryRealestateSearch(query)` | 부동산 등기 검색 / Real-estate registry search | JSON |
+| `registryCorporateSearch({ corpRegNo | bizNo })` | 법인 등기 검색 / Corporate registry search | JSON |
+| `createRegistryRealestateJob(options)` / `createRegistryCorporateJob(options)` | 등기 열람·발급 접수 / Registry view or issue job | JSON |
+| `getRegistryJob(jobId)` / `downloadRegistryPdf(jobId)` | 등기 작업 상태·PDF / Registry job status and PDF | JSON·PDF |
+| `vehicleEmission(certNo)` | 배출가스 인증정보 / Emission certification | JSON |
+| `vehicleRecall({ carNo | vin })` | 자동차 리콜 대상 여부(대상 아니면 0P) / Vehicle recall check (0P when none) | JSON |
+| `hipassUnpaid(carNo)` | 하이패스 미납 여부(미납 없으면 0P) / Unpaid expressway toll check (0P when none) | JSON |
+| `vehicleTaxCalc(cc, options)` | 자동차세 계산 / Annual automobile tax | JSON |
+| `appReviews(appId, options)` | 앱스토어 리뷰 / App Store reviews | JSON |
+| `geoStandardize(input)` · `geoBatchGeocode(addresses)` · `geoReverse(input)` · `geoAdminCode(input)` | 주소 표준화·대량 좌표 변환·좌표→주소·행정코드 / Address standardisation, batch geocoding, reverse geocoding, admin codes | JSON |
+| `geoAddressSearch(query)` · `geoAddressAutocomplete(query)` · `geoPlaceSearch(query)` · `geoCompareAddress(a, b)` · `geoAddressQuality(addresses)` | 주소 검색·자동완성·장소 검색·주소 동일성·주소 품질 / Address search, autocomplete, place search, address matching, address quality | JSON |
+| `geoMeasure(coordinates)` · `geoGeojsonAnalyze(geojson)` · `geoDistrictBoundary(query)` · `geoNeighborhood(input)` | 거리·면적 측량·GeoJSON 분석·행정구역 경계·주변 생활시설 / Distance and area, GeoJSON analysis, district boundaries, nearby facilities | JSON |
 | `createTtsJob(text, options)` | 한국어 내레이션 작업 접수 / Create TTS job | JSON |
 | `getTtsJob(jobId)` | TTS 작업 상태 / TTS job status | JSON |
 | `cancelTtsJob(jobId)` | 대기·생성 중 TTS 작업 취소 / Cancel waiting or processing TTS job | JSON |
@@ -132,7 +146,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestTaxReturnHistory(input)` / `getTaxReturnHistory(transactionId)` | 국세 신고내역 조회 / National tax return history | JSON |
 | `requestResidentRegistration(input)` / `getResidentRegistration(transactionId)` | 주민등록표등본 발급 / Resident registration certificate | JSON |
 | `requestResidentRegistrationCho(input)` / `getResidentRegistrationCho(transactionId)` | 주민등록표초본 발급 / Resident registration certificate (cho) | JSON |
-| `requestGov24Bundle(input)` / `getGov24Bundle(transactionId)` | 정부24 통합 조회 / Selectable Government24 bundle | JSON |
+| `requestGov24Bundle(input)` / `getGov24Bundle(transactionId)` | 민원서류 통합 조회 / Selectable civil-document bundle | JSON |
 | `requestIncomeAmountCert(input)` / `getIncomeAmountCert(transactionId)` | 소득금액증명 발급 / Income amount certificate | PDF·JSON |
 | `requestPensionCreditCert(input)` / `getPensionCreditCert(transactionId)` | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | PDF·JSON |
 | `requestFactCert(input)` / `getFactCert(transactionId)` | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | PDF·JSON |
@@ -277,6 +291,31 @@ await excel.save('./scores.xlsx');
 
 `ApickBinaryResult` provides `bytes`, `size`, `filename`, `contentType`, `meta`, `toArrayBuffer()`, `toBlob()`, and `save(path)`.
 
+### 공간정보·차량·기업·등기 / Geo, vehicle, company and registry
+
+공간정보 13종(`geo*`)은 JSON 본문으로 보내므로 주소 목록·좌표 배열·GeoJSON 객체를 그대로 넘깁니다. 좌표는 WGS84 경위도이며 `x`가 경도, `y`가 위도입니다. GeoJSON 요청 본문은 1MB 이하여야 합니다.
+The 13 geo methods (`geo*`) send a JSON body, so address lists, coordinate arrays and GeoJSON objects are passed as-is. Coordinates are WGS84 longitude (`x`) and latitude (`y`). GeoJSON request bodies must be 1 MB or smaller.
+
+```js
+const { data } = await client.geoStandardize('서울특별시 강남구 역삼동 808');
+const batch = await client.geoBatchGeocode(['서울특별시 강남구 역삼동 808', '서울특별시 강남구 테헤란로 152']);
+const nearby = await client.geoNeighborhood({ address: '서울특별시 강남구 역삼동 808', categories: ['편의점', '약국'], radius: 500 });
+```
+
+`vehicleRecall({ carNo })`·`vehicleRecall({ vin })`는 둘 중 하나만 받습니다. 리콜 대상이 아니면(`recall_target: false`), `hipassUnpaid(carNo)`는 미납이 없으면(`unpaid_target: false`) 과금되지 않습니다. `vehicleTaxCalc(cc, { carAgeYears })`는 비영업용 승용차의 연간 자동차세·지방교육세를 계산합니다.
+`vehicleRecall` takes exactly one of `carNo` or `vin`. It is free when the vehicle has no recall (`recall_target: false`), and `hipassUnpaid(carNo)` is free when nothing is unpaid (`unpaid_target: false`). `vehicleTaxCalc(cc, { carAgeYears })` calculates the annual tax for a non-commercial passenger car.
+
+등기 열람·발급은 작업형입니다. 검색(`registryRealestateSearch`·`registryCorporateSearch`)으로 대상을 확인하고, `createRegistry*Job`으로 접수한 뒤 `getRegistryJob(jobId)`으로 상태를 확인하고, 완료되면 `downloadRegistryPdf(jobId)`로 PDF를 받습니다. 같은 접수를 다시 보낼 때는 같은 `idempotencyKey`를 넣으세요. 상태 조회는 무료이며 과금·환급 조건은 [개발가이드](https://apick.app/dev_guide/registry_realestate_jobs)를 따릅니다.
+Registry view and issue requests are jobs: confirm the target with a search, submit with `createRegistry*Job`, poll `getRegistryJob(jobId)` and download the PDF with `downloadRegistryPdf(jobId)` once completed. Reuse the same `idempotencyKey` when resubmitting. Status checks are free; see the [developer guide](https://apick.app/dev_guide/registry_realestate_jobs) for charges and refunds.
+
+```js
+const found = await client.registryRealestateSearch('서울특별시 가상구 가상로 1');
+const { data: job } = await client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 1, idempotencyKey: 'order-1001' });
+let state = await client.getRegistryJob(job.job_id);
+while (!['completed', 'failed', 'cancelled'].includes(state.data.status)) { await new Promise(r => setTimeout(r, 5000)); state = await client.getRegistryJob(job.job_id); }
+if (state.data.status === 'completed') await (await client.downloadRegistryPdf(job.job_id)).save('registry.pdf');
+```
+
 ## 비동기 TTS Jobs / Asynchronous TTS Jobs
 
 기존 동기 TTS는 종료되었습니다. 한국어 내레이션은 작업을 접수하고 `completed`가 될 때까지 2~5초 간격으로 상태를 확인한 뒤 MP3 결과를 한 번만 내려받습니다.
@@ -310,7 +349,7 @@ if (job.data.status === 'completed') {
 
 Submission reserves an upper bound; successful completion settles actual charges. Disconnects do not cancel billing. Explicit cancellation settles work already performed. MP3 and ASS each allow one completed download; interrupted downloads can be retried.
 
-정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + 실제 AI 사용료입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
+정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + 실제 AI 사용료입니다. 정규화 실패는 제작을 중단하며, 서버의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
 
 Normalization is on by default and adds a skill charge. Set `normalize_text: false` (SDK `normalizeText: false`) to skip execution and billing. The skill price is its base fee (seller amount and base commission) plus the actual AI usage fee. Normalization failure stops synthesis; final server/provider failures refund normalization as well. ASS preserves the original spelling.
 
@@ -332,7 +371,7 @@ The four document-specific methods return JSON. `maskResidentNumber` returns PNG
 
 ## 간편인증 기반 데이터 조회 / Simple-auth data lookups
 
-본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·정부24 통합 조회·홈택스 민원증명)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
+본인 간편인증이 필요한 조회 상품(재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·민원서류 통합 조회·세무 민원증명)은 접수(`request*`)와 결과 조회(`get*`)가 분리되어 있습니다. 접수 응답의 `transactionId`로 결과를 폴링하세요.
 
 Products that require the user's own simple-auth verification (employment, income, pension, driver's license, health checkup, cash receipts, tax returns, resident registration certificates, and the Government24 bundle) split the call into a `request*()` acceptance and a `get*()` poll. Use the `transactionId` from the accepted response to poll for the result.
 
@@ -411,7 +450,7 @@ try {
 ```
 <!-- simple-auth-usage:end -->
 
-### 정부24 통합 조회 / Government24 bundle
+### 민원서류 통합 조회 / Civil-document bundle
 
 ```js
 const bundle = await apick.requestGov24Bundle({
@@ -451,7 +490,7 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 국세 신고내역 조회 / Tax return history | `requestTaxReturnHistory` / `getTaxReturnHistory` | `years` (1–10) |
 | 주민등록표등본 발급 / Resident registration certificate | `requestResidentRegistration` / `getResidentRegistration` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
 | 주민등록표초본 발급 / Resident registration certificate (cho) | `requestResidentRegistrationCho` / `getResidentRegistrationCho` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
-| 정부24 통합 조회 / Selectable Government24 bundle | `requestGov24Bundle` / `getGov24Bundle` | `products` (필수 / required), 등본·초본 선택 시 `sido`·`sigungu` (필수 / required when either resident certificate is selected) |
+| 민원서류 통합 조회 / Selectable civil-document bundle | `requestGov24Bundle` / `getGov24Bundle` | `products` (필수 / required), 등본·초본 선택 시 `sido`·`sigungu` (필수 / required when either resident certificate is selected) |
 | 소득금액증명 발급 / Income amount certificate | `requestIncomeAmountCert` / `getIncomeAmountCert` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `engl_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
 | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | `requestPensionCreditCert` / `getPensionCreditCert` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `address_open_yn`, `resno_open_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
 | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | `requestFactCert` / `getFactCert` | `use_purpose`, `submit_to`, `delivery`, `itrf_cd` (필수 / required), `year`, `start_month`, `end_month`, `issuance`, `engl_yn`, `format` |
@@ -463,7 +502,7 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 표준재무제표증명 발급 / Financial statements certificate | `requestFinancialStatementCert` / `getFinancialStatementCert` | `business_no`, `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `engl_yn`, `format` |
 | 폐업사실증명 발급 / Business closure certificate | `requestClosureCert` / `getClosureCert` | `business_no`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `engl_yn`, `format` |
 
-홈택스 민원증명은 발급 1건 60P 정액이고 `format` 으로 응답을 고릅니다(`pdf`·`json`·`both`, 기본 `both`). `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드` 가 함께 오며, 표 구조에 따라 필드가 비어 있을 수 있습니다. 구조화 값의 정본은 결과 본문(`문서확인번호`·`귀속연도` 등)입니다.
+세무 민원증명은 발급 1건 60P 정액이고 `format` 으로 응답을 고릅니다(`pdf`·`json`·`both`, 기본 `both`). `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드` 가 함께 오며, 표 구조에 따라 필드가 비어 있을 수 있습니다. 구조화 값의 정본은 결과 본문(`문서확인번호`·`귀속연도` 등)입니다.
 Hometax certificates cost a flat 60P per issuance. `format` selects the response (`pdf`, `json`, or `both`; default `both`). With `json`/`both` the parsed PDF fields arrive in `PDF데이터.필드`; some fields may be empty depending on the table layout. The structured values in the result body (`문서확인번호`, `귀속연도`, …) are authoritative.
 
 법원 경매사건 조회는 동기 상품입니다. 사건번호는 법원별로 관리되므로 `courtAuction(caseNo, court)` 처럼 법원(이름 `서울중앙지방법원` 또는 코드 `B000210`)을 함께 넘깁니다. 응답에는 사건 기본정보·매각물건·매각기일·배당요구종기가 담기고, 입찰대행·입찰서 작성은 제공하지 않습니다.

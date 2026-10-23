@@ -116,7 +116,7 @@ await client.ocr(bytes, {
 현재 목소리는 `listGeminiTtsVoices()`와 `listOpenAiTtsVoices()`로 조회합니다. 기존 `TTS_VOICE_IDS`는 폐기된 목소리입니다.
 
 
-정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + 실제 AI 사용료입니다. 정규화 실패는 제작을 중단하며, 서버·공급자의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
+정규화는 기본 켜짐이며 발음을 다듬는 스킬 요금이 추가됩니다. `normalize_text: false`(SDK `normalizeText: false`)로 실행과 요금을 끕니다. 스킬 최종가는 기본요금(판매자 금액·기본 수수료) + 실제 AI 사용료입니다. 정규화 실패는 제작을 중단하며, 서버의 최종 제작 실패는 정규화까지 전액 환불합니다. ASS에는 원문을 표시합니다.
 
 ```js
 const screenshot = await client.screenshot('https://example.com');
@@ -233,7 +233,7 @@ console.log(result.data.result.fields);
 
 ## 간편인증 데이터 조회
 
-재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·정부24 통합 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
+재직·소득·연금·면허·건강검진·현금영수증·국세 신고내역·주민등록표 발급·민원서류 통합 조회는 본인 간편인증이 필요해 접수(`request*`)와 결과 조회(`get*`)가 나뉩니다.
 
 아래 함수는 7종 모두에 공통으로 사용합니다. 같은 `transactionId`로 순차 조회하며 5→10→20→30초 간격으로 늘린 뒤 30초를 유지합니다. `resultAvailable === true`이면 즉시 결과를 반환합니다. `SUCCESS`는 전체 성공, `PARTIAL_SUCCESS`는 부분 성공이므로 `sources`에서 누락·실패 항목을 확인하세요. `AUTH_REJECTED`·`AUTH_EXPIRED`·`FAILED`는 실패 종료이며, `errorCode: 'RESULT_EXPIRED'`는 결과 보관 기간 만료입니다. 실패·만료 시 자동으로 재접수하지 않습니다.
 
@@ -309,7 +309,7 @@ try {
 
 `authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestNpsDeductionCert`는 `years`(1~5), `requestNpsCareerHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestCashReceiptDeduction`은 `incomeYears`(1~3), `requestTaxReturnHistory`는 `years`(1~10) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
 
-주민등록표등본·초본은 `requestResidentRegistration()`·`requestResidentRegistrationCho()`로 발급하며 주민등록 주소지 `sido`·`sigungu`가 필수입니다. 발급 1건은 80P이고 결과의 `발급문서`는 PDF 원본의 base64, `문서해시`는 그 SHA-256입니다. 정부24 통합 조회 `requestGov24Bundle()`은 `products`에 고른 상품만 한 번의 인증으로 조회하며, 과금은 고른 상품 단가의 합입니다. 선택 가능한 13개 키는 `GOV24_BUNDLE_PRODUCTS`로 제공하고 `sido`·`sigungu`는 등본·초본을 고를 때만 필요합니다.
+주민등록표등본·초본은 `requestResidentRegistration()`·`requestResidentRegistrationCho()`로 발급하며 주민등록 주소지 `sido`·`sigungu`가 필수입니다. 발급 1건은 80P이고 결과의 `발급문서`는 PDF 원본의 base64, `문서해시`는 그 SHA-256입니다. 민원서류 통합 조회 `requestGov24Bundle()`은 `products`에 고른 상품만 한 번의 인증으로 조회하며, 과금은 고른 상품 단가의 합입니다. 선택 가능한 13개 키는 `GOV24_BUNDLE_PRODUCTS`로 제공하고 `sido`·`sigungu`는 등본·초본을 고를 때만 필요합니다.
 
 ```js
 const bundle = await client.requestGov24Bundle({
@@ -320,7 +320,7 @@ const bundle = await client.requestGov24Bundle({
 const issued = await pollDataResult(id => client.getGov24Bundle(id), bundle);
 ```
 
-홈택스 민원증명은 `requestIncomeAmountCert`(소득금액증명), `requestPensionCreditCert`(연금보험료등 소득세액 공제확인서), `requestFactCert`(납부내역증명), `requestTaxClearanceCert`(납세증명서)로 발급하며 발급 1건은 60P입니다. 모두 본인명의 발급이고 `year`·`use_purpose`·`submit_to`·`delivery`가 필수이며 `format`(`pdf`·`json`·`both`, 기본 `both`)으로 응답을 고릅니다. `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드`가 함께 오고, 표 구조에 따라 일부 필드는 비어 있을 수 있습니다. 결과 본문의 `문서확인번호`·`귀속연도` 같은 값이 정본입니다.
+세무 민원증명은 `requestIncomeAmountCert`(소득금액증명), `requestPensionCreditCert`(연금보험료등 소득세액 공제확인서), `requestFactCert`(납부내역증명), `requestTaxClearanceCert`(납세증명서)로 발급하며 발급 1건은 60P입니다. 모두 본인명의 발급이고 `year`·`use_purpose`·`submit_to`·`delivery`가 필수이며 `format`(`pdf`·`json`·`both`, 기본 `both`)으로 응답을 고릅니다. `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드`가 함께 오고, 표 구조에 따라 일부 필드는 비어 있을 수 있습니다. 결과 본문의 `문서확인번호`·`귀속연도` 같은 값이 정본입니다.
 
 ```js
 const cert = await client.requestIncomeAmountCert({
@@ -427,7 +427,7 @@ if (status.data.status === "completed") {
 
 ## 상품별 조회 가이드
 
-상품별 간편인증 조회 가이드에는 조회 데이터, 출처 기관, 활용 사례와 자주 묻는 질문이 있습니다. 인증 요청은 해당 상품의 자료를 조회하기 위한 단계이며 결과 조회용 transactionId를 반환합니다. 요청·응답 계약과 인증 방식은 동일합니다. [공통 인증 흐름](https://apick.app/dev_guide/data)에서 절차와 오류 처리를 확인하세요.
+상품별 간편인증 조회 가이드에는 조회 데이터, 활용 사례와 자주 묻는 질문이 있습니다. 인증 요청은 해당 상품의 자료를 조회하기 위한 단계이며 결과 조회용 transactionId를 반환합니다. 요청·응답 계약과 인증 방식은 동일합니다. [공통 인증 흐름](https://apick.app/dev_guide/data)에서 절차와 오류 처리를 확인하세요.
 
 
 TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOpenAiTtsJob`, `listOpenAiTtsVoices`, `getTtsOptions`를 포함한 최신 계약입니다.

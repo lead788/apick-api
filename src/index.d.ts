@@ -311,6 +311,8 @@ export interface RtmsQueryOptions {
 	readonly propertyType?: 'apt' | 'rh' | 'sh' | 'offi';
 	readonly pageNo?: number;
 	readonly numOfRows?: number;
+	/** rtmsRent 전용. false 면 같은 단지 매매가 비교(jeonse_ratio) 없이 임대 분석만 받는다. 기본 true. */
+	readonly includeTrade?: boolean;
 }
 
 export interface DistributionEntry {
@@ -428,6 +430,120 @@ export interface RtmsRent {
 	readonly insights: readonly string[];
 }
 
+export interface CorpFinanceOptions {
+	/** 사업연도 YYYY. 생략하면 조회 가능한 가장 최근 연도. */
+	readonly bizYear?: string;
+	readonly type?: 'all' | 'summary' | 'balance' | 'income';
+	readonly scope?: 'all' | 'consolidated' | 'separate';
+}
+
+export interface CorpFinance {
+	readonly company: { readonly crno: string; readonly bizYear: string; readonly currency: string };
+	readonly summary: readonly Readonly<Record<string, unknown>>[];
+	readonly balance: readonly Readonly<Record<string, unknown>>[];
+	readonly income: readonly Readonly<Record<string, unknown>>[];
+	readonly metrics: Readonly<Record<string, number | string | null>> | null;
+	readonly count: number;
+}
+
+export interface BuildingRegisterOptions {
+	/** 필지고유번호 19자리. 주면 sigunguCd·bjdongCd·bun·ji 는 쓰지 않는다. */
+	readonly pnu?: string;
+	readonly sigunguCd?: string;
+	readonly bjdongCd?: string;
+	readonly platGbCd?: string;
+	readonly bun?: string;
+	readonly ji?: string;
+	readonly type?: 'title' | 'recap' | 'basis' | 'floor' | 'expos' | 'area' | 'price' | 'wclf' | 'jibun' | 'district';
+	readonly startDate?: string;
+	readonly endDate?: string;
+	readonly dongNm?: string;
+	readonly hoNm?: string;
+	readonly flrNo?: number;
+	readonly pageNo?: number;
+	readonly numOfRows?: number;
+}
+
+export interface VehicleRecall {
+	readonly result: {
+		readonly car_no: string;
+		readonly vin: string;
+		readonly recall_target: boolean;
+		readonly recall_count: number;
+		readonly free_repair_count: number;
+		readonly recalls: readonly Readonly<Record<string, unknown>>[];
+		readonly free_repairs: readonly Readonly<Record<string, unknown>>[];
+		readonly checked_at: string;
+	};
+}
+
+export interface HipassUnpaid {
+	readonly result: {
+		readonly car_no: string;
+		readonly unpaid_target: boolean;
+		readonly unpaid_count: number;
+		readonly checked_at: string;
+	};
+}
+
+export interface VehicleTaxCalc {
+	readonly result: {
+		readonly year: number;
+		readonly cc: number;
+		readonly cc_rate: number;
+		readonly car_age_years: number;
+		readonly discount_rate: number;
+		readonly vehicle_tax: number;
+		readonly local_education_tax: number;
+		readonly total: number;
+	};
+}
+
+export type GeoAddrType = 'auto' | 'parcel' | 'road';
+/** 좌표 하나: '경도,위도' 문자열 또는 [경도, 위도]. */
+export type GeoCoordinate = string | readonly [number, number];
+
+export interface GeoTarget {
+	readonly address?: string;
+	readonly pnu?: string;
+	readonly x?: number;
+	readonly y?: number;
+	/** '경도,위도' (예: '127.025,37.504') */
+	readonly point?: string;
+	readonly addrType?: GeoAddrType;
+	readonly includeZipcode?: boolean;
+}
+
+export type RegistryCorporateTarget = { readonly corpRegNo: string; readonly bizNo?: undefined } | { readonly bizNo: string; readonly corpRegNo?: undefined };
+
+export interface RegistryRealestateJobOptions {
+	/** 검색에 사용한 주소 또는 부동산고유번호. pin 과 둘 중 하나는 필요하다. */
+	readonly query?: string;
+	/** 부동산고유번호 14자리 */
+	readonly pin?: string;
+	/** 검색 결과 행 번호(1부터), 기본 1 */
+	readonly index?: number;
+	readonly usage?: 'view' | 'issue' | 'transfer-gov24' | 'transfer-court';
+	readonly recordScope?: 'all' | 'part';
+	readonly includeCancelled?: boolean;
+	readonly publishResidentNo?: boolean;
+	/** 같은 접수를 다시 보낼 때 중복 접수·과금을 막는 키 */
+	readonly idempotencyKey?: string;
+}
+
+export interface RegistryJob {
+	readonly job_id: string;
+	readonly status: string;
+	readonly replay?: boolean;
+	readonly [key: string]: unknown;
+}
+
+export interface GeoNeighborhoodInput extends GeoTarget {
+	readonly radius?: number;
+	readonly categories?: readonly string[];
+	readonly limit?: number;
+}
+
 export interface LinkedinJob {
 	readonly job_posting_id: string;
 	readonly title: string;
@@ -541,7 +657,7 @@ export interface MaskResidentNumberOptions extends OcrOptions {
 export const AUTH_PROVIDERS: readonly [
 	'kakao', 'naver', 'toss', 'pass', 'samsung', 'kb', 'shinhan', 'hana', 'woori', 'ibk', 'nh', 'kakaobank', 'banksalad'
 ];
-/** 정부24 통합 조회에서 고를 수 있는 상품 키. */
+/** 민원서류 통합 조회에서 고를 수 있는 상품 키. */
 export const GOV24_BUNDLE_PRODUCTS: readonly [
 	'resident_registration', 'resident_registration_cho', 'driving_license', 'health_checkup',
 	'police_penalty', 'parking_fine_target', 'mortgage_loan', 'housing_refund_balance',
@@ -577,7 +693,7 @@ export interface ResidentRegistrationOptions {
 export interface RequestResidentRegistrationInput extends DataRequestInput, ResidentRegistrationOptions {}
 export interface RequestResidentRegistrationChoInput extends DataRequestInput, ResidentRegistrationOptions {}
 /**
- * 정부24 통합 조회 입력. `products` 로 조회할 상품 키를 고른다.
+ * 민원서류 통합 조회 입력. `products` 로 조회할 상품 키를 고른다.
  * 등본·초본을 고르면 `sido`·`sigungu` 가 필요하다.
  */
 export interface RequestGov24BundleInput extends DataRequestInput {
@@ -591,7 +707,7 @@ export interface RequestGov24BundleInput extends DataRequestInput {
 }
 
 /**
- * 홈택스 민원증명 발급 조건. 신청인 본인명의 발급이고 발급 1건 60P 정액이다.
+ * 세무 민원증명 발급 조건. 신청인 본인명의 발급이고 발급 1건 60P 정액이다.
  * `format` 은 응답 형식이고, `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터` 가 함께 온다.
  * 코드 값(`use_purpose`·`submit_to`·`itrf_cd`)은 정부 공통코드다.
  */
@@ -655,7 +771,7 @@ export interface HometaxPdfData {
 	텍스트: string;
 	사유?: string;
 }
-/** 홈택스 민원증명 결과. `format` 이 json·both 이면 `발급문서`(base64)와 `PDF데이터` 가 함께 온다. */
+/** 세무 민원증명 결과. `format` 이 json·both 이면 `발급문서`(base64)와 `PDF데이터` 가 함께 온다. */
 export interface HometaxCertificateResultPayload {
 	문서확인번호: string;
 	귀속연도?: string;
@@ -1023,6 +1139,32 @@ export class ApickClient {
 	bidAward(options: BidQueryOptions): Promise<ApickResult<BidAward>>;
 	rtmsTrade(lawdCd: string, dealYmd: string, options?: RtmsQueryOptions): Promise<ApickResult<RtmsTrade>>;
 	rtmsRent(lawdCd: string, dealYmd: string, options?: RtmsQueryOptions): Promise<ApickResult<RtmsRent>>;
+	corpFinance(crno: string, options?: CorpFinanceOptions): Promise<ApickResult<CorpFinance>>;
+	buildingRegister(options: BuildingRegisterOptions): Promise<ApickResult>;
+	appReviews(appId: string | number, options?: { readonly country?: string; readonly page?: number }): Promise<ApickResult>;
+	vehicleEmission(certNo: string): Promise<ApickResult>;
+	vehicleRecall(input: { readonly carNo: string; readonly vin?: undefined } | { readonly vin: string; readonly carNo?: undefined }): Promise<ApickResult<VehicleRecall>>;
+	hipassUnpaid(carNo: string): Promise<ApickResult<HipassUnpaid>>;
+	vehicleTaxCalc(cc: number, options?: { readonly carAgeYears?: number; readonly year?: number }): Promise<ApickResult<VehicleTaxCalc>>;
+	geoStandardize(input: string | GeoTarget): Promise<ApickResult>;
+	geoBatchGeocode(addresses: readonly string[], options?: { readonly addrType?: GeoAddrType; readonly dedupe?: boolean }): Promise<ApickResult>;
+	geoReverse(input: { readonly x: number; readonly y: number } | { readonly point: string }): Promise<ApickResult>;
+	geoAddressSearch(query: string, options?: { readonly category?: GeoAddrType; readonly page?: number; readonly size?: number }): Promise<ApickResult>;
+	geoPlaceSearch(query: string, options?: { readonly origin?: string; readonly x?: number; readonly y?: number; readonly radius?: number; readonly sort?: 'distance' | 'relevance'; readonly page?: number; readonly size?: number }): Promise<ApickResult>;
+	geoAdminCode(input: string | GeoTarget): Promise<ApickResult>;
+	geoCompareAddress(addressA: string, addressB: string, options?: { readonly addrType?: GeoAddrType }): Promise<ApickResult>;
+	geoMeasure(coordinates: readonly GeoCoordinate[], options?: { readonly mode?: 'path' | 'polygon'; readonly unit?: 'm' | 'km'; readonly matrix?: boolean }): Promise<ApickResult>;
+	geoGeojsonAnalyze(geojson: Readonly<Record<string, unknown>> | string, options?: { readonly simplify?: number; readonly point?: string; readonly x?: number; readonly y?: number; readonly includeGeometry?: boolean }): Promise<ApickResult>;
+	geoAddressQuality(addresses: readonly string[], options?: { readonly addrType?: GeoAddrType }): Promise<ApickResult>;
+	geoAddressAutocomplete(query: string, options?: { readonly category?: GeoAddrType; readonly size?: number }): Promise<ApickResult>;
+	geoDistrictBoundary(query: string | number, options?: { readonly level?: 'L1' | 'L2' | 'L3' | 'L4'; readonly simplify?: number; readonly includeGeometry?: boolean }): Promise<ApickResult>;
+	geoNeighborhood(input: string | GeoNeighborhoodInput): Promise<ApickResult>;
+	registryRealestateSearch(query: string): Promise<ApickResult>;
+	registryCorporateSearch(input: RegistryCorporateTarget): Promise<ApickResult>;
+	createRegistryRealestateJob(options: RegistryRealestateJobOptions): Promise<ApickResult<RegistryJob>>;
+	createRegistryCorporateJob(options: RegistryCorporateTarget & { readonly usage?: 'view' | 'issue'; readonly idempotencyKey?: string }): Promise<ApickResult<RegistryJob>>;
+	getRegistryJob(jobId: string): Promise<ApickResult<RegistryJob>>;
+	downloadRegistryPdf(jobId: string): Promise<ApickBinaryResult>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
 	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;

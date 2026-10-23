@@ -34,8 +34,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 80 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 80);
+test('exports a focused catalog of 104 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 104);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -337,7 +337,7 @@ test('implements the request/get simple-auth data product contract (employment)'
 				return jsonResponse({
 					data: {
 						schemaVersion: '1.0', transactionId: txId, product: 'employment', status: 'SUCCESS',
-						resultAvailable: true, charged: true, sources: [{ source: '국민건강보험공단', type: 'employment', status: 'SUCCESS' }],
+						resultAvailable: true, charged: true, sources: [{ source: '건강보험 자격득실', type: 'employment', status: 'SUCCESS' }],
 						message: '조회가 완료됐습니다.', success: 1, checkedAt: '2026-09-20T05:24:07+09:00',
 						resultExpiresAt: '2026-09-21T05:24:07+09:00',
 						result: { employment: { 재직상태: 'EMPLOYED', 현재사업장: '에이픽', 취득일: '20200101', 이력: [], 보험료연도: [], 보험료: [] } }
@@ -860,4 +860,102 @@ test('implements the YouTube search, list and comments contracts', async () => {
 	assert.throws(() => client.youtubeChannel('@x', { tab: 'community' }), /tab/);
 	assert.throws(() => client.youtubeComments('dQw4w9WgXcQ', { replies: 'yes' }), /replies/);
 	assert.equal(requests.length, 6);
+});
+
+test('vehicle, finance and building lookups send the documented REST fields', async () => {
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
+		requests.push({ url, body: Object.fromEntries(options.body) });
+		return jsonResponse({ data: { result: {} }, api: { success: true, cost: 60 } });
+	} });
+	await client.vehicleRecall({ carNo: '12가 3456' });
+	await client.vehicleRecall({ vin: 'kmhxx00xxxx000000' });
+	await client.hipassUnpaid('서울12가3456');
+	await client.vehicleTaxCalc(1998, { carAgeYears: 4 });
+	await client.vehicleEmission('KMY-SY-13-24');
+	await client.corpFinance('110111-1234567', { bizYear: '2024', type: 'summary' });
+	await client.buildingRegister({ sigunguCd: '11680', bjdongCd: '10300', bun: '12', type: 'title' });
+	await client.appReviews(1234567890, { page: 2 });
+	assert.deepEqual(requests.map(r => r.url.replace('https://api.example.test', '')), [
+		'/rest/vehicle_recall', '/rest/vehicle_recall', '/rest/hipass_unpaid', '/rest/vehicle_tax_calc',
+		'/rest/vehicle_emission', '/rest/corp_finance', '/rest/bldrgst', '/rest/app_reviews'
+	]);
+	assert.deepEqual(requests[0].body, { car_no: '12가3456' });
+	assert.deepEqual(requests[1].body, { vin: 'KMHXX00XXXX000000' });
+	assert.deepEqual(requests[2].body, { car_no: '서울12가3456' });
+	assert.deepEqual(requests[3].body, { cc: '1998', car_age_years: '4' });
+	assert.deepEqual(requests[4].body, { cert_no: 'KMY-SY-13-24' });
+	assert.deepEqual(requests[5].body, { crno: '110111-1234567', bizYear: '2024', type: 'summary' });
+	assert.deepEqual(requests[6].body, { sigunguCd: '11680', bjdongCd: '10300', bun: '12', type: 'title' });
+	assert.deepEqual(requests[7].body, { appId: '1234567890', page: '2' });
+	assert.throws(() => client.vehicleRecall({}), /exactly one/);
+	assert.throws(() => client.vehicleRecall({ carNo: '12가3456', vin: 'KMHXX00XXXX000000' }), /exactly one/);
+	assert.throws(() => client.vehicleTaxCalc(), /cc is required/);
+	assert.throws(() => client.vehicleTaxCalc(20), /cc must be/);
+	assert.throws(() => client.buildingRegister({ bun: '12' }), /pnu or sigunguCd/);
+});
+
+test('geo methods send JSON bodies so lists and GeoJSON keep their shape', async () => {
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
+		assert.equal(options.headers['Content-Type'], 'application/json');
+		requests.push({ url: url.replace('https://api.example.test', ''), body: JSON.parse(options.body) });
+		return jsonResponse({ data: { matched: true }, api: { success: true, cost: 20 } });
+	} });
+	const polygon = { type: 'Polygon', coordinates: [[[127.02, 37.50], [127.03, 37.50], [127.03, 37.51], [127.02, 37.50]]] };
+	await client.geoStandardize('서울특별시 강남구 역삼동 808');
+	await client.geoBatchGeocode(['서울특별시 강남구 역삼동 808', '서울특별시 강남구 역삼동 858'], { dedupe: false });
+	await client.geoReverse({ point: '127.025,37.504' });
+	await client.geoAddressSearch('테헤란로 152', { size: 5 });
+	await client.geoPlaceSearch('강남역', { origin: '127.025,37.504', radius: 1000 });
+	await client.geoAdminCode({ x: 127.025, y: 37.504 });
+	await client.geoCompareAddress('서울특별시 강남구 역삼동 808', '서울특별시 강남구 테헤란로 152');
+	await client.geoMeasure([[127.02, 37.50], [127.03, 37.51]], { mode: 'path', unit: 'km' });
+	await client.geoGeojsonAnalyze(polygon, { point: '127.025,37.505' });
+	await client.geoAddressQuality(['서울 강남구 역삼동 808']);
+	await client.geoAddressAutocomplete('테헤란로', { size: 3 });
+	await client.geoDistrictBoundary(11680, { includeGeometry: false });
+	await client.geoNeighborhood({ address: '서울특별시 강남구 역삼동 808', categories: ['편의점', '약국'], radius: 500 });
+	assert.deepEqual(requests.map(r => r.url), [
+		'/rest/geo_standardize', '/rest/geo_batch_geocode', '/rest/geo_reverse', '/rest/geo_address_search', '/rest/geo_place_search',
+		'/rest/geo_admin_code', '/rest/geo_compare_address', '/rest/geo_measure', '/rest/geo_geojson_analyze', '/rest/geo_address_quality',
+		'/rest/geo_address_autocomplete', '/rest/geo_district_boundary', '/rest/geo_neighborhood'
+	]);
+	assert.deepEqual(requests[0].body, { address: '서울특별시 강남구 역삼동 808' });
+	assert.deepEqual(requests[1].body, { addresses: ['서울특별시 강남구 역삼동 808', '서울특별시 강남구 역삼동 858'], dedupe: false });
+	assert.deepEqual(requests[7].body.coordinates, [[127.02, 37.50], [127.03, 37.51]]);
+	assert.deepEqual(requests[8].body.geojson, polygon);
+	assert.deepEqual(requests[11].body, { query: '11680', includeGeometry: false });
+	assert.deepEqual(requests[12].body.categories, ['편의점', '약국']);
+	assert.throws(() => client.geoStandardize({}), /address or pnu/);
+	assert.throws(() => client.geoBatchGeocode([]), /non-empty array/);
+	assert.throws(() => client.geoMeasure(new Array(201).fill('127,37')), /200/);
+	assert.throws(() => client.geoGeojsonAnalyze(null), /geojson/);
+});
+
+test('registry search, job, status and PDF calls use the documented REST paths', async () => {
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
+		requests.push({ url: url.replace('https://api.example.test', ''), method: options.method, body: options.body ? Object.fromEntries(options.body) : null });
+		if (url.includes('download=1')) return new Response(new Uint8Array([37, 80, 68, 70]), { status: 200, headers: { 'content-type': 'application/pdf' } });
+		return jsonResponse({ data: { job_id: 'a'.repeat(32), status: 'queued' }, api: { success: true, cost: 0 } }, { status: url.includes('_jobs') ? 202 : 200 });
+	} });
+	await client.registryRealestateSearch('서울특별시 가상구 가상로 1');
+	await client.registryCorporateSearch({ corpRegNo: '110111-0000001' });
+	await client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 2, usage: 'view', includeCancelled: false, idempotencyKey: 'order-1' });
+	await client.createRegistryCorporateJob({ bizNo: '123-45-67890', usage: 'issue' });
+	const job = await client.getRegistryJob('a'.repeat(32));
+	const pdf = await client.downloadRegistryPdf('a'.repeat(32));
+	assert.deepEqual(requests.map(r => r.method + ' ' + r.url), [
+		'POST /rest/registry_realestate_search', 'POST /rest/registry_corporate_search', 'POST /rest/registry_realestate_jobs',
+		'POST /rest/registry_corporate_jobs', 'GET /rest/registry_jobs/' + 'a'.repeat(32), 'GET /rest/registry_jobs/' + 'a'.repeat(32) + '?download=1'
+	]);
+	assert.deepEqual(requests[1].body, { corp_reg_no: '1101110000001' });
+	assert.deepEqual(requests[2].body, { query: '서울특별시 가상구 가상로 1', index: '2', usage: 'view', include_cancelled: 'false', idempotency_key: 'order-1' });
+	assert.deepEqual(requests[3].body, { biz_no: '1234567890', usage: 'issue' });
+	assert.equal(job.data.status, 'queued');
+	assert.ok(pdf instanceof ApickBinaryResult);
+	assert.throws(() => client.registryCorporateSearch({}), /corpRegNo or bizNo/);
+	assert.throws(() => client.createRegistryRealestateJob({}), /query or pin/);
+	assert.throws(() => client.getRegistryJob('../x'), /jobId/);
 });

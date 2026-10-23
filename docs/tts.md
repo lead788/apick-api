@@ -29,6 +29,6 @@ Normalization is enabled by default and costs extra. Disable it with `normalize_
 
 AI usage is charged by actual usage, plus normalization. Fractions are rounded up, and from 2026-11-06 each synthesis job has a 5-point base fee. Rates differ by engine; check the estimate with the quote API (`POST /rest/tts/quote`) first.
 
-두 엔진은 같은 작업 조회·취소·MP3·원문 ASS 계약을 사용합니다. `billing`의 예약·해제·확정·환불을 확인하세요. MP3는 24kHz 모노 48kbps, 결과는 완료 후 24시간 보관합니다. MP3와 ASS는 각각 완료된 다운로드 1회만 허용하며 전송 중단은 재시도할 수 있습니다. 접수 응답 유실 시 같은 입력과 멱등 키를 재사용하세요. 서버·공급자 최종 실패는 정규화까지 환불하며, 연결 종료는 작업 취소가 아닙니다. 취소 시 이미 수행된 작업분을 정산합니다.
+두 엔진은 같은 작업 조회·취소·MP3·원문 ASS 계약을 사용합니다. `billing`의 예약·해제·확정·환불을 확인하세요. MP3는 24kHz 모노 48kbps, 결과는 완료 후 24시간 보관합니다. MP3와 ASS는 각각 완료된 다운로드 1회만 허용하며 전송 중단은 재시도할 수 있습니다. 접수 응답 유실 시 같은 입력과 멱등 키를 재사용하세요. 서버 최종 실패는 정규화까지 환불하며, 연결 종료는 작업 취소가 아닙니다. 취소 시 이미 수행된 작업분을 정산합니다.
 
 Both engines share job status, cancellation, MP3 and original-text ASS downloads. Check reserved, released, captured and refunded amounts in `billing`. MP3 is 24 kHz mono at 48 kbps. Files are kept for 24 hours; each permits one completed download, and interrupted transfers can be retried. Reuse the same input and idempotency key after a lost response. Final server/provider failures refund synthesis and normalization; disconnecting does not cancel work. Explicit cancellation settles work already performed.

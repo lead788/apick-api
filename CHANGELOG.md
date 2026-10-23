@@ -1,3 +1,9 @@
+# 4.13.1
+
+- 요금 안내 문구를 서버와 맞췄습니다. `README.md`·`docs/subagent.md`·`docs/tts.md`에서 시행일(2026-11-06)과 소수점 올림 표기를 뺐습니다. 요금과 메서드·타입은 바뀌지 않았습니다.
+
+- Pricing notes now match the server: the effective date (2026-11-06) and the rounding note were removed from `README.md`, `docs/subagent.md` and `docs/tts.md`. Prices, methods and types are unchanged.
+
 # 4.13.0
 
 - 신규 API 메서드 26개를 추가했습니다(서비스 목록 104개).

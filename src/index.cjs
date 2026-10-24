@@ -89,8 +89,8 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	geoNeighborhood: { endpoint: '/rest/geo_neighborhood', timeoutMs: 35_000, output: 'json', json: true },
 	registryRealestateSearch: { endpoint: '/rest/registry_realestate_search', timeoutMs: 125_000, output: 'json' },
 	registryCorporateSearch: { endpoint: '/rest/registry_corporate_search', timeoutMs: 125_000, output: 'json' },
-	createRegistryRealestateJob: { endpoint: '/rest/registry_realestate_jobs', timeoutMs: 50_000, output: 'json' },
-	createRegistryCorporateJob: { endpoint: '/rest/registry_corporate_jobs', timeoutMs: 50_000, output: 'json' },
+	createRegistryRealestateJob: { endpoint: '/rest/registry_realestate_jobs', timeoutMs: 200_000, output: 'binary', filename: 'registry.pdf' },
+	createRegistryCorporateJob: { endpoint: '/rest/registry_corporate_jobs', timeoutMs: 200_000, output: 'binary', filename: 'registry.pdf' },
 	screenshot: { endpoint: '/rest/url_screenshot', timeoutMs: 75_000, output: 'binary', filename: 'screenshot.jpeg' },
 	youtubeMetadata: { endpoint: '/rest/youtube_metadata', timeoutMs: 60_000, output: 'json' },
 	youtubeThumbnail: { endpoint: '/rest/youtube_thumbnail', timeoutMs: 60_000, output: 'binary', filename: 'thumbnail.jpg' },
@@ -346,12 +346,6 @@ function registryCorporateTarget(input) {
 	const biz = config.bizNo === undefined || config.bizNo === '' ? '' : requiredString('bizNo', config.bizNo, 20).replace(/[^0-9]/g, '');
 	if (!corp && !biz) throw new TypeError('corpRegNo or bizNo is required.');
 	return corp ? { corp_reg_no: corp } : { biz_no: biz };
-}
-
-function registryJobId(jobId) {
-	const id = requiredString('jobId', jobId, 64);
-	if (!/^[A-Za-z0-9_-]{8,64}$/.test(id)) throw new TypeError('jobId is invalid.');
-	return id;
 }
 
 function geoTarget(input, name) {
@@ -718,6 +712,15 @@ class ApickClient {
 			|| body && body.result && body.result.error
 			|| body && body.api && body.api.success === false
 		);
+		// PDF 확보가 끝나지 않은 정상 응답(data.pdf === 'preparing', 0P)은 재전송으로 받는다.
+		// 바이너리를 기대한 호출이 JSON 성공 본문을 받으면 준비 중으로 안내한다.
+		if (definition.output === 'binary' && response.ok && !bodyFailed && body && body.data && body.data.pdf === 'preparing') {
+			throw new ApickApiError('APICK is still preparing the PDF. Resend with the same idempotencyKey.', {
+				status: response.status,
+				code: 'APICK_PDF_PREPARING',
+				serviceCode: 'REGISTRY_PDF_PREPARING'
+			});
+		}
 		if (!response.ok || bodyFailed || definition.output === 'binary') {
 			throw new ApickApiError(failureMessage, {
 				status: response.status,
@@ -1126,8 +1129,9 @@ class ApickClient {
 		return this._call('registryCorporateSearch', registryCorporateTarget(input));
 	}
 
-	// 부동산 등기 열람·발급 접수. 접수 즉시 job_id 를 돌려주며 getRegistryJob 으로 상태를 확인한다.
-	// 같은 요청을 다시 보낼 수 있게 idempotencyKey 를 넣어 두는 것을 권장한다.
+	// 부동산 등기 열람·발급. 접수와 PDF 수신을 한 요청으로 끝내고 PDF 를 돌려준다(건당 850P).
+	// PDF 확보가 늦으면 HTTP 202(`serviceCode: REGISTRY_PDF_PREPARING`, 0P)로 ApickApiError 가 난다.
+	// 같은 요청을 다시 보낼 때는 같은 idempotencyKey 를 넣으면 추가 과금 없이 PDF 를 받는다.
 	createRegistryRealestateJob(options) {
 		const config = options || {};
 		if (!config.query && !config.pin) throw new TypeError('query or pin is required.');
@@ -1143,30 +1147,13 @@ class ApickClient {
 		}));
 	}
 
-	// 법인 등기 열람·발급 접수.
+	// 법인 등기 열람·발급. 접수와 PDF 수신을 한 요청으로 끝내고 PDF 를 돌려준다(건당 850P).
 	createRegistryCorporateJob(options) {
 		const config = options || {};
 		return this._call('createRegistryCorporateJob', Object.assign(registryCorporateTarget(config), compact({
 			usage: config.usage,
 			idempotency_key: config.idempotencyKey === undefined ? undefined : requiredString('idempotencyKey', config.idempotencyKey, 128)
 		})));
-	}
-
-	// 등기 작업 상태. 조회는 무료다.
-	getRegistryJob(jobId) {
-		return this._call('createRegistryRealestateJob', null, null, { endpoint: '/rest/registry_jobs/' + registryJobId(jobId), method: 'GET', timeoutMs: 35_000 });
-	}
-
-	// 완료된 등기 작업의 PDF. 전송이 끝난 다운로드만 과금된다.
-	downloadRegistryPdf(jobId) {
-		const id = registryJobId(jobId);
-		return this._call('createRegistryRealestateJob', null, null, {
-			endpoint: '/rest/registry_jobs/' + id + '?download=1',
-			method: 'GET',
-			output: 'binary',
-			filename: 'registry-' + id + '.pdf',
-			timeoutMs: 65_000
-		});
 	}
 
 	screenshot(url) {

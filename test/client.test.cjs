@@ -933,29 +933,40 @@ test('geo methods send JSON bodies so lists and GeoJSON keep their shape', async
 	assert.throws(() => client.geoGeojsonAnalyze(null), /geojson/);
 });
 
-test('registry search, job, status and PDF calls use the documented REST paths', async () => {
+test('registry search and issue calls use the documented REST paths', async () => {
 	const requests = [];
+	let preparing = false;
 	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
 		requests.push({ url: url.replace('https://api.example.test', ''), method: options.method, body: options.body ? Object.fromEntries(options.body) : null });
-		if (url.includes('download=1')) return new Response(new Uint8Array([37, 80, 68, 70]), { status: 200, headers: { 'content-type': 'application/pdf' } });
-		return jsonResponse({ data: { job_id: 'a'.repeat(32), status: 'queued' }, api: { success: true, cost: 0 } }, { status: url.includes('_jobs') ? 202 : 200 });
+		if (!url.includes('_jobs')) return jsonResponse({ data: { targets: [] }, api: { success: true, cost: 0 } });
+		if (preparing) return jsonResponse({ data: { job_id: 'a'.repeat(32), pdf: 'preparing', error_code: 'REGISTRY_PDF_PREPARING' }, api: { success: true, cost: 0 } }, { status: 200 });
+		return new Response(new Uint8Array([37, 80, 68, 70]), {
+			status: 200,
+			headers: { 'content-type': 'application/pdf', 'content-disposition': 'attachment; filename="registry-a.pdf"', 'x-apick-job-id': 'a'.repeat(32) }
+		});
 	} });
 	await client.registryRealestateSearch('서울특별시 가상구 가상로 1');
 	await client.registryCorporateSearch({ corpRegNo: '110111-0000001' });
-	await client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 2, usage: 'view', includeCancelled: false, idempotencyKey: 'order-1' });
-	await client.createRegistryCorporateJob({ bizNo: '123-45-67890', usage: 'issue' });
-	const job = await client.getRegistryJob('a'.repeat(32));
-	const pdf = await client.downloadRegistryPdf('a'.repeat(32));
+	const realestate = await client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 2, usage: 'view', includeCancelled: false, idempotencyKey: 'order-1' });
+	const corporate = await client.createRegistryCorporateJob({ bizNo: '123-45-67890', usage: 'issue' });
 	assert.deepEqual(requests.map(r => r.method + ' ' + r.url), [
 		'POST /rest/registry_realestate_search', 'POST /rest/registry_corporate_search', 'POST /rest/registry_realestate_jobs',
-		'POST /rest/registry_corporate_jobs', 'GET /rest/registry_jobs/' + 'a'.repeat(32), 'GET /rest/registry_jobs/' + 'a'.repeat(32) + '?download=1'
+		'POST /rest/registry_corporate_jobs'
 	]);
 	assert.deepEqual(requests[1].body, { corp_reg_no: '1101110000001' });
 	assert.deepEqual(requests[2].body, { query: '서울특별시 가상구 가상로 1', index: '2', usage: 'view', include_cancelled: 'false', idempotency_key: 'order-1' });
 	assert.deepEqual(requests[3].body, { biz_no: '1234567890', usage: 'issue' });
-	assert.equal(job.data.status, 'queued');
-	assert.ok(pdf instanceof ApickBinaryResult);
+	assert.ok(realestate instanceof ApickBinaryResult);
+	assert.ok(corporate instanceof ApickBinaryResult);
+	assert.equal(realestate.contentType, 'application/pdf');
+	assert.equal(realestate.filename, 'registry-a.pdf');
+	preparing = true;
+	await assert.rejects(
+		() => client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', idempotencyKey: 'order-1' }),
+		error => error.serviceCode === 'REGISTRY_PDF_PREPARING' && error.code === 'APICK_PDF_PREPARING'
+	);
+	assert.equal(client.getRegistryJob, undefined);
+	assert.equal(client.downloadRegistryPdf, undefined);
 	assert.throws(() => client.registryCorporateSearch({}), /corpRegNo or bizNo/);
 	assert.throws(() => client.createRegistryRealestateJob({}), /query or pin/);
-	assert.throws(() => client.getRegistryJob('../x'), /jobId/);
 });

@@ -106,8 +106,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `buildingRegister(options)` | 건축물대장 / Building register | JSON |
 | `registryRealestateSearch(query)` | 부동산 등기 검색 / Real-estate registry search | JSON |
 | `registryCorporateSearch({ corpRegNo | bizNo })` | 법인 등기 검색 / Corporate registry search | JSON |
-| `createRegistryRealestateJob(options)` / `createRegistryCorporateJob(options)` | 등기 열람·발급 접수 / Registry view or issue job | JSON |
-| `getRegistryJob(jobId)` / `downloadRegistryPdf(jobId)` | 등기 작업 상태·PDF / Registry job status and PDF | JSON·PDF |
+| `createRegistryRealestateJob(options)` / `createRegistryCorporateJob(options)` | 등기 열람·발급(접수와 PDF 수신을 한 요청, 건당 850P) / Registry view or issue with PDF in one request | PDF |
 | `vehicleEmission(certNo)` | 배출가스 인증정보 / Emission certification | JSON |
 | `vehicleRecall({ carNo | vin })` | 자동차 리콜 대상 여부(대상 아니면 0P) / Vehicle recall check (0P when none) | JSON |
 | `hipassUnpaid(carNo)` | 하이패스 미납 여부(미납 없으면 0P) / Unpaid expressway toll check (0P when none) | JSON |
@@ -305,17 +304,13 @@ const nearby = await client.geoNeighborhood({ address: '서울특별시 강남�
 `vehicleRecall({ carNo })`·`vehicleRecall({ vin })`는 둘 중 하나만 받습니다. 리콜 대상이 아니면(`recall_target: false`), `hipassUnpaid(carNo)`는 미납이 없으면(`unpaid_target: false`) 과금되지 않습니다. `vehicleTaxCalc(cc, { carAgeYears })`는 비영업용 승용차의 연간 자동차세·지방교육세를 계산합니다.
 `vehicleRecall` takes exactly one of `carNo` or `vin`. It is free when the vehicle has no recall (`recall_target: false`), and `hipassUnpaid(carNo)` is free when nothing is unpaid (`unpaid_target: false`). `vehicleTaxCalc(cc, { carAgeYears })` calculates the annual tax for a non-commercial passenger car.
 
-등기 열람·발급은 작업형입니다. 검색(`registryRealestateSearch`·`registryCorporateSearch`)으로 대상을 확인하고, `createRegistry*Job`으로 접수한 뒤 `getRegistryJob(jobId)`으로 상태를 확인하고, `completed` 뒤 `pdf_state`가 `ready`가 되면 `downloadRegistryPdf(jobId)`로 PDF를 받습니다. 준비 중에 받으면 HTTP 202(`serviceCode: REGISTRY_PDF_PREPARING`, 0P)로 `ApickApiError`가 나니 잠시 뒤 다시 요청하세요. 같은 접수를 다시 보낼 때는 같은 `idempotencyKey`를 넣으세요. 상태 조회는 무료이며 과금·환급 조건은 [개발가이드](https://apick.app/dev_guide/registry_realestate_jobs)를 따릅니다.
-Registry view and issue requests are jobs: confirm the target with a search, submit with `createRegistry*Job`, poll `getRegistryJob(jobId)` and download the PDF with `downloadRegistryPdf(jobId)` once `pdf_state` is `ready`; while it is still being prepared the call throws `ApickApiError` with HTTP 202 and `serviceCode` `REGISTRY_PDF_PREPARING` (no charge). Reuse the same `idempotencyKey` when resubmitting. Status checks are free; see the [developer guide](https://apick.app/dev_guide/registry_realestate_jobs) for charges and refunds.
+등기 열람·발급은 검색 → 발급 두 단계입니다. 검색(`registryRealestateSearch`·`registryCorporateSearch`)으로 대상을 확인하고, `createRegistry*Job`으로 발급을 요청하면 접수·결제·PDF 확보를 한 요청에서 끝내고 PDF를 돌려줍니다(건당 850P, PDF 전송 포함). PDF 확보가 늦으면 HTTP 200·`serviceCode: REGISTRY_PDF_PREPARING`(0P)로 `ApickApiError`가 나니 같은 `idempotencyKey`로 다시 보내면 추가 과금 없이 PDF를 받습니다. 과금·환급 조건은 [개발가이드](https://apick.app/dev_guide/registry_realestate_jobs)를 따릅니다.
+Registry view and issue takes two steps: find the target with a search (`registryRealestateSearch`·`registryCorporateSearch`), then call `createRegistry*Job`, which submits, pays, obtains the PDF and returns it in the same request (850P per issue, PDF transfer included). If the PDF is not ready yet the call throws `ApickApiError` with `serviceCode` `REGISTRY_PDF_PREPARING` (no charge); resend with the same `idempotencyKey` to get the PDF without another charge. See the [developer guide](https://apick.app/dev_guide/registry_realestate_jobs) for charges and refunds.
 
 ```js
 const found = await client.registryRealestateSearch('서울특별시 가상구 가상로 1');
-const { data: job } = await client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 1, idempotencyKey: 'order-1001' });
-let state = await client.getRegistryJob(job.job_id);
-// 열람이 끝나 completed 가 된 뒤에도 PDF 는 잠시 준비된다. pdf_state 가 ready 일 때 받는다.
-const done = s => ['failed', 'cancelled'].includes(s.status) || (s.status === 'completed' && s.pdf_state !== 'pending');
-while (!done(state.data)) { await new Promise(r => setTimeout(r, 5000)); state = await client.getRegistryJob(job.job_id); }
-if (state.data.pdf_state === 'ready') await (await client.downloadRegistryPdf(job.job_id)).save('registry.pdf');
+const pdf = await client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 1, idempotencyKey: 'order-1001' });
+await pdf.save('registry.pdf');
 ```
 
 ## 비동기 TTS Jobs / Asynchronous TTS Jobs

@@ -1,3 +1,9 @@
+# 5.0.0
+
+- 등기 열람·발급을 서버 계약에 맞췄습니다. `createRegistryRealestateJob`·`createRegistryCorporateJob`은 접수·결제·PDF 확보를 한 요청에서 끝내고 `ApickBinaryResult`(PDF, 건당 850P)를 돌려줍니다. 서버에서 사라진 상태 조회·다운로드 엔드포인트를 쓰던 `getRegistryJob`·`downloadRegistryPdf`와 `RegistryJob` 타입을 제거했습니다(파괴적 변경). PDF가 아직 준비되지 않았으면 `serviceCode` `REGISTRY_PDF_PREPARING`(0P)로 실패하며, 같은 `idempotencyKey`로 다시 보내면 추가 과금 없이 PDF를 받습니다.
+
+- Registry view and issue now follow the server contract: `createRegistryRealestateJob` and `createRegistryCorporateJob` submit, pay and return the PDF (`ApickBinaryResult`, 850P per issue) in one request. `getRegistryJob`, `downloadRegistryPdf` and the `RegistryJob` type were removed because the status and download endpoints no longer exist (breaking change). While the PDF is being prepared the call fails with `serviceCode` `REGISTRY_PDF_PREPARING` (no charge); resend with the same `idempotencyKey` to get the PDF without another charge.
+
 # 4.13.2
 
 - 등기 접수 예시를 서버 동작에 맞췄습니다. 열람이 끝나 `completed`가 된 뒤 PDF가 준비되므로 `pdf_state`가 `ready`일 때 `downloadRegistryPdf()`를 부릅니다. 준비 중에 받으면 HTTP 202(`REGISTRY_PDF_PREPARING`, 0P)입니다. 메서드와 엔드포인트는 바뀌지 않습니다.

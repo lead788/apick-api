@@ -531,13 +531,6 @@ export interface RegistryRealestateJobOptions {
 	readonly idempotencyKey?: string;
 }
 
-export interface RegistryJob {
-	readonly job_id: string;
-	readonly status: string;
-	readonly replay?: boolean;
-	readonly [key: string]: unknown;
-}
-
 export interface GeoNeighborhoodInput extends GeoTarget {
 	readonly radius?: number;
 	readonly categories?: readonly string[];
@@ -1161,10 +1154,8 @@ export class ApickClient {
 	geoNeighborhood(input: string | GeoNeighborhoodInput): Promise<ApickResult>;
 	registryRealestateSearch(query: string): Promise<ApickResult>;
 	registryCorporateSearch(input: RegistryCorporateTarget): Promise<ApickResult>;
-	createRegistryRealestateJob(options: RegistryRealestateJobOptions): Promise<ApickResult<RegistryJob>>;
-	createRegistryCorporateJob(options: RegistryCorporateTarget & { readonly usage?: 'view' | 'issue'; readonly idempotencyKey?: string }): Promise<ApickResult<RegistryJob>>;
-	getRegistryJob(jobId: string): Promise<ApickResult<RegistryJob>>;
-	downloadRegistryPdf(jobId: string): Promise<ApickBinaryResult>;
+	createRegistryRealestateJob(options: RegistryRealestateJobOptions): Promise<ApickBinaryResult>;
+	createRegistryCorporateJob(options: RegistryCorporateTarget & { readonly usage?: 'view' | 'issue'; readonly idempotencyKey?: string }): Promise<ApickBinaryResult>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
 	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;

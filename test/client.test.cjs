@@ -191,6 +191,8 @@ test('returns binary results with headers and bytes', async () => {
 	assert.equal(result.contentType, 'application/pdf');
 	assert.deepEqual([...result.bytes], [1, 2, 3]);
 	assert.deepEqual(result.meta, { cost: 10, durationMs: 25 });
+	assert.equal(result.jobId, undefined);
+	assert.deepEqual(Object.keys(result), ['bytes', 'contentType', 'filename', 'meta']);
 });
 
 test('implements processing cancellation and the one-time MP3 TTS Jobs contract', async () => {
@@ -942,7 +944,7 @@ test('registry search and issue calls use the documented REST paths', async () =
 		if (preparing) return jsonResponse({ data: { job_id: 'a'.repeat(32), pdf: 'preparing', error_code: 'REGISTRY_PDF_PREPARING' }, api: { success: true, cost: 0 } }, { status: 200 });
 		return new Response(new Uint8Array([37, 80, 68, 70]), {
 			status: 200,
-			headers: { 'content-type': 'application/pdf', 'content-disposition': 'attachment; filename="registry-a.pdf"', 'x-apick-job-id': 'a'.repeat(32) }
+			headers: { 'content-type': 'application/pdf', 'content-disposition': 'attachment; filename="registry-a.pdf"', 'X-Apick-Job-Id': url.includes('corporate') ? 'b'.repeat(32) : 'a'.repeat(32) }
 		});
 	} });
 	await client.registryRealestateSearch('서울특별시 가상구 가상로 1');
@@ -960,6 +962,8 @@ test('registry search and issue calls use the documented REST paths', async () =
 	assert.ok(corporate instanceof ApickBinaryResult);
 	assert.equal(realestate.contentType, 'application/pdf');
 	assert.equal(realestate.filename, 'registry-a.pdf');
+	assert.equal(realestate.jobId, 'a'.repeat(32));
+	assert.equal(corporate.jobId, 'b'.repeat(32));
 	preparing = true;
 	await assert.rejects(
 		() => client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', idempotencyKey: 'order-1' }),

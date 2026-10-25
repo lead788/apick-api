@@ -1,3 +1,8 @@
+## 6.0.1 (2026-10-26)
+
+- 부동산·법인 등기 PDF 발급 결과에 응답 헤더의 작업 ID를 `ApickBinaryResult.jobId`로 제공합니다. 재다운로드용 ID 저장 예제를 추가했습니다. 다른 바이너리 결과 형식은 그대로입니다.
+- Registry PDF issue results now expose the response header's job ID as `ApickBinaryResult.jobId`. The README shows how to save it for a later download. Other binary result shapes are unchanged.
+
 ## 6.0.0 (2026-10-25)
 
 스킬 판매·실행은 [리퀘오 REQEO](https://reqeo.com/dev_guide/skills)로 이전했습니다. 계정·포인트·인증키는 별개입니다. 이 SDK의 기존 스킬 메서드는 요청을 보내지 않고 `SKILLS_MOVED`(410)를 반환합니다. 에이픽 인증키를 리퀘오에 보내지 마세요. 일반 API·TTS·설치형 에이전트는 계속 지원합니다.

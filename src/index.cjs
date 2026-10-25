@@ -590,6 +590,7 @@ class ApickBinaryResult {
 		this.contentType = options.contentType || 'application/octet-stream';
 		this.filename = options.filename || 'result.bin';
 		this.meta = options.meta;
+		if (options.jobId !== null && options.jobId !== undefined) this.jobId = options.jobId;
 		Object.freeze(this.meta);
 	}
 
@@ -688,10 +689,12 @@ class ApickClient {
 
 		if (definition.output === 'binary' && !isJson && response.ok) {
 			const bytes = new Uint8Array(await response.arrayBuffer());
+			const registryIssue = serviceName === 'createRegistryRealestateJob' || serviceName === 'createRegistryCorporateJob';
 			return new ApickBinaryResult(bytes, {
 				contentType: contentType.split(';')[0] || 'application/octet-stream',
 				filename: parseFilename(response.headers.get('content-disposition'), definition.filename),
-				meta: responseMeta(null, response.headers)
+				meta: responseMeta(null, response.headers),
+				jobId: registryIssue ? response.headers.get('x-apick-job-id') : null
 			});
 		}
 

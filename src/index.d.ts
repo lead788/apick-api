@@ -1063,6 +1063,8 @@ export class ApickBinaryResult {
 	readonly contentType: string;
 	readonly filename: string;
 	readonly meta: ApickMeta;
+	/** 등기 PDF 발급 응답의 X-Apick-Job-Id. 다른 바이너리 결과에는 없습니다. */
+	readonly jobId?: string;
 	readonly size: number;
 	toArrayBuffer(): ArrayBuffer;
 	toBlob(): Blob;

@@ -1,3 +1,9 @@
+## 6.0.0 (2026-10-25)
+
+스킬 판매·실행은 [리퀘오 REQEO](https://reqeo.com/dev_guide/skills)로 이전했습니다. 계정·포인트·인증키는 별개입니다. 이 SDK의 기존 스킬 메서드는 요청을 보내지 않고 `SKILLS_MOVED`(410)를 반환합니다. 에이픽 인증키를 리퀘오에 보내지 마세요. 일반 API·TTS·설치형 에이전트는 계속 지원합니다.
+
+Skill sales and execution have moved to [REQEO](https://reqeo.com/dev_guide/skills). Accounts, points and API keys are separate. Legacy Skill methods reject locally with `SKILLS_MOVED` (410) without making a request. Do not send your APICK key to REQEO. General APIs, TTS and the installed agent remain supported.
+
 # 5.0.0
 
 - 등기 열람·발급을 서버 계약에 맞췄습니다. `createRegistryRealestateJob`·`createRegistryCorporateJob`은 접수·결제·PDF 확보를 한 요청에서 끝내고 `ApickBinaryResult`(PDF, 건당 850P)를 돌려줍니다. 서버에서 사라진 상태 조회·다운로드 엔드포인트를 쓰던 `getRegistryJob`·`downloadRegistryPdf`와 `RegistryJob` 타입을 제거했습니다(파괴적 변경). PDF가 아직 준비되지 않았으면 `serviceCode` `REGISTRY_PDF_PREPARING`(0P)로 실패하며, 같은 `idempotencyKey`로 다시 보내면 추가 과금 없이 PDF를 받습니다.

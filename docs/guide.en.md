@@ -1,9 +1,5 @@
 # apick-api English guide
 
-## Skill performance report
-
-Use `const { data } = await apick.getSkillPerformance()` to read the [public measurements](https://apick.app/skills/performance). Review sample sizes, dates, methods and failure reasons together. Model scores are not objective accuracy; unmeasured values are `null`. Reading the report does not execute a paid Skill.
-
 ## Request and response formats
 
 All SDK requests with a body use `multipart/form-data`. Arrays use separate indexed fields such as `utterance_ids[0]`; let the SDK set the Content-Type boundary. GET requests have no body. The server continues accepting older JSON requests for compatibility.
@@ -338,52 +334,6 @@ const incomeResult = await pollDataResult(id => client.getIncomeCertBundle(id), 
 console.log(incomeResult.data.result.incomeAmountCert?.문서확인번호, incomeResult.data.result.pensionCreditCert?.문서확인번호);
 ```
 
-## Skills
-
-Search and run reviewed Skills. Each Skill fixes its input format (`input_schema`), output format (`output_schema`) and base amount (`price_points`). A run is charged only when a result in the promised format is returned.
-
-For Skills that use generative AI (`usage_priced: true`) the actual usage of each run is added to the base amount, so the charge varies per run. `quoteSkill()` returns the estimated amount (`estimated_points`) and the maximum amount (`max_points`). The maximum is reserved when the run is accepted; when it finishes only the actual amount is charged and the rest is returned. Read the actual charge from `run.billing.charged_points`.
-
-```js
-import { randomUUID } from 'node:crypto';
-
-const found = await client.searchSkills({ query: 'product name', limit: 5 });
-const skillId = found.data.items[0].skill_id;
-const detail = await client.getSkill(skillId);
-const input = { product_name: 'Sturdy folding umbrella' };
-
-const quote = await client.quoteSkill(skillId, input);   // free, valid for 5 minutes
-const idempotencyKey = randomUUID();                      // reuse the same value when retrying
-let run = (await client.runSkill(skillId, input, {
-  idempotencyKey, quoteId: quote.data.quote_id, maxCostPoints: quote.data.max_points
-})).data;
-while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) {
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  run = (await client.getSkillRun(run.run_id)).data;
-}
-console.log(run.status, run.billing, run.result);
-```
-
-| Method | Description |
-| --- | --- |
-| `searchSkills({ query, category, sort, cursor, limit })` | Search. `limit` 1-20; `category` is one of `SKILL_CATEGORIES`, `sort` one of `SKILL_SORTS` |
-| `getSkill(skillId)` | Input and output formats, price, limits, examples |
-| `quoteSkill(skillId, input, { version })` | Validates the input and reports the points to be charged. Does not run |
-| `runSkill(skillId, input, { idempotencyKey, quoteId, maxCostPoints, version, waitSeconds })` | Run. `idempotencyKey` is required; `waitSeconds` 0-20 (default 20) |
-| `getSkillRun(runId)` / `getSkillRunResult(runId)` | Run status (with the result once succeeded) / result only. Results are kept for 7 days |
-| `cancelSkillRun(runId)` | Cancel an unfinished run. Cancelled runs are not charged |
-| `skillUsage({ cursor, limit })` | Your runs. `limit` 1-50 |
-
-- `sort` is one of `recommended`, `popular`, `used` (most run), `likes`, `rating`, `new`, `mine` (Skills your account runs most) and `liked` (Skills your account liked). Omit it for registration order.
-- Search and detail responses include `usage_label` (a usage tier such as `1,000회 미만` (under 1,000), `1,000+`, `1만+` (10,000+), not an exact count), `like_count`, `review_count` and `rating_average` (1-5, `null` without reviews). Likes and reviews are left on the Skill page of the APICK website.
-- `sort` is one of `recommended`, `popular`, `used` (most run), `likes`, `rating`, `new`, `mine` (Skills your account runs most) and `liked` (Skills your account liked). Omit it for registration order.
-- Search and detail responses include `usage_label` (a usage tier such as `1,000회 미만` (under 1,000), `1,000+`, `1만+` (10,000+), not an exact count), `like_count`, `review_count` and `rating_average` (1-5, `null` without reviews). Likes and reviews are left on the Skill page of the APICK website.
-- Skills responses are returned as-is in `data`. Read the charge from `data.billing.status` (`reserved`, `captured`, `released`, `partially_refunded`, `refunded`); `meta.cost` is not populated.
-- If a run does not finish within 20 seconds it comes back as `queued` or `running`; poll `getSkillRun`.
-- If a response is lost, call again with the same `idempotencyKey`. Points are charged once. The same key with a different input is rejected with `IDEMPOTENCY_CONFLICT`.
-- Rejections before acceptance throw `ApickApiError` (`serviceCode` such as `INVALID_INPUT`, `INSUFFICIENT_POINTS`, `PAYMENT_REQUIRED`, `PRICE_EXCEEDS_LIMIT`, `RATE_LIMITED`; extra information in `details`). Failures after acceptance are reported through `status` and `failure_code` (`EXECUTION_FAILED`, `OUTPUT_INVALID`, `TIMED_OUT`, `CANCELLED`, `UPSTREAM_UNAVAILABLE`).
-- Skills with `uses_generative_ai: true` produce results with generative AI. Verify them before relying on them.
-
 ## Errors and retries
 
 `ApickApiError` includes public error information: `code`, optional `serviceCode`, `status`, and `message`. The SDK does not retry automatically because a retry could duplicate an API call and its charge. If your application needs retries, decide explicitly after checking the error code and whether the operation is safe to repeat.
@@ -412,13 +362,14 @@ if (status.data.status === "completed") {
 }
 ```
 
-## Skill artifacts and execution estimates
-
-Skill details and quotes provide estimated price and duration ranges and tool call counts. Check the maximum reservation before execution, then use getSkillArtifact(runId, fileId) to download files with authentication. See [Skill artifacts](skill-artifacts.md) for fields and examples.
-
 ## Product-specific data guides
 
 Product-specific authenticated-data guides describe returned fields, source institutions, use cases, and FAQs. An authentication request starts access to the selected product and returns a transactionId for result polling. Request and response contracts and authentication are unchanged. See the [shared authentication guide](https://apick.app/dev_guide/data) for the flow and error handling.
 
 
 TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOpenAiTtsJob`, `listOpenAiTtsVoices`, `getTtsOptions`를 포함한 최신 계약입니다.
+
+
+## 리퀘오 이전 / Move to REQEO
+
+Skill sales and execution have moved to [REQEO](https://reqeo.com/dev_guide/skills). Accounts, points and API keys are separate. Legacy Skill methods reject locally with `SKILLS_MOVED` (410) without making a request. Do not send your APICK key to REQEO. General APIs, TTS and the installed agent remain supported.

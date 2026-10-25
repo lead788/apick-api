@@ -1230,8 +1230,12 @@ export class ApickClient {
 	getResidentRegistrationCho(transactionId: string): Promise<ApickResult<DataRequestResult<ResidentRegistrationChoResultPayload>>>;
 	requestGov24Bundle(input: RequestGov24BundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getGov24Bundle(transactionId: string): Promise<ApickResult<DataRequestResult<Gov24BundleResultPayload>>>;
+	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
+
 	searchSkills(options?: SkillSearchOptions): Promise<ApickResult<SkillPage<SkillSummary>>>;
 	/** Public measured results and methods; model scores are not accuracy guarantees. */
+	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
+
 	getSkillPerformance(): Promise<ApickResult<SkillPerformanceReport>>;
 	subagentStatus(): Promise<ApickResult<Record<string, unknown>>>;
 	subagentUsage(): Promise<ApickResult<Record<string, unknown>>>;
@@ -1246,14 +1250,24 @@ export class ApickClient {
 	reviewSubagent(jobId:string,resultHash:string,decision:'accepted'|'rejected'): Promise<ApickResult<Record<string,unknown>>>;
 	cancelSubagent(jobId:string): Promise<ApickResult<SubagentJob>>;
 	deleteSubagentJob(jobId:string): Promise<ApickResult<Record<string,unknown>>>;
+	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
+
 	getSkill(skillId: string): Promise<ApickResult<SkillDetail>>;
+	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
+
 	quoteSkill(skillId: string, input: Record<string, unknown>, options?: { version?: string }): Promise<ApickResult<SkillQuote>>;
 	runSkill<T = Record<string, unknown>>(skillId: string, input: Record<string, unknown>, options: SkillRunOptions): Promise<ApickResult<SkillRun<T>>>;
 	getSkillRun<T = Record<string, unknown>>(runId: string): Promise<ApickResult<SkillRun<T>>>;
 	getSkillRunResult<T = Record<string, unknown>>(runId: string): Promise<ApickResult<SkillRunResult<T>>>;
 	/** 본인 실행의 결과 파일을 인증해 내려받습니다. / Download an artifact owned by this API key. */
+	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
+
 	getSkillArtifact(runId: string, fileId: string): Promise<ApickBinaryResult>;
+	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
+
 	cancelSkillRun(runId: string): Promise<ApickResult<SkillRun>>;
+	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
+
 	skillUsage(options?: { cursor?: string; limit?: number }): Promise<ApickResult<SkillPage<SkillRun>>>;
 }
 
@@ -1298,6 +1312,7 @@ export type SkillBillingStatus = 'reserved' | 'captured' | 'released' | 'partial
 export type SkillFailureCode = 'EXECUTION_FAILED' | 'OUTPUT_INVALID' | 'TIMED_OUT' | 'CANCELLED' | 'UPSTREAM_UNAVAILABLE';
 /** `ApickApiError.serviceCode` 로 돌아오는 Skills 오류 코드 */
 export type SkillErrorCode =
+	| 'SKILLS_MOVED'
 	| 'INVALID_INPUT' | 'AUTH_REQUIRED' | 'NOT_ALLOWED' | 'PAYMENT_REQUIRED' | 'SKILL_OR_RUN_NOT_FOUND'
 	| 'IDEMPOTENCY_KEY_REQUIRED' | 'IDEMPOTENCY_CONFLICT' | 'QUOTE_EXPIRED' | 'VERSION_UNAVAILABLE'
 	| 'PRICE_EXCEEDS_LIMIT' | 'RUN_NOT_CANCELLABLE' | 'RESULT_NOT_READY' | 'RESULT_EXPIRED'

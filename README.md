@@ -156,51 +156,6 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestVatTaxBaseCert(input)` / `getVatTaxBaseCert(transactionId)` | 부가가치세 과세표준증명 발급 / VAT tax base certificate | PDF·JSON |
 | `requestFinancialStatementCert(input)` / `getFinancialStatementCert(transactionId)` | 표준재무제표증명 발급 / Financial statements certificate | PDF·JSON |
 | `requestClosureCert(input)` / `getClosureCert(transactionId)` | 폐업사실증명 발급 / Business closure certificate | PDF·JSON |
-| `searchSkills(options)` / `getSkill(skillId)` | Skill 검색·상세 / Search and inspect Skills | JSON |
-| `getSkillPerformance()` | 시험 방법·표본 수·기계 검사·품질 점수 / Measured results and methods | JSON |
-| `quoteSkill(skillId, input, options)` | Skill 견적(무료) / Quote a run (free) | JSON |
-| `runSkill(skillId, input, options)` | Skill 실행 / Run a Skill | JSON |
-| `getSkillRun(runId)` / `getSkillRunResult(runId)` / `cancelSkillRun(runId)` | 실행 조회·결과·취소 / Read, fetch result, cancel | JSON |
-| `skillUsage(options)` | 내 Skill 실행 내역 / My Skill runs | JSON |
-
-## Skills
-
-검수를 거친 Skill 을 검색하고 실행합니다. 결과가 약속한 형식으로 반환된 실행만 포인트가 차감되고, 실패·시간초과·취소는 차감되지 않습니다. 생성형 AI 를 쓰는 Skill 은 실행마다 실제 사용량만큼 금액이 달라지므로, 실행 전에 `quoteSkill()` 로 예상 금액(`estimated_points`)과 최대 금액(`max_points`)을 확인하세요. 1회 이상 결제한 계정에서 실행할 수 있습니다.
-Search and run reviewed Skills. Points are charged only when a result in the promised format is returned; failures, timeouts and cancellations are not charged. For Skills that use generative AI the amount varies per run with actual usage, so call `quoteSkill()` first to get the estimated (`estimated_points`) and maximum (`max_points`) amount. Running requires an account with at least one payment.
-
-```js
-import { randomUUID } from 'node:crypto';
-
-const found = await apick.searchSkills({ query: '상품명', limit: 5 });
-const skillId = found.data.items[0].skill_id;
-const detail = await apick.getSkill(skillId);          // input_schema, output_schema, price_points, estimated_points
-const input = { product_name: '튼튼한 접이식 우산' };
-const quote = (await apick.quoteSkill(skillId, input)).data; // 무료 / free: estimated_points, max_points
-
-const idempotencyKey = randomUUID();                    // 재시도할 때 같은 값을 다시 씁니다 / reuse on retry
-let run = (await apick.runSkill(skillId, input, { idempotencyKey, quoteId: quote.quote_id, maxCostPoints: quote.max_points })).data;
-while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) {
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  run = (await apick.getSkillRun(run.run_id)).data;
-}
-console.log(run.status, run.billing, run.result);
-```
-
-검증 결과는 [스킬 성능표](https://apick.app/skills/performance) 또는 `const { data } = await apick.getSkillPerformance()`로 확인합니다. 표본 수·시험일·방법·기계 검사 통과율과 모델 평가 점수를 함께 읽으세요. 미검증 값은 `null`이며, 과거의 다른 조건에서 얻은 점수는 `legacy`로 구분합니다. 모델 점수는 객관적 정확도나 판매 성과 보장이 아닙니다.
-
-See the [Skill performance report](https://apick.app/skills/performance) or call `const { data } = await apick.getSkillPerformance()`. Read sample sizes, dates, methods, machine checks and model scores together. Unmeasured values are `null`; historical results under different conditions are in `legacy`. Model scores are not objective accuracy or sales guarantees.
-
-`searchSkills({ sort })` 로 추천(`recommended`)·인기(`popular`)·많이 사용(`used`)·좋아요순(`likes`)·평점순(`rating`)·최신(`new`) 순서를 고르고, 검색·상세 응답의 `usage_label`(사용 건수 구간)·`like_count`·`review_count`·`rating_average` 로 Skill 을 비교할 수 있습니다.
-Pick an order with `searchSkills({ sort })` (`recommended`, `popular`, `used`, `likes`, `rating`, `new`) and compare Skills with `usage_label` (a usage tier), `like_count`, `review_count` and `rating_average` in search and detail responses.
-
-`searchSkills({ sort })` 로 추천(`recommended`)·인기(`popular`)·많이 사용(`used`)·좋아요순(`likes`)·평점순(`rating`)·최신(`new`) 순서를 고르고, 검색·상세 응답의 `usage_label`(사용 건수 구간)·`like_count`·`review_count`·`rating_average` 로 Skill 을 비교할 수 있습니다.
-Pick an order with `searchSkills({ sort })` (`recommended`, `popular`, `used`, `likes`, `rating`, `new`) and compare Skills with `usage_label` (a usage tier), `like_count`, `review_count` and `rating_average` in search and detail responses.
-
-Skills 응답은 다른 API 와 달리 봉투 없이 그대로 `data` 에 담깁니다. 과금 상태는 `data.billing`(`reserved`·`captured`·`released`…)에서 확인하며 `meta.cost` 는 채워지지 않습니다. 응답을 받지 못했을 때는 **같은 `idempotencyKey`** 로 다시 호출하세요. 포인트는 한 번만 차감됩니다. 같은 키에 다른 입력을 보내면 `IDEMPOTENCY_CONFLICT` 로 거부됩니다.
-Skills responses are returned as-is in `data`. Read the charge from `data.billing`; `meta.cost` is not populated. If a response is lost, call again with the **same `idempotencyKey`** — points are charged once. The same key with a different input is rejected with `IDEMPOTENCY_CONFLICT`.
-
-접수 전에 거절된 요청은 `ApickApiError` 로 던져지며 `serviceCode` 에 `INVALID_INPUT`·`INSUFFICIENT_POINTS`·`PRICE_EXCEEDS_LIMIT`·`RATE_LIMITED` 같은 코드가, `details` 에 부가 정보가 담깁니다. 접수된 뒤 실패한 실행은 예외가 아니라 `status` 와 `failure_code` 로 확인합니다.
-Requests rejected before acceptance throw `ApickApiError` with the code in `serviceCode` and extra information in `details`. A run that fails after acceptance is reported through `status` and `failure_code`, not an exception.
 
 ## JSON 결과 / JSON results
 
@@ -596,10 +551,6 @@ if (status.data.status === "completed") {
 }
 ```
 
-### 스킬 결과 파일 / Skill result files
-
-`getSkillArtifact(runId, fileId)` returns authenticated binary artifacts. 가격·시간·호출 수 범위와 다운로드 예제: [스킬 파일 가이드 / guide](docs/skill-artifacts.md).
-
 ## 서브에이전트 / Subagent
 
 설치형 `apick-agent` 상품은 `apick-subagent` 스킬 패키지와 전용 REST·MCP를 사용합니다. 설치비·도입비·구독료 없이 성공한 작업만 사용량대로 정산(AI 사용 작업 기본 5P), 승인된 동일 결과 캐시 1P, 충전 잔액 외 상품 한도 없음. [연동 가이드](https://apick.app/dev_guide/subagent).
@@ -633,3 +584,10 @@ await client.vehicleModelInfo({ model: "파나메라 gts 4인승 19년식" });
 차량정보는 공백·대소문자가 다른 동일 등급을 우선해 찾으며 연식·사양이 다른 차량은 구분합니다. 기존 `안내`에서 연식·사양 대체, 사양 충돌, 국내 출시 여부 확인 보류, 일부 제원의 추가 검증 상태를 확인할 수 있습니다. 국내 미출시가 확인된 차량은 해외 자료 기준이며 100% 정확성을 보장하지 않는다는 안내가 추가됩니다. 반환된 연식·등급과 안내를 확인하세요. 입력·응답 구조와 과금 방식은 유지됩니다.
 
 Vehicle information prioritizes the same trim across spacing and case variations while distinguishing model years and specifications. The existing `안내` notice can describe year/specification substitutions, conflicting specifications, unverified Korean-market availability, or specifications still under review. Confirmed non-Korean-market vehicles receive an additional notice that overseas data does not guarantee 100% accuracy. Check the returned year, trim and notices. Request/response shapes and billing behavior remain unchanged.
+
+
+## 리퀘오 이전 / Move to REQEO
+
+스킬 판매·실행은 [리퀘오 REQEO](https://reqeo.com/dev_guide/skills)로 이전했습니다. 계정·포인트·인증키는 별개입니다. 이 SDK의 기존 스킬 메서드는 요청을 보내지 않고 `SKILLS_MOVED`(410)를 반환합니다. 에이픽 인증키를 리퀘오에 보내지 마세요. 일반 API·TTS·설치형 에이전트는 계속 지원합니다.
+
+Skill sales and execution have moved to [REQEO](https://reqeo.com/dev_guide/skills). Accounts, points and API keys are separate. Legacy Skill methods reject locally with `SKILLS_MOVED` (410) without making a request. Do not send your APICK key to REQEO. General APIs, TTS and the installed agent remain supported.

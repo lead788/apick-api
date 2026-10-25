@@ -1694,9 +1694,9 @@ class ApickClient {
 		return this._call('requestGov24Bundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_gov24_bundle' });
 	}
 
-	// Skills: 요청·응답이 모두 JSON 이고 data·api 봉투 없이 응답 항목이 최상위에 온다.
+	// 설치형 에이전트의 JSON 요청·응답 공용 전송.
 	// 오류는 { error: { code, message, details } } 형식이며 code 를 serviceCode 로 돌려준다.
-	async _skills(method, path, options) {
+	async _jsonApi(method, path, options) {
 		const config = options || {};
 		const controller = new AbortController();
 		const timeoutMs = this.#timeoutMs || config.timeoutMs || DEFAULT_TIMEOUT_MS;
@@ -1750,31 +1750,11 @@ class ApickClient {
 		return Object.freeze({ data: body, meta: responseMeta(null, response.headers) });
 	}
 
-	searchSkills(options) {
-		const config = options || {};
-		const query = {};
-		if (config.query !== undefined && config.query !== null && config.query !== '') query.query = requiredString('query', config.query, 60);
-		if (config.category !== undefined && config.category !== null && config.category !== '') {
-			const category = requiredString('category', config.category);
-			if (!SKILL_CATEGORY_SET.has(category)) throw new RangeError('category must be one of the supported Skill categories.');
-			query.category = category;
-		}
-		if (config.sort !== undefined && config.sort !== null && config.sort !== '') {
-			const sort = requiredString('sort', config.sort);
-			if (!SKILL_SORT_SET.has(sort)) throw new RangeError('sort must be one of the supported Skill sort orders.');
-			query.sort = sort;
-		}
-		if (config.cursor !== undefined && config.cursor !== null && config.cursor !== '') query.cursor = requiredString('cursor', String(config.cursor), 20);
-		const limit = optionalRangeInteger('limit', config.limit, 1, 20);
-		if (limit !== undefined) query.limit = String(limit);
-		return this._skills('GET', '/rest/skills', { query });
-	}
+	searchSkills(options) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
-	getSkillPerformance() {
-		return this._skills('GET', '/skills/performance/data.json');
-	}
+	getSkillPerformance() { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
-	_subagent(method, route, options) { return this._skills(method, '/rest/subagent/v1' + route, options); }
+	_subagent(method, route, options) { return this._jsonApi(method, '/rest/subagent/v1' + route, options); }
 	subagentStatus() { return this._subagent('GET', '/status'); }
 	subagentUsage() { return this._subagent('GET', '/usage'); }
 	createSubagentFile(input) { return this._subagent('POST', '/files', {body: input}); }
@@ -1789,91 +1769,23 @@ class ApickClient {
 	cancelSubagent(jobId) { return this._subagent('POST','/jobs/'+normalizeSubagentId(jobId,'saj')+'/cancel',{body:{}}); }
 	deleteSubagentJob(jobId) { return this._subagent('DELETE','/jobs/'+normalizeSubagentId(jobId,'saj')); }
 
-	getSkill(skillId) {
-		return this._skills('GET', '/rest/skills/' + normalizeSkillId(skillId));
-	}
+	getSkill(skillId) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
-	quoteSkill(skillId, input, options) {
-		const body = { input: skillInput(input) };
-		const version = optionalSkillText('version', (options || {}).version, 16);
-		if (version !== undefined) body.version = version;
-		return this._skills('POST', '/rest/skills/' + normalizeSkillId(skillId) + '/quotes', { body });
-	}
+	quoteSkill(skillId, input, options) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
 	// 같은 idempotencyKey 로 다시 보내면 새로 실행하지 않고 처음 실행을 돌려준다. 응답을 못 받았을 때는 같은 키로 재시도한다.
-	runSkill(skillId, input, options) {
-		const config = options || {};
-		const idempotencyKey = requiredString('idempotencyKey', config.idempotencyKey);
-		if (!/^[A-Za-z0-9._:-]{1,128}$/.test(idempotencyKey)) {
-			throw new TypeError('idempotencyKey must be 1-128 characters of letters, digits, and . _ : -');
-		}
-		const body = { input: skillInput(input) };
-		const version = optionalSkillText('version', config.version, 16);
-		const quoteId = optionalSkillText('quoteId', config.quoteId, 40);
-		const maxCostPoints = config.maxCostPoints === undefined || config.maxCostPoints === null ? undefined : positiveInteger('maxCostPoints', config.maxCostPoints);
-		const waitSeconds = optionalRangeInteger('waitSeconds', config.waitSeconds, 0, 20);
-		if (version !== undefined) body.version = version;
-		if (quoteId !== undefined) body.quote_id = quoteId;
-		if (maxCostPoints !== undefined) body.max_cost_points = maxCostPoints;
-		if (waitSeconds !== undefined) body.wait_seconds = waitSeconds;
-		return this._skills('POST', '/rest/skills/' + normalizeSkillId(skillId) + '/runs', { body, idempotencyKey, timeoutMs: 40_000 });
-	}
+	runSkill(skillId, input, options) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
-	getSkillRun(runId) {
-		return this._skills('GET', '/rest/skills/runs/' + normalizeSkillRunId(runId));
-	}
+	getSkillRun(runId) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
-	getSkillRunResult(runId) {
-		return this._skills('GET', '/rest/skills/runs/' + normalizeSkillRunId(runId) + '/result');
-	}
+	getSkillRunResult(runId) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
 	/** Download a file from a completed run owned by this API key. */
-	async getSkillArtifact(runId, fileId) {
-		const run = normalizeSkillRunId(runId);
-		if (typeof fileId !== 'string' || !/^art_[a-f0-9]{24}$/.test(fileId)) throw new TypeError('fileId must be an artifact ID from a Skill result.');
-		const controller = new AbortController();
-		const timeoutMs = this.#timeoutMs || DEFAULT_TIMEOUT_MS;
-		const timer = setTimeout(() => controller.abort(), timeoutMs);
-		try {
-			const response = await this.#fetch(this.#baseUrl + '/rest/skills/runs/' + run + '/files/' + fileId + '?download=1', {
-				method: 'GET', headers: { Authorization: `Bearer ${this.#apiKey}` }, signal: controller.signal, redirect: 'error'
-			});
-			if (!response.ok) {
-				let body; try { body = await response.json(); } catch { body = null; }
-				throw new ApickApiError('APICK artifact download failed.', { status: response.status, code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR', serviceCode: body && body.error && body.error.code });
-			}
-			const limit = 200 * 1024 * 1024;
-			if (Number(response.headers.get('content-length')) > limit) { controller.abort(); throw new ApickApiError('APICK artifact exceeds the size limit.', { code: 'APICK_INVALID_RESPONSE' }); }
-			const reader = response.body.getReader(), chunks = []; let size = 0;
-			try {
-				while (true) {
-					const item = await reader.read(); if (item.done) break;
-					size += item.value.byteLength;
-					if (size > limit) { await reader.cancel(); throw new ApickApiError('APICK artifact exceeds the size limit.', { code: 'APICK_INVALID_RESPONSE' }); }
-					chunks.push(item.value);
-				}
-			} finally { reader.releaseLock(); }
-			const bytes = new Uint8Array(size); let offset = 0;
-			for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-			return new ApickBinaryResult(bytes, { contentType: (response.headers.get('content-type') || '').split(';')[0], filename: parseFilename(response.headers.get('content-disposition'), 'result.bin'), meta: responseMeta(null, response.headers) });
-		} catch (error) {
-			if (error instanceof ApickApiError) throw error;
-			throw new ApickApiError(controller.signal.aborted ? 'APICK artifact download timed out.' : redact(error && error.message || 'APICK download failed.', this.#apiKey), { code: controller.signal.aborted ? 'APICK_TIMEOUT' : 'APICK_NETWORK_ERROR' });
-		} finally { clearTimeout(timer); }
-	}
+	async getSkillArtifact(runId, fileId) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
-	cancelSkillRun(runId) {
-		return this._skills('POST', '/rest/skills/runs/' + normalizeSkillRunId(runId) + '/cancel', { body: {} });
-	}
+	cancelSkillRun(runId) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 
-	skillUsage(options) {
-		const config = options || {};
-		const query = {};
-		if (config.cursor !== undefined && config.cursor !== null && config.cursor !== '') query.cursor = requiredString('cursor', String(config.cursor), 20);
-		const limit = optionalRangeInteger('limit', config.limit, 1, 50);
-		if (limit !== undefined) query.limit = String(limit);
-		return this._skills('GET', '/rest/skills/usage', { query });
-	}
+	skillUsage(options) { return Promise.reject(new ApickApiError('스킬은 https://reqeo.com 으로 이전했습니다. 계정과 포인트는 별개입니다. / Skills moved to REQEO; accounts and points are separate.', {status:410,code:'APICK_API_ERROR',serviceCode:'SKILLS_MOVED',details:{url:'https://reqeo.com/dev_guide/skills'}})); }
 }
 
 module.exports = {

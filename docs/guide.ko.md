@@ -1,9 +1,5 @@
 # apick-api 한국어 가이드
 
-## 스킬 성능표
-
-`const { data } = await apick.getSkillPerformance()`로 [공개 측정표](https://apick.app/skills/performance)를 조회합니다. 표본 수·시험일·검사 방법·실패 사유를 함께 확인하세요. 모델 점수는 객관적 정확도가 아니며 미검증 값은 `null`입니다. 조회 자체에는 유료 실행이 필요하지 않습니다.
-
 ## 요청과 응답 형식
 
 SDK의 본문 요청은 모두 `multipart/form-data`입니다. `utterance_ids[0]`처럼 배열을 개별 필드로 전송하며 `Content-Type` 헤더를 직접 지정할 필요가 없습니다. GET 조회는 본문을 보내지 않습니다. 기존 JSON 요청도 서버에서 호환용으로 계속 처리합니다.
@@ -341,52 +337,6 @@ const incomeResult = await pollDataResult(id => client.getIncomeCertBundle(id), 
 console.log(incomeResult.data.result.incomeAmountCert?.문서확인번호, incomeResult.data.result.pensionCreditCert?.문서확인번호);
 ```
 
-## Skills
-
-검수를 거친 Skill 을 검색하고 실행합니다. Skill 마다 입력 형식(`input_schema`)·결과 형식(`output_schema`)·기본 금액(`price_points`)이 정해져 있으며, 결과가 약속한 형식으로 반환된 실행만 차감됩니다.
-
-생성형 AI 를 쓰는 Skill(`usage_priced: true`)은 기본 금액에 그 실행의 실제 사용량이 더해져 실행마다 금액이 달라집니다. `quoteSkill()` 은 예상 금액(`estimated_points`)과 최대 금액(`max_points`)을 돌려줍니다. 실행을 접수할 때 최대 금액을 예약하고, 끝나면 실제 금액만 차감한 뒤 나머지를 돌려줍니다. 실제 차감액은 `run.billing.charged_points` 에서 확인합니다.
-
-```js
-import { randomUUID } from 'node:crypto';
-
-const found = await client.searchSkills({ query: '상품명', limit: 5 });
-const skillId = found.data.items[0].skill_id;
-const detail = await client.getSkill(skillId);
-const input = { product_name: '튼튼한 접이식 우산' };
-
-const quote = await client.quoteSkill(skillId, input);   // 무료. 5분 동안 유효
-const idempotencyKey = randomUUID();                      // 재시도할 때 같은 값을 다시 씁니다
-let run = (await client.runSkill(skillId, input, {
-  idempotencyKey, quoteId: quote.data.quote_id, maxCostPoints: quote.data.max_points
-})).data;
-while (!['succeeded', 'failed', 'timed_out', 'cancelled'].includes(run.status)) {
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  run = (await client.getSkillRun(run.run_id)).data;
-}
-console.log(run.status, run.billing, run.result);
-```
-
-| 메서드 | 설명 |
-| --- | --- |
-| `searchSkills({ query, category, sort, cursor, limit })` | 검색. `limit` 1~20, `category` 는 `SKILL_CATEGORIES`, `sort` 는 `SKILL_SORTS` 중 하나 |
-| `getSkill(skillId)` | 입력·결과 형식, 가격, 처리 상한, 예제 |
-| `quoteSkill(skillId, input, { version })` | 입력 검사와 차감될 포인트 확인. 실행하지 않습니다 |
-| `runSkill(skillId, input, { idempotencyKey, quoteId, maxCostPoints, version, waitSeconds })` | 실행. `idempotencyKey` 필수, `waitSeconds` 0~20(기본 20) |
-| `getSkillRun(runId)` / `getSkillRunResult(runId)` | 실행 상태(성공하면 결과 포함) / 결과만 조회. 결과는 7일 동안 보관 |
-| `cancelSkillRun(runId)` | 끝나지 않은 실행 취소. 취소된 실행은 차감되지 않습니다 |
-| `skillUsage({ cursor, limit })` | 내 실행 내역. `limit` 1~50 |
-
-- `sort` 는 `recommended`(추천)·`popular`(인기)·`used`(많이 사용)·`likes`(좋아요순)·`rating`(평점순)·`new`(최신)·`mine`(내 계정이 많이 실행한 Skill)·`liked`(내 계정이 좋아요한 Skill) 가운데 하나입니다. 생략하면 등록 순서입니다.
-- 검색·상세 응답에는 고를 때 참고하는 `usage_label`(사용 건수 구간: `1,000회 미만`, `1,000+`, `1만+` …), `like_count`, `review_count`, `rating_average`(1~5, 리뷰가 없으면 `null`)가 있습니다. 좋아요와 리뷰는 에이픽 웹의 Skill 화면에서 남깁니다.
-- `sort` 는 `recommended`(추천)·`popular`(인기)·`used`(많이 사용)·`likes`(좋아요순)·`rating`(평점순)·`new`(최신)·`mine`(내 계정이 많이 실행한 Skill)·`liked`(내 계정이 좋아요한 Skill) 가운데 하나입니다. 생략하면 등록 순서입니다.
-- 검색·상세 응답에는 고를 때 참고하는 `usage_label`(사용 건수 구간: `1,000회 미만`, `1,000+`, `1만+` …), `like_count`, `review_count`, `rating_average`(1~5, 리뷰가 없으면 `null`)가 있습니다. 좋아요와 리뷰는 에이픽 웹의 Skill 화면에서 남깁니다.
-- Skills 응답은 봉투 없이 `data` 에 그대로 담기며, 과금 상태는 `data.billing.status`(`reserved`·`captured`·`released`·`partially_refunded`·`refunded`)로 확인합니다. `meta.cost` 는 채워지지 않습니다.
-- 20초 안에 끝나지 않으면 `status` 가 `queued`·`running` 인 채로 돌아오므로 `getSkillRun` 으로 확인하세요.
-- 응답을 받지 못했을 때는 같은 `idempotencyKey` 로 다시 호출하세요. 포인트는 한 번만 차감됩니다. 같은 키에 다른 입력을 보내면 `IDEMPOTENCY_CONFLICT` 입니다.
-- 접수 전 거절은 `ApickApiError`(`serviceCode`: `INVALID_INPUT`·`INSUFFICIENT_POINTS`·`PAYMENT_REQUIRED`·`PRICE_EXCEEDS_LIMIT`·`RATE_LIMITED` 등, `details` 에 부가 정보)로, 접수 뒤 실패는 `status` 와 `failure_code`(`EXECUTION_FAILED`·`OUTPUT_INVALID`·`TIMED_OUT`·`CANCELLED`·`UPSTREAM_UNAVAILABLE`)로 확인합니다.
-- `uses_generative_ai` 가 true 인 Skill 은 생성형 AI 로 결과를 만듭니다. 중요한 판단에 쓰기 전에 확인하세요.
-
 ## 오류와 재시도
 
 `ApickApiError`에는 공개 오류 정보인 `code`, `serviceCode`, `status`, `message`가 포함됩니다. SDK는 중복 호출과 중복 과금을 방지하기 위해 자동 재시도를 하지 않습니다. 재시도가 필요하면 작업의 멱등성과 오류 코드를 확인한 뒤 애플리케이션에서 명시적으로 결정하세요.
@@ -421,13 +371,14 @@ if (status.data.status === "completed") {
 }
 ```
 
-## 스킬 결과 파일과 실행 예상
-
-스킬 상세·견적은 가격과 시간 범위, 도구별 예상 호출 수를 제공합니다. 실행 전 최대 예약액을 확인하고, 성공 결과의 파일은 인증이 적용되는 getSkillArtifact(runId, fileId)로 내려받으세요. 자세한 필드와 예시는 [스킬 결과 파일 안내](skill-artifacts.md)를 참고하세요.
-
 ## 상품별 조회 가이드
 
 상품별 간편인증 조회 가이드에는 조회 데이터, 활용 사례와 자주 묻는 질문이 있습니다. 인증 요청은 해당 상품의 자료를 조회하기 위한 단계이며 결과 조회용 transactionId를 반환합니다. 요청·응답 계약과 인증 방식은 동일합니다. [공통 인증 흐름](https://apick.app/dev_guide/data)에서 절차와 오류 처리를 확인하세요.
 
 
 TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOpenAiTtsJob`, `listOpenAiTtsVoices`, `getTtsOptions`를 포함한 최신 계약입니다.
+
+
+## 리퀘오 이전 / Move to REQEO
+
+스킬 판매·실행은 [리퀘오 REQEO](https://reqeo.com/dev_guide/skills)로 이전했습니다. 계정·포인트·인증키는 별개입니다. 이 SDK의 기존 스킬 메서드는 요청을 보내지 않고 `SKILLS_MOVED`(410)를 반환합니다. 에이픽 인증키를 리퀘오에 보내지 마세요. 일반 API·TTS·설치형 에이전트는 계속 지원합니다.

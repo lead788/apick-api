@@ -21,6 +21,70 @@ function jsonResponse(body, options) {
 	});
 }
 
+for (const [method, endpoint] of [['bidNotice', '/rest/bid_notice'], ['bidAward', '/rest/bid_award']]) {
+	test(`${method} preserves bid notice numbers in the outgoing form`, async () => {
+		const requests = [];
+		const client = new ApickClient({
+			apiKey: 'test-key', baseUrl: 'https://api.example.test',
+			fetch: async (url, options) => {
+				requests.push({ url, method: options.method, body: Object.fromEntries(options.body) });
+				return jsonResponse({ data: {}, api: { success: true } });
+			}
+		});
+		const numbers = ['R26BK01469289', 'R25BK00932003', '20240112345', '00000123456',
+			'aB00123', '0', '12345678901234567890', 'A1234567890123456789'];
+		for (const bidNtceNo of numbers) {
+			const options = Object.freeze({ bizType: '공사', bidNtceNo, pageNo: 2 });
+			await client[method](options);
+		}
+		assert.deepEqual(requests, numbers.map(bidNtceNo => ({
+			url: `https://api.example.test${endpoint}`, method: 'POST',
+			body: { bizType: '공사', bidNtceNo, pageNo: '2' }
+		})));
+	});
+
+	test(`${method} rejects invalid bid notice numbers before fetch`, () => {
+		let calls = 0;
+		const client = new ApickClient({
+			apiKey: 'test-key', baseUrl: 'https://api.example.test',
+			fetch: async () => {
+				calls += 1;
+				return jsonResponse({ data: {}, api: { success: true } });
+			}
+		});
+		const invalid = ['', ' ', 'ABC', 'abc', '---', 'R26BK01469289-000', '20240112345-00',
+			'2024-01-12345', 'R26 BK01469289', ' R26BK01469289', 'R26BK01469289 ',
+			'R26BK01469289\n', 'R26BK\t01469289', 'R26BK01469289\u0000',
+			'Ｒ26BK01469289', '공고20240112345', '１２３', 'R26BK01469289/1',
+			'20240112345?x=1', null, 20240112345, false, [], {}, new String('20240112345')];
+		for (const bidNtceNo of invalid) {
+			assert.throws(() => client[method]({ bidNtceNo, startDate: '20261001', endDate: '20261022' }),
+				{ name: 'TypeError', message: /bidNtceNo/ }, `input: ${JSON.stringify(bidNtceNo)}`);
+			assert.equal(calls, 0);
+		}
+		for (const bidNtceNo of ['1'.repeat(21), 'A' + '1'.repeat(20)]) {
+			assert.throws(() => client[method]({ bidNtceNo }),
+				{ name: 'RangeError', message: /bidNtceNo.*20/ });
+			assert.equal(calls, 0);
+		}
+	});
+
+	test(`${method} omits absent bid notice numbers for date queries`, async () => {
+		const bodies = [];
+		const client = new ApickClient({
+			apiKey: 'test-key', baseUrl: 'https://api.example.test',
+			fetch: async (url, options) => {
+				bodies.push(Object.fromEntries(options.body));
+				return jsonResponse({ data: {}, api: { success: true } });
+			}
+		});
+		const dates = { startDate: '20261001', endDate: '20261022' };
+		await client[method](dates);
+		await client[method]({ ...dates, bidNtceNo: undefined });
+		assert.deepEqual(bodies, [dates, dates]);
+	});
+}
+
 test('vehicle free-text queries preserve all supplied constraints and zero-cost results', async () => {
 	const requests = [];
 	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {

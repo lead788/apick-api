@@ -301,6 +301,7 @@ export interface BidQueryOptions {
 	readonly bizType?: '물품' | '공사' | '용역' | '외자';
 	readonly startDate?: string;
 	readonly endDate?: string;
+	/** 1~20자의 영문·숫자 문자열(숫자 1개 이상). 원문을 보존하며 공백·구분자·공고차수는 허용하지 않는다. */
 	readonly bidNtceNo?: string;
 	readonly indstrytyCd?: string;
 	readonly pageNo?: number;

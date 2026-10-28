@@ -11,7 +11,10 @@ const {
 	SERVICES,
 	TTS_VOICE_IDS,
 	AUTH_PROVIDERS,
-	GOV24_BUNDLE_PRODUCTS
+	GOV24_BUNDLE_PRODUCTS,
+	NPS_BUNDLE_PRODUCTS,
+	HOMETAX_BUNDLE_PRODUCTS,
+	HOMETAX_BIZ_BUNDLE_PRODUCTS
 } = require('../src/index.cjs');
 
 function jsonResponse(body, options) {
@@ -34,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 104 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 104);
+test('exports a focused catalog of 107 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 107);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -525,6 +528,57 @@ test('implements resident registration and the selectable Government24 bundle', 
 	assert.throws(() => client.requestGov24Bundle({ ...base, products: ['unknown_product'] }), /unsupported key/);
 	assert.throws(() => client.requestGov24Bundle({ ...base, products: 'resident_registration' }), /sido/);
 	assert.throws(() => client.getGov24Bundle('E'.repeat(32)), /transactionId/);
+	assert.equal(requests.length, 7);
+});
+
+test('implements NPS, personal Hometax and business Hometax bundles', async () => {
+	const txId = 'f'.repeat(32);
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, body: options.body });
+			return jsonResponse({ data: { transactionId: txId, product: 'x', status: 'AUTH_REQUESTED', resultAvailable: false, charged: true, sources: [], message: '', success: 1 }, api: { success: true, cost: 20 } });
+		}
+	});
+	const base = { name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao' };
+
+	assert.equal(NPS_BUNDLE_PRODUCTS.length, 3);
+	assert.equal(HOMETAX_BUNDLE_PRODUCTS.length, 9);
+	assert.equal(HOMETAX_BIZ_BUNDLE_PRODUCTS.length, 15);
+
+	// 국민연금 통합은 세 조회가 항상 함께 실행되므로 products 를 받지 않는다.
+	await client.requestNpsBundle({ ...base, years: 5 });
+	assert.ok(requests[0].url.endsWith('/rest/req_nps_bundle'));
+	assert.equal(requests[0].body.get('years'), '5');
+	assert.equal(requests[0].body.get('products'), null);
+	await client.getNpsBundle(txId);
+	assert.ok(requests[1].url.endsWith('/rest/get_nps_bundle'));
+
+	// 개인 국세 통합은 고른 상품만 실행한다.
+	await client.requestHometaxBundle({ ...base, products: ['personal_income', 'tax_return_history'], years: 3 });
+	assert.ok(requests[2].url.endsWith('/rest/req_hometax_bundle'));
+	assert.equal(requests[2].body.get('products'), 'personal_income,tax_return_history');
+	assert.equal(requests[2].body.get('years'), '3');
+	await client.getHometaxBundle(txId);
+	assert.ok(requests[3].url.endsWith('/rest/get_hometax_bundle'));
+
+	// 사업자 국세 통합은 사업자번호를 정규화하고 대표자 본인 확인을 요구한다.
+	await client.requestHometaxBizBundle({ ...base, products: ['business_sales', 'etax_status'], business_no: '123-45-67890', agreed: true });
+	assert.ok(requests[4].url.endsWith('/rest/req_hometax_biz_bundle'));
+	assert.equal(requests[4].body.get('products'), 'business_sales,etax_status');
+	assert.equal(requests[4].body.get('business_no'), '1234567890');
+	assert.equal(requests[4].body.get('agreed'), 'true');
+	await client.getHometaxBizBundle(txId);
+	assert.ok(requests[5].url.endsWith('/rest/get_hometax_biz_bundle'));
+
+	assert.throws(() => client.requestHometaxBundle(base), /products/);
+	assert.throws(() => client.requestHometaxBundle({ ...base, products: ['business_sales'] }), /unsupported key/);
+	assert.throws(() => client.requestHometaxBizBundle({ ...base, products: ['personal_income'], agreed: true }), /unsupported key/);
+	assert.throws(() => client.requestHometaxBizBundle({ ...base, products: ['business_sales'] }), /agreed must be true/);
+	assert.throws(() => client.requestHometaxBizBundle({ ...base, products: ['business_sales'], agreed: 'yes' }), /agreed must be a boolean/);
+	assert.doesNotThrow(() => client.requestHometaxBizBundle({ ...base, products: ['business_sales'], bind_id: 'bind-1' }));
+	assert.throws(() => client.getNpsBundle('G'.repeat(32)), /transactionId/);
 	assert.equal(requests.length, 7);
 });
 

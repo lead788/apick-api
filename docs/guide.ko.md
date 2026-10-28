@@ -305,7 +305,23 @@ try {
 
 `authProvider`는 `AUTH_PROVIDERS`(13종: kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad) 중 하나입니다. 접수는 정액 과금, 결과는 최초 반환에서만 과금되며 재조회는 무료입니다. `requestEmployment`는 `insuranceYears`(1~3), `requestPersonalIncome`은 `incomeYears`(1~5), `requestNpsJoinHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestNpsDeductionCert`는 `years`(1~5), `requestNpsCareerHistory`는 `from`/`to`(`YYYY-MM`) 선택 입력을 받습니다. `requestCashReceiptDeduction`은 `incomeYears`(1~3), `requestTaxReturnHistory`는 `years`(1~10) 선택 입력을 받습니다. 나머지 상품은 `requestDrivingLicense`, `requestHealthCheckup`입니다.
 
-주민등록표등본·초본은 `requestResidentRegistration()`·`requestResidentRegistrationCho()`로 발급하며 주민등록 주소지 `sido`·`sigungu`가 필수입니다. 발급 1건은 80P이고 결과의 `발급문서`는 PDF 원본의 base64, `문서해시`는 그 SHA-256입니다. 민원서류 통합 조회 `requestGov24Bundle()`은 `products`에 고른 상품만 한 번의 인증으로 조회하며, 과금은 고른 상품 단가의 합입니다. 선택 가능한 13개 키는 `GOV24_BUNDLE_PRODUCTS`로 제공하고 `sido`·`sigungu`는 등본·초본을 고를 때만 필요합니다.
+주민등록표등본·초본은 `requestResidentRegistration()`·`requestResidentRegistrationCho()`로 발급하며 주민등록 주소지 `sido`·`sigungu`가 필수입니다. 발급 1건은 80P이고 결과의 `발급문서`는 PDF 원본의 base64, `문서해시`는 그 SHA-256입니다. 민원서류 통합 조회 `requestGov24Bundle()`은 `products`에 고른 상품만 한 번의 인증으로 조회하며, 과금은 고른 상품 단가의 합입니다. 선택 가능한 17개 키는 `GOV24_BUNDLE_PRODUCTS`로 제공하고 `sido`·`sigungu`는 등본·초본을 고를 때만 필요합니다.
+
+한 번의 간편인증으로 여러 조회를 처리하는 묶음 상품도 있습니다. 국민연금 통합 `requestNpsBundle()`은 가입내역·소득공제용 납부확인서·경력이력을 항상 함께 조회하고(`from`/`to` 또는 `years`), 개인 국세 통합 `requestHometaxBundle()`은 `HOMETAX_BUNDLE_PRODUCTS`(9개) 중 `products`로 고른 조회만 실행합니다. 사업자 국세 통합 `requestHometaxBizBundle()`은 `HOMETAX_BIZ_BUNDLE_PRODUCTS`(15개)를 고른 만큼 실행하며, 대표자 본인 확인을 위해 `bind_id` 또는 `agreed: true`가 필요합니다. 과금은 고른 상품 단가의 합(국민연금은 묶음 단가)이고 모두 실패하면 과금되지 않습니다.
+
+```js
+const nps = await client.requestNpsBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao', years: 5
+});
+const tax = await client.requestHometaxBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  products: ['personal_income', 'tax_return_history']
+});
+const biz = await client.requestHometaxBizBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  products: ['business_sales', 'etax_status'], business_no: '123-45-67890', agreed: true
+});
+```
 
 ```js
 const bundle = await client.requestGov24Bundle({

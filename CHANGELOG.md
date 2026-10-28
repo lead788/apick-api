@@ -1,3 +1,14 @@
+## 6.1.0 (2026-10-28)
+
+한 번의 간편인증으로 여러 조회를 처리하는 묶음 상품을 추가했습니다(서비스 목록 107개).
+- `requestNpsBundle` / `getNpsBundle` — 국민연금 3종(가입내역·소득공제용 납부확인서·경력이력)을 한 번에 조회합니다. `NPS_BUNDLE_PRODUCTS`.
+- `requestHometaxBundle` / `getHometaxBundle` — 개인 국세 9종 중 `products` 로 고른 조회만 실행합니다. `HOMETAX_BUNDLE_PRODUCTS`.
+- `requestHometaxBizBundle` / `getHometaxBizBundle` — 사업자 국세 15종을 고른 만큼 실행합니다. 대표자 본인 확인이 필요해 `bind_id` 또는 `agreed: true` 를 함께 보냅니다. `HOMETAX_BIZ_BUNDLE_PRODUCTS`.
+- `GOV24_BUNDLE_PRODUCTS` 를 13개에서 17개로 늘렸습니다(`military_service_cert`·`vehicle_register_doc`·`driver_career_cert`·`local_tax_clearance_cert`).
+- 고른 상품만 실행하고, 과금은 고른 상품 단가의 합(또는 묶음 단가)으로 정해집니다. 모두 실패하면 과금되지 않습니다.
+
+Bundles that run several lookups under one approval are now available (107 services). `requestNpsBundle`/`getNpsBundle` covers three pension lookups, `requestHometaxBundle`/`getHometaxBundle` runs the selected personal tax products, and `requestHometaxBizBundle`/`getHometaxBizBundle` runs the selected business tax products (requires `bind_id` or `agreed: true`). `GOV24_BUNDLE_PRODUCTS` now lists 17 keys. Billing is the sum of the selected products (or the fixed bundle price); an all-failure run is not charged.
+
 ## 6.0.1 (2026-10-26)
 
 - 부동산·법인 등기 PDF 발급 결과에 응답 헤더의 작업 ID를 `ApickBinaryResult.jobId`로 제공합니다. 재다운로드용 ID 저장 예제를 추가했습니다. 다른 바이너리 결과 형식은 그대로입니다.

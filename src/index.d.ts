@@ -654,7 +654,24 @@ export const AUTH_PROVIDERS: readonly [
 export const GOV24_BUNDLE_PRODUCTS: readonly [
 	'resident_registration', 'resident_registration_cho', 'driving_license', 'health_checkup',
 	'police_penalty', 'parking_fine_target', 'mortgage_loan', 'housing_refund_balance',
-	'housing_pension_balance', 'housing_loan_stage', 'mortgage_application', 'confirm_verify', 'power_bill'
+	'housing_pension_balance', 'housing_loan_stage', 'mortgage_application', 'confirm_verify', 'power_bill',
+	'military_service_cert', 'vehicle_register_doc', 'driver_career_cert', 'local_tax_clearance_cert'
+];
+/** 국민연금 통합 조회에 담긴 상품 키. 한 번의 인증으로 세 조회를 모두 받는다. */
+export const NPS_BUNDLE_PRODUCTS: readonly ['nps_join_history', 'nps_deduction_cert', 'nps_career_history'];
+/** 개인 국세 통합 조회에서 고를 수 있는 상품 키. */
+export const HOMETAX_BUNDLE_PRODUCTS: readonly [
+	'personal_income', 'cash_receipt_deduction', 'income_by_payer', 'income_data_check',
+	'tax_return_history', 'tax_payment_history',
+	'income_amount_cert', 'pension_credit_cert', 'fact_cert'
+];
+/** 사업자 국세 통합 조회에서 고를 수 있는 상품 키. */
+export const HOMETAX_BIZ_BUNDLE_PRODUCTS: readonly [
+	'business_sales', 'business_purchase',
+	'business_registration_cert', 'vat_tax_base_cert', 'financial_statement_cert',
+	'closure_cert', 'tax_clearance_cert',
+	'etax_sales_list', 'etax_purchase_list', 'etax_sales_summary', 'etax_purchase_summary',
+	'etax_stats', 'etax_client_list', 'etax_item_list', 'etax_status'
 ];
 export type AuthProvider = typeof AUTH_PROVIDERS[number];
 
@@ -697,6 +714,70 @@ export interface RequestGov24BundleInput extends DataRequestInput {
 	submitTarget?: string;
 	includeAddressHistory?: 'Y' | 'N';
 	includeHousehold?: 'Y' | 'N';
+}
+/** 국민연금 통합 조회 입력. 세 조회가 모두 실행되고 기간 입력을 함께 쓴다. */
+export interface RequestNpsBundleInput extends DataRequestInput {
+	from?: string;
+	to?: string;
+	years?: number;
+}
+/** 개인 국세 통합 조회 입력. `products` 로 조회할 상품 키를 고른다. */
+export interface RequestHometaxBundleInput extends DataRequestInput {
+	products: string[] | string;
+	incomeYears?: number;
+	years?: number;
+	year?: string;
+	use_purpose?: string;
+	submit_to?: string;
+	delivery?: string;
+	format?: 'pdf' | 'json' | 'both';
+	amount_open_yn?: 'Y' | 'N';
+	income_source_open_yn?: 'Y' | 'N';
+	withholding_all_print_yn?: 'Y' | 'N';
+	address_open_yn?: 'Y' | 'N';
+	resno_open_yn?: 'Y' | 'N';
+	quantity?: number;
+	email?: string;
+	fax_no?: string;
+	wallet_address?: string;
+	start_month?: string;
+	end_month?: string;
+	itrf_cd?: string;
+	issuance?: string;
+	engl_yn?: 'Y' | 'N';
+}
+/**
+ * 사업자 국세 통합 조회 입력. 사업자 조회라 대표자 본인 확인이 필요하다.
+ * `bind_id` 가 없으면 `agreed` 를 true 로 보내야 한다.
+ */
+export interface RequestHometaxBizBundleInput extends DataRequestInput {
+	products: string[] | string;
+	business_no?: string;
+	businessNo?: string;
+	businessYear?: string;
+	businessMonths?: number;
+	year?: string;
+	period?: string;
+	cert_type?: string;
+	engl_yn?: 'Y' | 'N';
+	use_purpose?: string;
+	submit_to?: string;
+	delivery?: string;
+	format?: 'pdf' | 'json' | 'both';
+	quantity?: number;
+	email?: string;
+	fax_no?: string;
+	wallet_address?: string;
+	start_month?: string;
+	end_month?: string;
+	itrf_cd?: string;
+	issuance?: string;
+	from?: string;
+	to?: string;
+	keyword?: string;
+	approval_nos?: string;
+	bind_id?: string;
+	agreed?: boolean;
 }
 
 /**
@@ -951,6 +1032,16 @@ export type Gov24BundleResultPayload = Record<string, unknown> & {
 	residentRegistration?: ResidentRegistrationInfo;
 	residentRegistrationCho?: ResidentRegistrationInfo;
 };
+/** 국민연금 통합 조회 결과. 세 조회가 섹션으로 함께 온다. */
+export type NpsBundleResultPayload = Record<string, unknown> & {
+	npsJoinHistory?: Record<string, unknown>;
+	npsDeductionCert?: Record<string, unknown>;
+	npsCareerHistory?: Record<string, unknown>;
+};
+/** 개인 국세 통합 조회 결과. 접수 때 고른 상품의 섹션만 온다. */
+export type HometaxBundleResultPayload = Record<string, unknown>;
+/** 사업자 국세 통합 조회 결과. 접수 때 고른 상품의 섹션만 온다. */
+export type HometaxBizBundleResultPayload = Record<string, unknown>;
 
 export interface YoutubeThumbnail { url: string; width: number; height: number; }
 export interface YoutubeChapter { title: string; start_time: number | null; end_time: number | null; }
@@ -1232,6 +1323,12 @@ export class ApickClient {
 	getResidentRegistrationCho(transactionId: string): Promise<ApickResult<DataRequestResult<ResidentRegistrationChoResultPayload>>>;
 	requestGov24Bundle(input: RequestGov24BundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getGov24Bundle(transactionId: string): Promise<ApickResult<DataRequestResult<Gov24BundleResultPayload>>>;
+	requestNpsBundle(input: RequestNpsBundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsBundle(transactionId: string): Promise<ApickResult<DataRequestResult<NpsBundleResultPayload>>>;
+	requestHometaxBundle(input: RequestHometaxBundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getHometaxBundle(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxBundleResultPayload>>>;
+	requestHometaxBizBundle(input: RequestHometaxBizBundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getHometaxBizBundle(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxBizBundleResultPayload>>>;
 	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
 
 	searchSkills(options?: SkillSearchOptions): Promise<ApickResult<SkillPage<SkillSummary>>>;

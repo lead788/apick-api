@@ -20,9 +20,28 @@ const AUTH_PROVIDER_SET = new Set(AUTH_PROVIDERS);
 const GOV24_BUNDLE_PRODUCTS = Object.freeze([
 	'resident_registration', 'resident_registration_cho', 'driving_license', 'health_checkup',
 	'police_penalty', 'parking_fine_target', 'mortgage_loan', 'housing_refund_balance',
-	'housing_pension_balance', 'housing_loan_stage', 'mortgage_application', 'confirm_verify', 'power_bill'
+	'housing_pension_balance', 'housing_loan_stage', 'mortgage_application', 'confirm_verify', 'power_bill',
+	'military_service_cert', 'vehicle_register_doc', 'driver_career_cert', 'local_tax_clearance_cert'
 ]);
 const GOV24_BUNDLE_PRODUCT_SET = new Set(GOV24_BUNDLE_PRODUCTS);
+// 국민연금 통합 조회에 담긴 상품 키. 한 번의 인증으로 세 조회를 모두 받는다.
+const NPS_BUNDLE_PRODUCTS = Object.freeze(['nps_join_history', 'nps_deduction_cert', 'nps_career_history']);
+// 개인 국세 통합 조회에서 고를 수 있는 상품 키. 사업자 조회는 hometaxBizBundle 로 나눈다.
+const HOMETAX_BUNDLE_PRODUCTS = Object.freeze([
+	'personal_income', 'cash_receipt_deduction', 'income_by_payer', 'income_data_check',
+	'tax_return_history', 'tax_payment_history',
+	'income_amount_cert', 'pension_credit_cert', 'fact_cert'
+]);
+const HOMETAX_BUNDLE_PRODUCT_SET = new Set(HOMETAX_BUNDLE_PRODUCTS);
+// 사업자 국세 통합 조회에서 고를 수 있는 상품 키. 대표자 바인딩 점검을 받는다.
+const HOMETAX_BIZ_BUNDLE_PRODUCTS = Object.freeze([
+	'business_sales', 'business_purchase',
+	'business_registration_cert', 'vat_tax_base_cert', 'financial_statement_cert',
+	'closure_cert', 'tax_clearance_cert',
+	'etax_sales_list', 'etax_purchase_list', 'etax_sales_summary', 'etax_purchase_summary',
+	'etax_stats', 'etax_client_list', 'etax_item_list', 'etax_status'
+]);
+const HOMETAX_BIZ_BUNDLE_PRODUCT_SET = new Set(HOMETAX_BIZ_BUNDLE_PRODUCTS);
 
 const SERVICE_DEFINITIONS = Object.freeze({
 	businessDetails: { endpoint: '/rest/biz_detail', timeoutMs: 50_000, output: 'json' },
@@ -129,7 +148,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestClosureCert: { endpoint: '/rest/req_closure_cert', timeoutMs: 60_000, output: 'json' },
 	requestResidentRegistration: { endpoint: '/rest/req_resident_registration', timeoutMs: 35_000, output: 'json' },
 	requestResidentRegistrationCho: { endpoint: '/rest/req_resident_registration_cho', timeoutMs: 35_000, output: 'json' },
-	requestGov24Bundle: { endpoint: '/rest/req_gov24_bundle', timeoutMs: 35_000, output: 'json' }
+	requestGov24Bundle: { endpoint: '/rest/req_gov24_bundle', timeoutMs: 35_000, output: 'json' },
+	requestNpsBundle: { endpoint: '/rest/req_nps_bundle', timeoutMs: 35_000, output: 'json' },
+	requestHometaxBundle: { endpoint: '/rest/req_hometax_bundle', timeoutMs: 60_000, output: 'json' },
+	requestHometaxBizBundle: { endpoint: '/rest/req_hometax_biz_bundle', timeoutMs: 60_000, output: 'json' }
 });
 
 const SERVICES = Object.freeze(Object.fromEntries(
@@ -438,17 +460,50 @@ function residentOptionsInput(config, payload) {
 }
 
 // 통합 조회는 고른 상품 키를 쉼표로 이어 보낸다. 서버는 배열과 쉼표 문자열을 모두 받는다.
-function gov24BundleProductsInput(value) {
+function bundleProductsInput(value, allowed) {
 	const list = Array.isArray(value) ? value : String(value === undefined || value === null ? '' : value).split(',');
 	const keys = list.map(function(item) { return String(item).trim(); }).filter(Boolean);
 	if (!keys.length) throw new TypeError('products must select at least one product key.');
 	keys.forEach(function(key) {
-		if (!GOV24_BUNDLE_PRODUCT_SET.has(key)) {
+		if (!allowed.has(key)) {
 			throw new RangeError(`products contains an unsupported key: ${key}.`);
 		}
 	});
 	return Array.from(new Set(keys)).join(',');
 }
+
+function gov24BundleProductsInput(value) {
+	return bundleProductsInput(value, GOV24_BUNDLE_PRODUCT_SET);
+}
+
+// 통합 조회의 선택 입력. 서버는 최상위 평면 필드명을 그대로 읽으므로 정해진 키만 그대로 넘긴다.
+function bundleOptionsInput(input, keys) {
+	const config = input || {};
+	const payload = dataRequestInput(config);
+	keys.forEach(function (key) {
+		const value = config[key];
+		if (value === undefined || value === null || value === '') return;
+		payload[key] = value;
+	});
+	return payload;
+}
+
+const NPS_BUNDLE_OPTIONS = Object.freeze(['from', 'to', 'years']);
+// 개인 국세 통합 조회. 소득·신고·납부는 연수 입력을, 증명은 발급 조건을 받는다.
+const HOMETAX_BUNDLE_OPTIONS = Object.freeze([
+	'incomeYears', 'years', 'year', 'use_purpose', 'submit_to', 'delivery', 'format',
+	'amount_open_yn', 'income_source_open_yn', 'withholding_all_print_yn',
+	'address_open_yn', 'resno_open_yn', 'quantity', 'email', 'fax_no', 'wallet_address',
+	'start_month', 'end_month', 'itrf_cd', 'issuance', 'engl_yn'
+]);
+// 사업자 국세 통합 조회. 사업자번호 표기가 상품마다 달라 둘 다 받는다.
+const HOMETAX_BIZ_BUNDLE_OPTIONS = Object.freeze([
+	'business_no', 'businessNo', 'businessYear', 'businessMonths', 'year', 'period',
+	'cert_type', 'engl_yn', 'use_purpose', 'submit_to', 'delivery', 'format',
+	'quantity', 'email', 'fax_no', 'wallet_address', 'start_month', 'end_month',
+	'itrf_cd', 'issuance', 'from', 'to', 'keyword', 'approval_nos',
+	'bind_id', 'agreed'
+]);
 
 const SKILL_CATEGORIES = Object.freeze(['data', 'ai', 'dev', 'document', 'marketing', 'finance', 'productivity', 'video', 'etc']);
 const SKILL_CATEGORY_SET = new Set(SKILL_CATEGORIES);
@@ -1697,6 +1752,47 @@ class ApickClient {
 		return this._call('requestGov24Bundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_gov24_bundle' });
 	}
 
+	// 국민연금 통합조회. 세 조회가 같은 인증 단위라 승인은 한 번이고, 단가는 묶음 하나로 정해진다.
+	requestNpsBundle(input) {
+		return this._call('requestNpsBundle', bundleOptionsInput(input, NPS_BUNDLE_OPTIONS));
+	}
+
+	getNpsBundle(transactionId) {
+		return this._call('requestNpsBundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_bundle' });
+	}
+
+	// 개인 국세 통합조회. 한 번의 인증으로 고른 조회만 실행하고, 단가는 고른 상품의 합으로 정해진다.
+	requestHometaxBundle(input) {
+		const config = input || {};
+		const payload = bundleOptionsInput(config, HOMETAX_BUNDLE_OPTIONS);
+		payload.products = bundleProductsInput(config.products, HOMETAX_BUNDLE_PRODUCT_SET);
+		return this._call('requestHometaxBundle', payload);
+	}
+
+	getHometaxBundle(transactionId) {
+		return this._call('requestHometaxBundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_hometax_bundle' });
+	}
+
+	// 사업자 국세 통합조회. 사업자 조회라 대표자 본인 확인(bind_id 또는 agreed)을 함께 받는다.
+	requestHometaxBizBundle(input) {
+		const config = input || {};
+		const payload = bundleOptionsInput(config, HOMETAX_BIZ_BUNDLE_OPTIONS);
+		payload.products = bundleProductsInput(config.products, HOMETAX_BIZ_BUNDLE_PRODUCT_SET);
+		if (config.business_no !== undefined && config.business_no !== null && config.business_no !== '') {
+			payload.business_no = normalizeBusinessNumber(config.business_no);
+		}
+		if (config.agreed === true) payload.agreed = 'true';
+		else if (config.agreed !== undefined && config.agreed !== false) throw new TypeError('agreed must be a boolean.');
+		if (!payload.bind_id && payload.agreed !== 'true') {
+			throw new TypeError('agreed must be true when bind_id is not provided.');
+		}
+		return this._call('requestHometaxBizBundle', payload);
+	}
+
+	getHometaxBizBundle(transactionId) {
+		return this._call('requestHometaxBizBundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_hometax_biz_bundle' });
+	}
+
 	// 설치형 에이전트의 JSON 요청·응답 공용 전송.
 	// 오류는 { error: { code, message, details } } 형식이며 code 를 serviceCode 로 돌려준다.
 	async _jsonApi(method, path, options) {
@@ -1799,6 +1895,9 @@ module.exports = {
 	TTS_VOICE_IDS,
 	AUTH_PROVIDERS,
 	GOV24_BUNDLE_PRODUCTS,
+	NPS_BUNDLE_PRODUCTS,
+	HOMETAX_BUNDLE_PRODUCTS,
+	HOMETAX_BIZ_BUNDLE_PRODUCTS,
 	SKILL_CATEGORIES,
 	SKILL_SORTS,
 	DEFAULT_BASE_URL

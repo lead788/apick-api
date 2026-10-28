@@ -302,7 +302,23 @@ Sources: [APICK development guide](https://apick.app/dev_guide/data_health_check
 
 `authProvider` is one of the 13 values in `AUTH_PROVIDERS` (kakao, naver, toss, pass, samsung, kb, shinhan, hana, woori, ibk, nh, kakaobank, banksalad). Acceptance is billed at a flat rate; the result is billed only on its first return and free to re-poll afterward. `requestEmployment` takes an optional `insuranceYears` (1-3), `requestPersonalIncome` takes `incomeYears` (1-5), and `requestNpsJoinHistory` takes optional `from`/`to` (`YYYY-MM`). `requestNpsDeductionCert` takes optional `years` (1-5) and `requestNpsCareerHistory` takes optional `from`/`to` (`YYYY-MM`). `requestCashReceiptDeduction` takes optional `incomeYears` (1-3) and `requestTaxReturnHistory` takes optional `years` (1-10). The remaining products are `requestDrivingLicense` and `requestHealthCheckup`.
 
-`requestResidentRegistration()` and `requestResidentRegistrationCho()` issue the resident registration certificate and require the resident address `sido` and `sigungu`. Each issue costs 80P, and the result carries the PDF base64 in `발급문서` and its SHA-256 in `문서해시`. `requestGov24Bundle()` collects only the products named in `products` with a single authentication, and the charge is the sum of the selected products' prices. `GOV24_BUNDLE_PRODUCTS` exports the 13 selectable keys, and `sido`/`sigungu` are required only when a resident registration product is selected.
+`requestResidentRegistration()` and `requestResidentRegistrationCho()` issue the resident registration certificate and require the resident address `sido` and `sigungu`. Each issue costs 80P, and the result carries the PDF base64 in `발급문서` and its SHA-256 in `문서해시`. `requestGov24Bundle()` collects only the products named in `products` with a single authentication, and the charge is the sum of the selected products' prices. `GOV24_BUNDLE_PRODUCTS` exports the 17 selectable keys, and `sido`/`sigungu` are required only when a resident registration product is selected.
+
+Bundles also cover several lookups under one approval. `requestNpsBundle()` always runs the three pension lookups (`from`/`to` or `years`), `requestHometaxBundle()` runs only the products named in `products` from `HOMETAX_BUNDLE_PRODUCTS` (9 keys), and `requestHometaxBizBundle()` runs the selected products from `HOMETAX_BIZ_BUNDLE_PRODUCTS` (15 keys) and requires `bind_id` or `agreed: true` for the representative identity check. Billing is the sum of the selected products' prices (a fixed price for the pension bundle), and nothing is charged when every lookup fails.
+
+```js
+const nps = await client.requestNpsBundle({
+  name: 'Hong Gildong', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao', years: 5
+});
+const tax = await client.requestHometaxBundle({
+  name: 'Hong Gildong', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  products: ['personal_income', 'tax_return_history']
+});
+const biz = await client.requestHometaxBizBundle({
+  name: 'Hong Gildong', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  products: ['business_sales', 'etax_status'], business_no: '123-45-67890', agreed: true
+});
+```
 
 ```js
 const bundle = await client.requestGov24Bundle({

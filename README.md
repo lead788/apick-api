@@ -146,6 +146,9 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestResidentRegistration(input)` / `getResidentRegistration(transactionId)` | 주민등록표등본 발급 / Resident registration certificate | JSON |
 | `requestResidentRegistrationCho(input)` / `getResidentRegistrationCho(transactionId)` | 주민등록표초본 발급 / Resident registration certificate (cho) | JSON |
 | `requestGov24Bundle(input)` / `getGov24Bundle(transactionId)` | 민원서류 통합 조회 / Selectable civil-document bundle | JSON |
+| `requestNpsBundle(input)` / `getNpsBundle(transactionId)` | 국민연금 통합 조회 / National pension bundle | JSON |
+| `requestHometaxBundle(input)` / `getHometaxBundle(transactionId)` | 개인 국세 통합 조회 / Personal tax bundle | JSON·PDF |
+| `requestHometaxBizBundle(input)` / `getHometaxBizBundle(transactionId)` | 사업자 국세 통합 조회 / Business tax bundle | JSON·PDF |
 | `requestIncomeAmountCert(input)` / `getIncomeAmountCert(transactionId)` | 소득금액증명 발급 / Income amount certificate | PDF·JSON |
 | `requestPensionCreditCert(input)` / `getPensionCreditCert(transactionId)` | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | PDF·JSON |
 | `requestFactCert(input)` / `getFactCert(transactionId)` | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | PDF·JSON |
@@ -436,7 +439,32 @@ const issued = await pollDataResult(id => apick.getGov24Bundle(id), bundle);
 const pdfBase64 = issued.data.result.residentRegistration['발급문서'];
 ```
 
-`GOV24_BUNDLE_PRODUCTS` lists the 13 selectable product keys. Selecting only `driving_license` (or any non-resident product) does not require `sido`/`sigungu`. / `GOV24_BUNDLE_PRODUCTS` lists the 13 selectable keys; the address is required only when a resident registration certificate is selected.
+`GOV24_BUNDLE_PRODUCTS` lists the 17 selectable product keys. Selecting only `driving_license` (or any non-resident product) does not require `sido`/`sigungu`. / `GOV24_BUNDLE_PRODUCTS` lists the 17 selectable keys; the address is required only when a resident registration certificate is selected.
+
+### 국세·연금 통합 조회 / Hometax and NPS bundles
+
+한 번의 간편인증으로 여러 조회를 처리하는 묶음 상품입니다. 고른 상품만 실행하고, 단가는 고른 상품의 합(또는 묶음 단가)으로 정해집니다. / Bundles that run several lookups under one approval. Only the selected products run; billing is the sum of the selected products (or the fixed bundle price).
+
+```js
+// 국민연금 3종: 세 조회가 항상 함께 실행됩니다.
+const nps = await apick.requestNpsBundle({ name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao', years: 5 });
+
+// 개인 국세: 소득·신고·납부·증명 중 고른 것만 실행합니다.
+const personal = await apick.requestHometaxBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  products: ['personal_income', 'tax_return_history']
+});
+
+// 사업자 국세: 대표자 본인 확인이 필요합니다(bind_id 또는 agreed: true).
+const business = await apick.requestHometaxBizBundle({
+  name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao',
+  products: ['business_sales', 'etax_status'], business_no: '123-45-67890', agreed: true
+});
+
+const income = await pollDataResult(id => apick.getHometaxBundle(id), personal);
+```
+
+`NPS_BUNDLE_PRODUCTS`(3) · `HOMETAX_BUNDLE_PRODUCTS`(9) · `HOMETAX_BIZ_BUNDLE_PRODUCTS`(15) 가 각 묶음에서 고를 수 있는 키입니다. `/ `NPS_BUNDLE_PRODUCTS`, `HOMETAX_BUNDLE_PRODUCTS` and `HOMETAX_BIZ_BUNDLE_PRODUCTS` list the selectable keys per bundle.
 
 근거: [APICK 개발가이드](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 상태 계약](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
@@ -460,6 +488,9 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 주민등록표등본 발급 / Resident registration certificate | `requestResidentRegistration` / `getResidentRegistration` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
 | 주민등록표초본 발급 / Resident registration certificate (cho) | `requestResidentRegistrationCho` / `getResidentRegistrationCho` | `sido`, `sigungu` (필수 / required), `purposeCd`, `submitTarget`, `includeAddressHistory`, `includeHousehold` |
 | 민원서류 통합 조회 / Selectable civil-document bundle | `requestGov24Bundle` / `getGov24Bundle` | `products` (필수 / required), 등본·초본 선택 시 `sido`·`sigungu` (필수 / required when either resident certificate is selected) |
+| 국민연금 통합 조회 / National pension bundle | `requestNpsBundle` / `getNpsBundle` | `from`·`to` 또는 `years` (선택 / optional) |
+| 개인 국세 통합 조회 / Personal tax bundle | `requestHometaxBundle` / `getHometaxBundle` | `products` (필수 / required) |
+| 사업자 국세 통합 조회 / Business tax bundle | `requestHometaxBizBundle` / `getHometaxBizBundle` | `products` (필수), `bind_id` 또는 `agreed: true` (필수 / required) |
 | 소득금액증명 발급 / Income amount certificate | `requestIncomeAmountCert` / `getIncomeAmountCert` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `engl_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
 | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | `requestPensionCreditCert` / `getPensionCreditCert` | `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `format`, `address_open_yn`, `resno_open_yn`, `quantity`, `email`, `fax_no`, `wallet_address` |
 | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | `requestFactCert` / `getFactCert` | `use_purpose`, `submit_to`, `delivery`, `itrf_cd` (필수 / required), `year`, `start_month`, `end_month`, `issuance`, `engl_yn`, `format` |

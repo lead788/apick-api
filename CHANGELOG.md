@@ -1,3 +1,13 @@
+## 6.2.0 (2026-11-02)
+
+기업·공시 분석 3종을 추가했습니다(서비스 목록 110개).
+- `dartDisclosure(options)` — 공시 유형 분포·기업별 밀도·위험 공시 타임라인을 분석합니다. `corpCode` 를 생략하면 기간 전체를 훑고, 넣으면 그 기업으로 좁힙니다. 호출당 50P.
+- `dartCompany(corpCode)` — 기업 개황에 최근 90일 공시 이벤트와 위험 신호를 붙여 정리합니다. 호출당 30P.
+- `dartFinancials(corpCode, bsnsYear, options)` — 이익률·부채비율·유동비율·ROE·ROA·전년 대비 성장률과 적자·과다부채 신호를 계산합니다. 호출당 50P.
+- 세 메서드 모두 원본 목록 대신 분석 결과를 돌려줍니다. 실패·0건 호출은 과금되지 않습니다.
+
+Adds three corporate-disclosure analytics methods (110 named services). All take an 8-digit company code (disclosure optional), return analytics rather than raw lists, and charge 50 / 30 / 50 points per successful call.
+
 ## 6.1.0 (2026-10-28)
 
 한 번의 간편인증으로 여러 조회를 처리하는 묶음 상품을 추가했습니다(서비스 목록 107개).

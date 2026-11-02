@@ -82,6 +82,9 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	courtAuction: { endpoint: '/rest/court_auction', timeoutMs: 45_000, output: 'json' },
 	bidNotice: { endpoint: '/rest/bid_notice', timeoutMs: 45_000, output: 'json' },
 	bidAward: { endpoint: '/rest/bid_award', timeoutMs: 45_000, output: 'json' },
+	dartDisclosure: { endpoint: '/rest/dart_disclosure', timeoutMs: 30_000, output: 'json' },
+	dartCompany: { endpoint: '/rest/dart_company', timeoutMs: 30_000, output: 'json' },
+	dartFinancials: { endpoint: '/rest/dart_financials', timeoutMs: 30_000, output: 'json' },
 	rtmsTrade: { endpoint: '/rest/rtms_trade', timeoutMs: 45_000, output: 'json' },
 	rtmsRent: { endpoint: '/rest/rtms_rent', timeoutMs: 45_000, output: 'json' },
 	registryDocVerify: { endpoint: '/rest/registry_doc_verify', timeoutMs: 30_000, output: 'json' },
@@ -1015,6 +1018,24 @@ class ApickClient {
 	// 낙찰 경쟁 분석. 입력은 bidNotice 와 같다.
 	bidAward(options) {
 		return this._call('bidAward', bidQueryInput(options));
+	}
+
+	// 공시 이벤트 분석. corpCode 를 생략하면 기간 전체를 훑고, 넣으면 그 기업으로 좁힌다.
+	dartDisclosure(options) {
+		return this._call('dartDisclosure', pickOptions('options', options, ['corpCode', 'startDate', 'endDate', 'pblntfTy', 'pageNo', 'numOfRows']));
+	}
+
+	// 기업 스냅샷. 고유번호 8자리 필수.
+	dartCompany(corpCode) {
+		return this._call('dartCompany', { corpCode: requiredString('corpCode', corpCode, 8) });
+	}
+
+	// 재무 건전성 분석. 고유번호 8자리와 사업연도(YYYY)가 필수, 보고서 코드·연결 구분은 선택이다.
+	dartFinancials(corpCode, bsnsYear, options) {
+		return this._call('dartFinancials', Object.assign(
+			{ corpCode: requiredString('corpCode', corpCode, 8), bsnsYear: requiredString('bsnsYear', bsnsYear, 4) },
+			pickOptions('options', options, ['reprtCode', 'fsDiv'])
+		));
 	}
 
 	// 매매 실거래 분석. 지역코드 5자리와 계약년월 6자리가 필요하다.

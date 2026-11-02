@@ -430,6 +430,26 @@ export interface RtmsRent {
 	readonly insights: readonly string[];
 }
 
+export interface DartDisclosureOptions {
+	/** 기업 고유번호 8자리. 생략하면 기간 전체 공시를 조회한다. */
+	readonly corpCode?: string;
+	/** 조회 시작일 YYYYMMDD. */
+	readonly startDate?: string;
+	/** 조회 종료일 YYYYMMDD. */
+	readonly endDate?: string;
+	/** 공시유형 A~J. */
+	readonly pblntfTy?: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J';
+	readonly pageNo?: number;
+	readonly numOfRows?: number;
+}
+
+export interface DartFinancialsOptions {
+	/** 보고서 코드 (11011 사업, 11012 반기, 11013 1분기, 11014 3분기). */
+	readonly reprtCode?: '11011' | '11012' | '11013' | '11014';
+	/** 연결(CFS)/개별(OFS) 구분. 기본 CFS. */
+	readonly fsDiv?: 'CFS' | 'OFS';
+}
+
 export interface CorpFinanceOptions {
 	/** 사업연도 YYYY. 생략하면 조회 가능한 가장 최근 연도. */
 	readonly bizYear?: string;
@@ -1226,6 +1246,9 @@ export class ApickClient {
 	rtmsTrade(lawdCd: string, dealYmd: string, options?: RtmsQueryOptions): Promise<ApickResult<RtmsTrade>>;
 	rtmsRent(lawdCd: string, dealYmd: string, options?: RtmsQueryOptions): Promise<ApickResult<RtmsRent>>;
 	corpFinance(crno: string, options?: CorpFinanceOptions): Promise<ApickResult<CorpFinance>>;
+	dartDisclosure(options?: DartDisclosureOptions): Promise<ApickResult>;
+	dartCompany(corpCode: string): Promise<ApickResult>;
+	dartFinancials(corpCode: string, bsnsYear: string, options?: DartFinancialsOptions): Promise<ApickResult>;
 	buildingRegister(options: BuildingRegisterOptions): Promise<ApickResult>;
 	appReviews(appId: string | number, options?: { readonly country?: string; readonly page?: number }): Promise<ApickResult>;
 	vehicleEmission(certNo: string): Promise<ApickResult>;

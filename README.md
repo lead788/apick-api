@@ -99,6 +99,9 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `courtAuction(caseNo, court)` | 법원 경매사건 조회 / Court auction case | JSON |
 | `bidNotice(options)` | 입찰 공고 분석 / Bid notice analytics | JSON |
 | `bidAward(options)` | 낙찰 경쟁 분석 / Bid award analytics | JSON |
+| `dartDisclosure(options)` | 공시 이벤트 분석 / Disclosure event analytics | JSON |
+| `dartCompany(corpCode)` | 기업 스냅샷 / Company snapshot | JSON |
+| `dartFinancials(corpCode, bsnsYear, options)` | 재무 건전성 분석 / Financial health analytics | JSON |
 | `rtmsTrade(lawdCd, dealYmd, options)` | 매매 시장 분석 / Sale market analytics | JSON |
 | `rtmsRent(lawdCd, dealYmd, options)` | 전월세 시장 분석 / Rent market analytics | JSON |
 | `registryDocVerify(issueNo, options)` | 등기·증명서 발급확인 / Registry certificate verification | JSON |
@@ -513,6 +516,10 @@ Court auction lookup is synchronous. A case number belongs to one court, so pass
 
 입찰·부동산 4종은 원본 목록이 아니라 **분석 결과**를 돌려줍니다. `bidNotice(options)`·`bidAward(options)` 는 업무구분·기간·공고번호를 받고 `summary`·`distribution`·`insights` 를, 낙찰은 여기에 `competitors`·`low_rate` 를 더합니다. `rtmsTrade(lawdCd, dealYmd, options)` 는 ㎡당 중위가와 면적·가격·층 분포, 단지별 시세, 직거래·해제 비중, 시세 이탈 거래를, `rtmsRent` 는 전세 비중, 보증금·월세 분포, 보증금 대비 연월세 비율, 갱신 비중과 같은 단지 매매 대비 전세가율을 계산합니다. `items`·`totalCount` 같은 원본 목록은 제공하지 않습니다.
 The four bid and real-estate methods return **analytics**, not raw lists. `bidNotice(options)` and `bidAward(options)` take a business type, period or notice number and return `summary`, `distribution` and `insights`; awards add `competitors` and `low_rate`. `rtmsTrade(lawdCd, dealYmd, options)` returns median price per square metre, area/price/floor bands, per-complex medians, direct-deal and cancellation shares and price outliers, while `rtmsRent` computes jeonse share, deposit and monthly-rent bands, annual rent to deposit ratio, renewal share and the jeonse ratio against same-complex sale prices. Raw lists such as `items` and `totalCount` are not returned.
+
+기업·공시 3종도 원본 목록 대신 분석 결과를 돌려줍니다. `dartDisclosure(options)` 는 공시 유형 분포·기업별 밀도·위험 공시 타임라인(`summary`·`distribution`·`timeline`·`high_risk`·`insights`), `dartCompany(corpCode)` 는 개황과 최근 90일 공시 이벤트·위험 신호, `dartFinancials(corpCode, bsnsYear, options)` 는 이익률·부채비율·유동비율·ROE·ROA·성장률과 적자·과다부채 신호를 계산합니다.
+
+The three corporate-disclosure methods also return analytics instead of raw lists. `dartDisclosure(options)` returns the disclosure event mix, per-company density and a high-risk timeline; `dartCompany(corpCode)` returns the profile with the last 90 days of disclosure events and risk flags; `dartFinancials(corpCode, bsnsYear, options)` computes margins, debt and current ratios, ROE/ROA, year-over-year growth and distress flags.
 
 증빙서류 묶음 2종은 휴대폰 승인 한 번으로 담긴 증명을 함께 발급합니다. 소득 묶음은 소득금액증명·연금보험료등 소득세액 공제확인서(결과 `result.incomeAmountCert`·`result.pensionCreditCert`), 사업자 묶음은 사업자등록증명·부가가치세 과세표준증명·표준재무제표증명(결과 `result.businessRegistrationCert`·`result.vatTaxBaseCert`·`result.financialStatementCert`)입니다. 접수 20P, 최초 결과는 84P·126P로 개별 발급 합계보다 30% 쌉니다. 사업자 묶음은 대표자 본인 확인을 받으므로 `agreed: true` 또는 이전 응답의 `bind_id`(같은 계정·같은 사업자등록번호, 90일)를 보내야 하며, 빠지면 SDK가 호출 전에 `TypeError` 를 던집니다. 일부 증명만 발급되면 `status` 가 `PARTIAL_SUCCESS` 이고 결과 단가는 그대로 청구됩니다.
 The two certificate bundles issue every included certificate after a single phone approval. Acceptance is 20P and the first result is 84P (income) or 126P (business), 30% below issuing each certificate separately. The business bundle requires representative consent: send `agreed: true` or a `bind_id` from a previous response (same account and business number, valid for 90 days); the SDK throws a `TypeError` before calling the server when both are missing. If only some certificates are issued, `status` is `PARTIAL_SUCCESS` and the bundle result price still applies.

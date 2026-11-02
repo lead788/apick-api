@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const DEFAULT_BASE_URL = 'https://apick.app';
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -126,6 +126,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	createTtsJob: { endpoint: '/rest/tts/jobs', timeoutMs: 35_000, output: 'json' },
 	createVideoJob: { endpoint: '/rest/seedance/jobs', timeoutMs: 60_000, output: 'json' },
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
+	formDocument: { endpoint: '/rest/form_document', timeoutMs: 40_000, output: 'binary', json: true, filename: 'document.pdf' },
 	jsonToExcel: { endpoint: '/rest/json_to_excel', timeoutMs: 45_000, output: 'binary', filename: 'data.xlsx' },
 	summarize: { endpoint: '/rest/llm/text_summary', timeoutMs: 75_000, output: 'json' },
 	polish: { endpoint: '/rest/llm/text_polish', timeoutMs: 105_000, output: 'json' },
@@ -1444,6 +1445,20 @@ class ApickClient {
 		});
 	}
 
+	formDocument(form, options) {
+		const config = options || {};
+		const payload = { form: requiredString('form', form) };
+		if (config.text !== undefined) payload.text = requiredString('text', config.text, 5000);
+		if (config.data !== undefined) {
+			if (!config.data || typeof config.data !== 'object' || Array.isArray(config.data)) {
+				throw new TypeError('data must be a plain object.');
+			}
+			payload.data = config.data;
+		}
+		if (config.format !== undefined) payload.format = requiredString('format', config.format);
+		return this._call('formDocument', payload);
+	}
+
 	jsonToExcel(data, options) {
 		if (!Array.isArray(data)) throw new TypeError('data must be an array.');
 		const config = options || {};
@@ -1923,3 +1938,4 @@ module.exports = {
 	SKILL_SORTS,
 	DEFAULT_BASE_URL
 };
+

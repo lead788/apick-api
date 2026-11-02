@@ -1,4 +1,4 @@
-export interface ApickClientOptions {
+﻿export interface ApickClientOptions {
 	apiKey: string;
 	baseUrl?: string;
 	timeoutMs?: number;
@@ -1300,6 +1300,8 @@ export class ApickClient {
 	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
+	/** 서식 자동작성 — 계약서·증명서·신고서 50종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx' }): Promise<ApickBinaryResult>;
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;
 	summarize(text: string): Promise<ApickResult>;
 	polish(text: string): Promise<ApickResult>;
@@ -1543,3 +1545,5 @@ export interface VideoJobData {
 export interface SubagentTask { kind:'inventory'|'extract'|'summarize'|'compare';goal:string;file_ids:string[];focus?:string[];acceptance?:string[];retention?:'seven_days'|'none'; }
 export interface SubagentFile { file_id:string;path:string;sha256:string;bytes:number;state:string;expires_at:string;part_bytes?:number; }
 export interface SubagentJob { job_id:string;kind:SubagentTask['kind'];state:string;billing_state:string;cache_hit:boolean;reserved_points:number;charged_points:number;accrued_points:string;result_hash?:string;result?:Record<string,unknown>; }
+
+

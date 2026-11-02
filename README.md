@@ -128,6 +128,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `downloadTtsCandidate(jobId, candidateId)` | 폐기됨 / Retired | HTTP 409 |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
+| `formDocument(form, options)` | 서식 자동작성(계약서·증명서·신고서 50종, PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX) / Korean form generation | Binary |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |
 | `polish(text)` | 텍스트 다듬기 / Text polishing | JSON |
 | `generateImages(prompt, options)` | 이미지 생성 / Image generation | JSON |

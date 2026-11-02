@@ -1,3 +1,10 @@
+﻿## 6.3.0 (2026-11-02)
+
+서식 자동작성 1종을 추가했습니다(서비스 목록 111개).
+- `formDocument(form, options)` — 계약서·증명서·신고서 50종을 자유 문장(`text`) 또는 정형 필드(`data`)로 받아 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만듭니다. 없는 항목은 오류 없이 빈칸으로 남고, 문서 포맷은 호출당 100P·값 포맷은 30P 입니다.
+- 서식 키와 필드 정의는 무료 REST(`/rest/form_list`·`/rest/form_fields`)에서 확인합니다.
+
+Adds Korean form generation (111 named services). Accepts free-form text and/or structured fields, leaves unspecified fields blank, and returns PDF, DOCX, HWPX, RTF, HTML, Markdown, TXT, JSON, or XLSX.
 ## 6.2.0 (2026-11-02)
 
 기업·공시 분석 3종을 추가했습니다(서비스 목록 110개).
@@ -369,3 +376,4 @@ Adds the Subagent integration and usage-based installed-agent contract. Existing
 - Added 20 focused APICK service methods.
 - Added JSON, multipart image upload, and binary file response support.
 - Added ESM, CommonJS, and TypeScript declarations.
+

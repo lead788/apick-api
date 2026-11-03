@@ -400,3 +400,13 @@ TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOp
 ## 리퀘오 이전 / Move to REQEO
 
 스킬 판매·실행은 [리퀘오 REQEO](https://reqeo.com/dev_guide/skills)로 이전했습니다. 계정·포인트·인증키는 별개입니다. 이 SDK의 기존 스킬 메서드는 요청을 보내지 않고 `SKILLS_MOVED`(410)를 반환합니다. 에이픽 인증키를 리퀘오에 보내지 마세요. 일반 API·TTS·설치형 에이전트는 계속 지원합니다.
+
+## 문서 작성과 DOCX
+
+문서 만들기·목록·열기·수정·삭제·견적은 무료입니다. 공개 API의 에이픽에이전트 작성은 성공한 요청당 20P이며, 웹 무료 체험과 별도입니다. DOCX는 최초 100P, 같은 문서의 구매한 내용은 보관기간 내 재다운로드가 무료입니다. 출력 내용이 달라지면 다음 다운로드에 100P가 차감됩니다. 최초 저장 또는 마지막 실제 수정·성공한 다운로드부터 14일간 보관하며, 조회와 동일 내용 저장은 기한을 연장하지 않습니다.
+
+메서드: `documentCreate`, `documentList`, `documentGet`, `documentUpdate`, `documentDelete`, `documentAiWrite`, `documentQuote`, `documentDownload`. 모든 메서드는 옵션 객체를 받으며 `documentList()`는 인자를 생략할 수 있습니다. [실행 예제](../examples/documents.mjs)를 참고하세요.
+
+만들기·수정·AI·다운로드에는 `request_id`를 전달하고 같은 요청을 재시도할 때 같은 값을 사용합니다. 수정에는 읽은 `version`, 다운로드에는 견적의 `version`과 `content_hash`가 필요합니다. 충돌 응답을 받으면 문서를 다시 읽거나 사본으로 저장하세요. AI 결과는 제안이며 자동 저장되지 않습니다.
+
+`content`는 `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'본문'}]}]}` 구조입니다. 표·목록·이미지·명시적 페이지 나누기도 지원합니다. 자세한 제한과 요청 필드는 [문서 개발가이드](https://apick.app/dev_guide/document_create)를 확인하세요.

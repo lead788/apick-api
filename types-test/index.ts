@@ -195,3 +195,12 @@ const premiumImage = client.generateImages("제품 사진", { quality: "premium"
 void premiumImage;
 // @ts-expect-error 공개 품질은 basic·advanced·premium 뿐이다
 client.generateImages("제품 사진", { quality: "high" });
+
+const documentDraft = client.documentCreate({ request_id: 'request-id-123456', title: '문서', content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '본문' }] }] } });
+const documentList = client.documentList();
+const documentResult = client.documentGet({ document_id: 'document-id-12345' });
+const documentUpdate = client.documentUpdate({ document_id: 'document-id-12345', version: 1, title: '수정', request_id: 'request-id-123456' });
+const documentProposal = client.documentAiWrite({ action: 'draft', text: '주간 보고', request_id: 'request-id-123456' });
+const documentQuote = client.documentQuote({ document_id: 'document-id-12345', version: 1 });
+const documentFile: Promise<ApickBinaryResult> = client.documentDownload({ document_id: 'document-id-12345', version: 1, content_hash: 'a'.repeat(64), request_id: 'request-id-123456' });
+const documentRemoved = client.documentDelete({ document_id: 'document-id-12345' });

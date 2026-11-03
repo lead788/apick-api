@@ -126,6 +126,14 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	createTtsJob: { endpoint: '/rest/tts/jobs', timeoutMs: 35_000, output: 'json' },
 	createVideoJob: { endpoint: '/rest/seedance/jobs', timeoutMs: 60_000, output: 'json' },
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
+	documentCreate: { endpoint: '/rest/document_create', timeoutMs: 30000, output: 'json', json: true },
+	documentList: { endpoint: '/rest/document_list', timeoutMs: 30000, output: 'json', json: true },
+	documentGet: { endpoint: '/rest/document_get', timeoutMs: 30000, output: 'json', json: true },
+	documentUpdate: { endpoint: '/rest/document_update', timeoutMs: 30000, output: 'json', json: true },
+	documentDelete: { endpoint: '/rest/document_delete', timeoutMs: 30000, output: 'json', json: true },
+	documentAiWrite: { endpoint: '/rest/document_ai_write', timeoutMs: 65000, output: 'json', json: true },
+	documentQuote: { endpoint: '/rest/document_quote', timeoutMs: 30000, output: 'json', json: true },
+	documentDownload: { endpoint: '/rest/document_download', timeoutMs: 30000, output: 'binary', json: true, filename: 'document.docx' },
 	formDocument: { endpoint: '/rest/form_document', timeoutMs: 40_000, output: 'binary', json: true, filename: 'document.pdf' },
 	formBundle: { endpoint: '/rest/form_document_batch', timeoutMs: 120_000, output: 'binary', filename: 'forms_bundle.zip' },
 	formList: { endpoint: '/rest/form_list', timeoutMs: 20_000, output: 'json' },
@@ -1532,6 +1540,38 @@ class ApickClient {
 			html: requiredString('html', html),
 			pagination: config.pagination ? 1 : 0
 		});
+	}
+
+	documentCreate(options) {
+		return this._call('documentCreate', options);
+	}
+
+	documentList(options = {}) {
+		return this._call('documentList', options);
+	}
+
+	documentGet(options) {
+		return this._call('documentGet', options);
+	}
+
+	documentUpdate(options) {
+		return this._call('documentUpdate', options);
+	}
+
+	documentDelete(options) {
+		return this._call('documentDelete', options);
+	}
+
+	documentAiWrite(options) {
+		return this._call('documentAiWrite', options);
+	}
+
+	documentQuote(options) {
+		return this._call('documentQuote', options);
+	}
+
+	documentDownload(options) {
+		return this._call('documentDownload', options);
 	}
 
 	formDocument(form, options) {

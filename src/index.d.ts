@@ -1,3 +1,19 @@
+export interface DocumentNode {
+ type: 'doc' | 'paragraph' | 'heading' | 'text' | 'hardBreak' | 'bulletList' | 'orderedList' | 'listItem' | 'table' | 'tableRow' | 'tableCell' | 'tableHeader' | 'image' | 'pageBreak' | 'docField';
+ text?: string; attrs?: Record<string, unknown>; content?: DocumentNode[];
+ marks?: Array<{ type: 'bold' | 'italic' | 'underline' | 'strike' | 'textStyle'; attrs?: Record<string, unknown> }>;
+}
+export interface DocumentBody { schema_version?: 1; title?: string; form?: string; content?: DocumentNode; }
+export interface SavedDocument extends DocumentBody { document_id: string; version: number; content_hash: string; updated_at: string; expires_at: string; download_price: number; }
+export interface DocumentReference { document_id: string; }
+export interface DocumentVersion extends DocumentReference { version: number; }
+export interface DocumentCreateInput extends DocumentBody { request_id: string; }
+export interface DocumentUpdateInput extends DocumentBody, DocumentVersion { request_id: string; }
+export interface DocumentQuote extends DocumentVersion { content_hash: string; price: number; redownload: boolean; expires_at: string; }
+export interface DocumentDownloadInput extends DocumentVersion { content_hash: string; request_id: string; }
+export interface DocumentAiInput { action?: 'draft' | 'fill' | 'polish' | 'summarize' | 'expand'; text: string; document?: DocumentBody; selection?: string; request_id: string; }
+export type DocumentAiResult = { kind: 'document' | 'selection'; title: string; content: DocumentNode; notes: string } | { kind: 'fields'; values: Record<string, string>; notes: string };
+
 ﻿export interface ApickClientOptions {
 	apiKey: string;
 	baseUrl?: string;
@@ -1332,6 +1348,14 @@ export class ApickClient {
 	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
 	/** 서식 자동작성 — 계약서·증명서·신고서 130종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	documentCreate(options: DocumentCreateInput): Promise<ApickResult<SavedDocument>>;
+	documentList(options?: Record<string, never>): Promise<ApickResult<{ documents: Array<Pick<SavedDocument, 'document_id' | 'title' | 'form' | 'version' | 'updated_at' | 'expires_at'>> }>>;
+	documentGet(options: DocumentReference): Promise<ApickResult<SavedDocument>>;
+	documentUpdate(options: DocumentUpdateInput): Promise<ApickResult<SavedDocument>>;
+	documentDelete(options: DocumentReference): Promise<ApickResult<{ deleted: boolean }>>;
+	documentAiWrite(options: DocumentAiInput): Promise<ApickResult<DocumentAiResult>>;
+	documentQuote(options: DocumentVersion): Promise<ApickResult<DocumentQuote>>;
+	documentDownload(options: DocumentDownloadInput): Promise<ApickBinaryResult>;
 	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }): Promise<ApickBinaryResult>;
 	/** 서식 묶음 — 최대 10건을 한 번에 만들어 ZIP 하나로 받는다(성공한 건만 합계 과금). */
 	formBundle(forms: Array<{ form: string; text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }>): Promise<ApickBinaryResult>;

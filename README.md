@@ -128,11 +128,12 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `downloadTtsCandidate(jobId, candidateId)` | 폐기됨 / Retired | HTTP 409 |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
-| `formDocument(form, options)` | 서식 자동작성(계약서·증명서·신고서 100종, 서명·도장 이미지, PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX) / Korean form generation | Binary |
+| `formDocument(form, options)` | 서식 자동작성(계약서·증명서·신고서 130종, 서명·도장 이미지, PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX) / Korean form generation | Binary |
 | `formBundle(forms)` | 서식 묶음 ZIP(최대 10건, 성공한 건만 과금) / Multi-form ZIP bundle | Binary |
 | `formList(options)` | 서식 목록(무료) / Form catalog (free) | JSON |
 | `formFields(form)` | 서식 필드 정의(무료) / Form field guide (free) | JSON |
 | `formPreview(form, options)` | 서식 미리보기(무료) / Form preview (free) | JSON |
+| `formAiFill(form, text, options)` | 서식 AI 채우기(상황 설명 → 항목 값, 글에 없는 사실은 빈칸, 20P) / AI form filling | JSON |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |
 | `polish(text)` | 텍스트 다듬기 / Text polishing | JSON |
 | `generateImages(prompt, options)` | 이미지 생성 / Image generation | JSON |

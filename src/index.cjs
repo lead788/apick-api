@@ -131,6 +131,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	formList: { endpoint: '/rest/form_list', timeoutMs: 20_000, output: 'json' },
 	formFields: { endpoint: '/rest/form_fields', timeoutMs: 20_000, output: 'json' },
 	formPreview: { endpoint: '/rest/form_preview', timeoutMs: 20_000, output: 'json' },
+	formAiFill: { endpoint: '/rest/form_ai_fill', timeoutMs: 45_000, output: 'json', json: true },
 	jsonToExcel: { endpoint: '/rest/json_to_excel', timeoutMs: 45_000, output: 'binary', filename: 'data.xlsx' },
 	summarize: { endpoint: '/rest/llm/text_summary', timeoutMs: 75_000, output: 'json' },
 	polish: { endpoint: '/rest/llm/text_polish', timeoutMs: 105_000, output: 'json' },
@@ -1572,6 +1573,19 @@ class ApickClient {
 			payload.data = config.data;
 		}
 		return this._call('formPreview', payload);
+	}
+
+	/** AI 채우기 — 상황 설명에서 서식 항목 값만 골라 돌려준다(문서는 만들지 않는다). 받은 values 를 formDocument 의 data 로 넘긴다. */
+	formAiFill(form, text, options) {
+		const config = options || {};
+		const payload = { form: requiredString('form', form), text: requiredString('text', text, 3000) };
+		if (config.data !== undefined) {
+			if (!config.data || typeof config.data !== 'object' || Array.isArray(config.data)) {
+				throw new TypeError('data must be a plain object.');
+			}
+			payload.data = config.data;
+		}
+		return this._call('formAiFill', payload);
 	}
 
 	jsonToExcel(data, options) {

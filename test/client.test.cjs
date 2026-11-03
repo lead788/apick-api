@@ -37,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 115 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 115);
+test('exports a focused catalog of 116 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 116);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -1086,5 +1086,20 @@ test('form helpers reject non-data-URL images and oversized bundles before any r
 	assert.throws(() => client.formDocument('biz_estimate', { signature_image: 'https://example.com/s.png' }), /PNG or JPEG data URL/);
 	assert.throws(() => client.formBundle([]), /non-empty array/);
 	assert.throws(() => client.formBundle(new Array(11).fill({ form: 'biz_estimate' })), /must not exceed 10/);
+	assert.throws(() => client.formAiFill('hr_written_explanation', ''), /text/);
+	assert.throws(() => client.formAiFill('hr_written_explanation', 'x'.repeat(3001)), /text/);
+	assert.throws(() => client.formAiFill('hr_written_explanation', '경위', { data: [] }), /plain object/);
 	assert.equal(fetched, 0);
+});
+
+test('formAiFill sends form, text and fixed values as JSON and returns the values', async () => {
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
+		requests.push({ url: url.replace('https://api.example.test', ''), body: JSON.parse(options.body) });
+		return jsonResponse({ data: { form: 'hr_written_explanation', values: { emp_name: '김철수', company_name: '(주)에이픽' }, ai_filled: ['emp_name'], missing: [], notes: '' }, api: { success: true, cost: 20 } });
+	} });
+	const result = await client.formAiFill('hr_written_explanation', '김철수 대리가 자료를 잘못 보냈습니다.', { data: { company_name: '(주)에이픽' } });
+	assert.deepEqual(requests, [{ url: '/rest/form_ai_fill', body: { form: 'hr_written_explanation', text: '김철수 대리가 자료를 잘못 보냈습니다.', data: { company_name: '(주)에이픽' } } }]);
+	assert.equal(result.data.values.emp_name, '김철수');
+	assert.equal(result.meta.cost, 20);
 });

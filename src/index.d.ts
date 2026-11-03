@@ -1331,7 +1331,7 @@ export class ApickClient {
 	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
-	/** 서식 자동작성 — 계약서·증명서·신고서 100종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	/** 서식 자동작성 — 계약서·증명서·신고서 130종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
 	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }): Promise<ApickBinaryResult>;
 	/** 서식 묶음 — 최대 10건을 한 번에 만들어 ZIP 하나로 받는다(성공한 건만 합계 과금). */
 	formBundle(forms: Array<{ form: string; text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }>): Promise<ApickBinaryResult>;
@@ -1341,6 +1341,8 @@ export class ApickClient {
 	formFields(form: string): Promise<ApickResult>;
 	/** 무료 — 문서를 만들지 않고 인식 결과와 비어 있는 필수 항목만 돌려준다. */
 	formPreview(form: string, options?: { text?: string; data?: Record<string, unknown> }): Promise<ApickResult>;
+	/** AI 채우기 — 상황 설명(최대 3,000자)에서 서식 항목 값만 골라 돌려준다. data 로 준 값은 바꾸지 않고, 글에 없는 사실은 빈칸으로 둔다. */
+	formAiFill(form: string, text: string, options?: { data?: Record<string, unknown> }): Promise<ApickResult<{ form: string; values: Record<string, string>; ai_filled: string[]; notes: string; missing: Array<{ key: string; label: string; type: string }>; filled: number; total: number }>>;
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;
 	summarize(text: string): Promise<ApickResult>;
 	polish(text: string): Promise<ApickResult>;

@@ -1,4 +1,13 @@
-﻿## 6.5.0 (2026-11-03)
+﻿## 6.6.0 (2026-11-03)
+
+서식 자동작성을 130종으로 넓히고 AI 채우기를 더했습니다(서비스 목록 116개).
+- `formAiFill(form, text, options)` — 상황을 문장으로 적으면(최대 3,000자) 서식 항목에 맞는 값만 골라 돌려줍니다. 경위·사유 같은 서술 항목은 적은 사실만으로 다듬고, 글에 없는 이름·번호·금액·날짜는 만들지 않고 빈칸으로 둡니다. `options.data` 로 준 값은 바꾸지 않습니다. 받은 `values` 를 `formDocument` 의 `data` 로 넘기면 됩니다. 요청당 20P, 처리하지 못하면 차감하지 않습니다.
+- `formDocument`·`formBundle` 이 지원하는 서식이 130종이 됐습니다(시말서·경위서·품의서·지출결의서·고소장·탄원서 등 30종 추가). 서식 키는 무료 `formList` 로 확인합니다.
+- REST 에는 서식별 경로 `POST /rest/form/{form}` 도 있습니다. 입력·응답·요금은 `/rest/form_document` 와 같습니다.
+
+Adds `formAiFill` (AI form filling from a situation description; unknown facts stay blank; 20P) and expands form generation to 130 forms (116 named services).
+
+## 6.5.0 (2026-11-03)
 
 국세청 상품을 공동인증서로 인증할 수 있습니다.
 - 국세청 상품(`requestPersonalIncome`·`requestCashReceiptDeduction`·`requestTaxReturnHistory`·세무 민원증명·증빙서류 묶음·국세 통합 조회)이 `certificate: { certFile, keyFile, password, businessType? }`를 받습니다. 인증서를 미리 등록하지 않아도 되고 휴대폰 승인 없이 접수 직후 결과를 조회합니다. 인증서와 비밀번호는 이번 인증에만 쓰이고 보관되지 않습니다.

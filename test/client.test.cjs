@@ -978,7 +978,7 @@ test('vehicle, finance and building lookups send the documented REST fields', as
 	await client.vehicleTaxCalc(1998, { carAgeYears: 4 });
 	await client.vehicleEmission('KMY-SY-13-24');
 	await client.corpFinance('110111-1234567', { bizYear: '2024', type: 'summary' });
-	await client.buildingRegister({ sigunguCd: '12480', bjdongCd: '10300', bun: '12', type: 'title' });
+	await client.buildingRegister({ sigunguCd: '11680', bjdongCd: '10300', bun: '12', type: 'title' });
 	await client.appReviews(1234567890, { page: 2 });
 	assert.deepEqual(requests.map(r => r.url.replace('https://api.example.test', '')), [
 		'/rest/vehicle_recall', '/rest/vehicle_recall', '/rest/hipass_unpaid', '/rest/vehicle_tax_calc',
@@ -990,7 +990,7 @@ test('vehicle, finance and building lookups send the documented REST fields', as
 	assert.deepEqual(requests[3].body, { cc: '1998', car_age_years: '4' });
 	assert.deepEqual(requests[4].body, { cert_no: 'KMY-SY-13-24' });
 	assert.deepEqual(requests[5].body, { crno: '110111-1234567', bizYear: '2024', type: 'summary' });
-	assert.deepEqual(requests[6].body, { sigunguCd: '12480', bjdongCd: '10300', bun: '12', type: 'title' });
+	assert.deepEqual(requests[6].body, { sigunguCd: '11680', bjdongCd: '10300', bun: '12', type: 'title' });
 	assert.deepEqual(requests[7].body, { appId: '1234567890', page: '2' });
 	assert.throws(() => client.vehicleRecall({}), /exactly one/);
 	assert.throws(() => client.vehicleRecall({ carNo: '12가3456', vin: 'KMHXX00XXXX000000' }), /exactly one/);
@@ -1018,7 +1018,7 @@ test('geo methods send JSON bodies so lists and GeoJSON keep their shape', async
 	await client.geoGeojsonAnalyze(polygon, { point: '127.025,37.505' });
 	await client.geoAddressQuality(['서울 강남구 역삼동 808']);
 	await client.geoAddressAutocomplete('테헤란로', { size: 3 });
-	await client.geoDistrictBoundary(12480, { includeGeometry: false });
+	await client.geoDistrictBoundary(11680, { includeGeometry: false });
 	await client.geoNeighborhood({ address: '서울특별시 강남구 역삼동 808', categories: ['편의점', '약국'], radius: 500 });
 	assert.deepEqual(requests.map(r => r.url), [
 		'/rest/geo_standardize', '/rest/geo_batch_geocode', '/rest/geo_reverse', '/rest/geo_address_search', '/rest/geo_place_search',
@@ -1029,7 +1029,7 @@ test('geo methods send JSON bodies so lists and GeoJSON keep their shape', async
 	assert.deepEqual(requests[1].body, { addresses: ['서울특별시 강남구 역삼동 808', '서울특별시 강남구 역삼동 858'], dedupe: false });
 	assert.deepEqual(requests[7].body.coordinates, [[127.02, 37.50], [127.03, 37.51]]);
 	assert.deepEqual(requests[8].body.geojson, polygon);
-	assert.deepEqual(requests[11].body, { query: '12480', includeGeometry: false });
+	assert.deepEqual(requests[11].body, { query: '11680', includeGeometry: false });
 	assert.deepEqual(requests[12].body.categories, ['편의점', '약국']);
 	assert.throws(() => client.geoStandardize({}), /address or pnu/);
 	assert.throws(() => client.geoBatchGeocode([]), /non-empty array/);

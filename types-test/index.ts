@@ -78,6 +78,18 @@ const incomeRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requ
   name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "naver", incomeYears: 5
 });
 const incomeResult: Promise<ApickResult<DataRequestResult<PersonalIncomeResultPayload>>> = client.getPersonalIncome("a".repeat(32));
+// 국세청 상품은 간편인증 대신 공동인증서를 실어 보낼 수 있다.
+const certIncomeRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestPersonalIncome({
+  certificate: { certFile: new Uint8Array([1]), keyFile: "AQ==", password: "secret" }, incomeYears: 2
+});
+const certBizBundleRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestHometaxBizBundle({
+  certificate: { certFile: "AQ==", keyFile: "AQ==", password: "secret", businessType: "corporate" },
+  products: ["business_sales"], business_no: "1234567890", agreed: true
+});
+// @ts-expect-error 공동인증서와 간편인증 입력을 함께 보낼 수 없다.
+client.requestIncomeAmountCert({ certificate: { certFile: "AQ==", keyFile: "AQ==", password: "x" }, name: "홍길동", year: "2025" });
+// @ts-expect-error 국세청 밖 상품은 공동인증서를 받지 않는다.
+client.requestEmployment({ certificate: { certFile: "AQ==", keyFile: "AQ==", password: "x" } });
 const npsRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsJoinHistory({
   name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", from: "1988-01", to: "2026-09"
 });

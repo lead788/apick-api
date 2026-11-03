@@ -378,6 +378,54 @@ test('implements the request/get simple-auth data product contract (employment)'
 	assert.throws(() => client.getEmployment('not-a-transaction-id'), /transactionId/);
 });
 
+test('Hometax products send an inline certificate instead of simple-auth fields', async () => {
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'key', fetch: async (url, options) => {
+		requests.push({ url, body: Object.fromEntries(options.body) });
+		return jsonResponse({ data: { transactionId: 'c'.repeat(32), status: 'AUTH_COMPLETED' }, api: { success: true, cost: 20 } });
+	} });
+	const certFile = Buffer.from('cert-der');
+	const keyFile = new Uint8Array([1, 2, 3]);
+	const certificate = { certFile, keyFile, password: ' pass word ' };
+
+	await client.requestPersonalIncome({ certificate, incomeYears: 2 });
+	assert.ok(requests[0].url.endsWith('/rest/req_personal_income'));
+	assert.deepEqual(requests[0].body, {
+		cert_file: certFile.toString('base64'),
+		key_file: Buffer.from(keyFile).toString('base64'),
+		cert_password: ' pass word ',
+		incomeYears: '2'
+	});
+
+	await client.requestIncomeAmountCert({ certificate: { certFile: 'Y2VydA==\n', keyFile: keyFile.buffer, password: 'pw' }, year: '2025' });
+	assert.equal(requests[1].body.cert_file, 'Y2VydA==');
+	assert.equal(requests[1].body.key_file, Buffer.from(keyFile).toString('base64'));
+	assert.equal(requests[1].body.year, '2025');
+	assert.equal(requests[1].body.name, undefined);
+
+	await client.requestHometaxBizBundle({ certificate: { ...certificate, businessType: 'corporate' }, products: ['business_sales'], business_no: '1234567890', agreed: true });
+	assert.equal(requests[2].body.business_type, 'corporate');
+	assert.equal(requests[2].body.products, 'business_sales');
+	assert.equal(requests[2].body.authProvider, undefined);
+
+	await client.requestHometaxBundle({ certificate, products: ['personal_income'] });
+	assert.ok(requests[3].body.cert_file);
+
+	// 국세청 밖 상품은 서버를 부르기 전에 거절한다.
+	assert.throws(() => client.requestEmployment({ certificate }), /only for National Tax Service/);
+	assert.throws(() => client.requestNpsBundle({ certificate }), /only for National Tax Service/);
+	assert.throws(() => client.requestResidentRegistration({ certificate, sido: '서울', sigungu: '종로구' }), /only for National Tax Service/);
+	// 형식 오류도 서버를 부르지 않는다.
+	assert.throws(() => client.requestPersonalIncome({ certificate: 'x' }), /certificate must be an object/);
+	assert.throws(() => client.requestPersonalIncome({ certificate: { certFile, keyFile } }), /certificate.password/);
+	assert.throws(() => client.requestPersonalIncome({ certificate: { certFile: 'not base64!', keyFile, password: 'pw' } }), /certificate.certFile/);
+	assert.throws(() => client.requestPersonalIncome({ certificate: { certFile, keyFile: Buffer.alloc(0), password: 'pw' } }), /certificate.keyFile must not be empty/);
+	assert.throws(() => client.requestPersonalIncome({ certificate: { certFile: Buffer.alloc(64 * 1024 + 1), keyFile, password: 'pw' } }), /must not exceed 65536 bytes/);
+	assert.throws(() => client.requestPersonalIncome({ certificate: { certFile, keyFile, password: 'x'.repeat(65) } }), /must not exceed 64 characters/);
+	assert.throws(() => client.requestPersonalIncome({ certificate: { certFile, keyFile, password: 'pw', businessType: 'company' } }), /personal or corporate/);
+	assert.equal(requests.length, 4);
+});
+
 test('implements the remaining four simple-auth data products with product-specific options', async () => {
 	const txId = 'c'.repeat(32);
 	function fetchStub(assertBody) {

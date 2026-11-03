@@ -1,4 +1,13 @@
-﻿## 6.4.0 (2026-11-03)
+﻿## 6.5.0 (2026-11-03)
+
+국세청 상품을 공동인증서로 인증할 수 있습니다.
+- 국세청 상품(`requestPersonalIncome`·`requestCashReceiptDeduction`·`requestTaxReturnHistory`·세무 민원증명·증빙서류 묶음·국세 통합 조회)이 `certificate: { certFile, keyFile, password, businessType? }`를 받습니다. 인증서를 미리 등록하지 않아도 되고 휴대폰 승인 없이 접수 직후 결과를 조회합니다. 인증서와 비밀번호는 이번 인증에만 쓰이고 보관되지 않습니다.
+- 파일은 Buffer·Uint8Array·ArrayBuffer·base64 문자열로 받고 각 64KB, 비밀번호는 64자까지입니다. 국세청 밖 상품에 `certificate`를 넣으면 요청 전에 `TypeError`가 납니다.
+- 타입: `ApickCertificate`·`CertificateAuthInput`·`HometaxAuthInput`을 추가했습니다. 국세청 입력 타입(`RequestPersonalIncomeInput` 등)은 간편인증 입력과 공동인증서 입력 중 하나를 받는 타입 별칭이 되었고, 발급 조건은 `HometaxCertificateOptions`·`FactCertOptions` 등 인증 입력이 빠진 인터페이스로 나눴습니다.
+
+Hometax products accept an inline joint certificate (`certificate: { certFile, keyFile, password, businessType? }`) instead of simple-auth. No registration or phone approval is needed, and the certificate is not stored. Hometax request input types are now unions of the simple-auth and certificate inputs.
+
+## 6.4.0 (2026-11-03)
 
 서식 자동작성을 100종으로 넓히고 서명·도장·묶음 생성을 더했습니다(서비스 목록 115개).
 - `formDocument(form, options)` — `signature_image`·`stamp_image` 로 PNG·JPEG data URL(300KB 이하)을 넣으면 서명란·도장란에 그대로 들어갑니다. 지원하는 서식은 100종입니다.

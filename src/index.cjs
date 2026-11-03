@@ -424,14 +424,69 @@ function optionalRangeInteger(name, value, min, max) {
 
 // 재직·소득·연금·면허·건강검진 등 간편인증 기반 조회 상품의 공통 입력.
 // 서버는 최상위 평면 필드명을 그대로 받으므로 여기서 만든 객체가 폼 필드 이름이 된다.
-function dataRequestInput(input) {
+// 국세청 상품(allowCertificate)은 간편인증 대신 공동인증서로 인증할 수 있다.
+// certificate 를 주면 이름·생년월일·휴대전화·인증방식은 보내지 않는다.
+function dataRequestInput(input, allowCertificate) {
 	const config = input || {};
+	if (config.certificate !== undefined && config.certificate !== null) {
+		if (!allowCertificate) throw new TypeError('certificate is supported only for National Tax Service (Hometax) products.');
+		return certificateInput(config.certificate);
+	}
 	return {
 		name: requiredString('name', config.name),
 		birthDate: normalizeBirthDate(config.birthDate),
 		phone: normalizeKoreanMobile(config.phone),
 		authProvider: normalizeAuthProvider(config.authProvider)
 	};
+}
+
+// 공동인증서 파일 한 개는 64KB 를 넘지 않는다. 서버도 같은 상한으로 거절한다.
+const CERTIFICATE_FILE_MAX_BYTES = 64 * 1024;
+const CERTIFICATE_PASSWORD_MAX_LENGTH = 64;
+const CERTIFICATE_BUSINESS_TYPES = Object.freeze(['personal', 'corporate']);
+
+// 인증서·개인키 파일은 Buffer·Uint8Array·ArrayBuffer 또는 base64 문자열로 받아 base64 로 보낸다.
+function certificateFileInput(name, value) {
+	let bytes;
+	if (typeof value === 'string') {
+		const text = value.replace(/\s+/g, '');
+		if (!text || !/^[A-Za-z0-9+/]+={0,2}$/.test(text)) throw new TypeError(`${name} must be a Buffer, Uint8Array or base64 string.`);
+		bytes = Buffer.from(text, 'base64');
+	} else if (value instanceof ArrayBuffer) {
+		bytes = Buffer.from(value);
+	} else if (ArrayBuffer.isView(value)) {
+		bytes = Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+	} else {
+		throw new TypeError(`${name} must be a Buffer, Uint8Array or base64 string.`);
+	}
+	if (!bytes.length) throw new TypeError(`${name} must not be empty.`);
+	if (bytes.length > CERTIFICATE_FILE_MAX_BYTES) throw new RangeError(`${name} must not exceed ${CERTIFICATE_FILE_MAX_BYTES} bytes.`);
+	return bytes.toString('base64');
+}
+
+// 등록 없이 요청에 실어 보내는 공동인증서. 서버는 이번 인증에만 쓰고 보관하지 않는다.
+// 비밀번호는 앞뒤 공백도 그대로 보낸다.
+function certificateInput(value) {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		throw new TypeError('certificate must be an object with certFile, keyFile and password.');
+	}
+	const password = value.password;
+	if (typeof password !== 'string' || !password) throw new TypeError('certificate.password must be a non-empty string.');
+	if (password.length > CERTIFICATE_PASSWORD_MAX_LENGTH) {
+		throw new RangeError(`certificate.password must not exceed ${CERTIFICATE_PASSWORD_MAX_LENGTH} characters.`);
+	}
+	const payload = {
+		cert_file: certificateFileInput('certificate.certFile', value.certFile),
+		key_file: certificateFileInput('certificate.keyFile', value.keyFile),
+		cert_password: password
+	};
+	if (value.businessType !== undefined && value.businessType !== null && value.businessType !== '') {
+		if (!CERTIFICATE_BUSINESS_TYPES.includes(value.businessType)) {
+			throw new RangeError('certificate.businessType must be personal or corporate.');
+		}
+		payload.business_type = value.businessType;
+	}
+	return payload;
 }
 
 // 세무 민원증명. 발급 조건은 REST 필드명 그대로 보낸다(서버가 최상위 평면 이름을 읽는다).
@@ -451,7 +506,7 @@ const BUSINESS_CERT_BUNDLE_OPTIONS = Object.freeze(['year', 'period', 'engl_yn',
 
 function hometaxCertInput(input, keys) {
 	const config = input || {};
-	const payload = dataRequestInput(config);
+	const payload = dataRequestInput(config, true);
 	keys.forEach(function (key) {
 		const value = config[key];
 		if (value === undefined || value === null || value === '') return;
@@ -514,9 +569,9 @@ function gov24BundleProductsInput(value) {
 }
 
 // 통합 조회의 선택 입력. 서버는 최상위 평면 필드명을 그대로 읽으므로 정해진 키만 그대로 넘긴다.
-function bundleOptionsInput(input, keys) {
+function bundleOptionsInput(input, keys, allowCertificate) {
 	const config = input || {};
-	const payload = dataRequestInput(config);
+	const payload = dataRequestInput(config, allowCertificate);
 	keys.forEach(function (key) {
 		const value = config[key];
 		if (value === undefined || value === null || value === '') return;
@@ -1633,7 +1688,7 @@ class ApickClient {
 	}
 
 	requestPersonalIncome(input) {
-		const payload = dataRequestInput(input);
+		const payload = dataRequestInput(input, true);
 		const incomeYears = optionalRangeInteger('incomeYears', (input || {}).incomeYears, 1, 5);
 		if (incomeYears !== undefined) payload.incomeYears = incomeYears;
 		return this._call('requestPersonalIncome', payload);
@@ -1699,7 +1754,7 @@ class ApickClient {
 	}
 
 	requestCashReceiptDeduction(input) {
-		const payload = dataRequestInput(input);
+		const payload = dataRequestInput(input, true);
 		const incomeYears = optionalRangeInteger('incomeYears', (input || {}).incomeYears, 1, 3);
 		if (incomeYears !== undefined) payload.incomeYears = incomeYears;
 		return this._call('requestCashReceiptDeduction', payload);
@@ -1710,7 +1765,7 @@ class ApickClient {
 	}
 
 	requestTaxReturnHistory(input) {
-		const payload = dataRequestInput(input);
+		const payload = dataRequestInput(input, true);
 		const years = optionalRangeInteger('years', (input || {}).years, 1, 10);
 		if (years !== undefined) payload.years = years;
 		return this._call('requestTaxReturnHistory', payload);
@@ -1860,7 +1915,7 @@ class ApickClient {
 	// 개인 국세 통합조회. 한 번의 인증으로 고른 조회만 실행하고, 단가는 고른 상품의 합으로 정해진다.
 	requestHometaxBundle(input) {
 		const config = input || {};
-		const payload = bundleOptionsInput(config, HOMETAX_BUNDLE_OPTIONS);
+		const payload = bundleOptionsInput(config, HOMETAX_BUNDLE_OPTIONS, true);
 		payload.products = bundleProductsInput(config.products, HOMETAX_BUNDLE_PRODUCT_SET);
 		return this._call('requestHometaxBundle', payload);
 	}
@@ -1872,7 +1927,7 @@ class ApickClient {
 	// 사업자 국세 통합조회. 사업자 조회라 대표자 본인 확인(bind_id 또는 agreed)을 함께 받는다.
 	requestHometaxBizBundle(input) {
 		const config = input || {};
-		const payload = bundleOptionsInput(config, HOMETAX_BIZ_BUNDLE_OPTIONS);
+		const payload = bundleOptionsInput(config, HOMETAX_BIZ_BUNDLE_OPTIONS, true);
 		payload.products = bundleProductsInput(config.products, HOMETAX_BIZ_BUNDLE_PRODUCT_SET);
 		if (config.business_no !== undefined && config.business_no !== null && config.business_no !== '') {
 			payload.business_no = normalizeBusinessNumber(config.business_no);

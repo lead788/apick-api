@@ -474,6 +474,31 @@ const income = await pollDataResult(id => apick.getHometaxBundle(id), personal);
 
 `NPS_BUNDLE_PRODUCTS`(3) · `HOMETAX_BUNDLE_PRODUCTS`(9) · `HOMETAX_BIZ_BUNDLE_PRODUCTS`(15) 가 각 묶음에서 고를 수 있는 키입니다. `/ `NPS_BUNDLE_PRODUCTS`, `HOMETAX_BUNDLE_PRODUCTS` and `HOMETAX_BIZ_BUNDLE_PRODUCTS` list the selectable keys per bundle.
 
+### 공동인증서로 인증 / Certificate authentication
+
+국세청 상품(`requestPersonalIncome`·`requestCashReceiptDeduction`·`requestTaxReturnHistory`·세무 민원증명 `request*Cert`·`requestIncomeCertBundle`·`requestBusinessCertBundle`·`requestHometaxBundle`·`requestHometaxBizBundle`)은 간편인증 대신 공동인증서를 요청에 실어 보낼 수 있습니다. 인증서를 미리 등록하지 않아도 되고, 휴대폰 승인 없이 접수 직후 결과를 조회할 수 있습니다. 이름·생년월일·휴대전화·인증방식은 보내지 않습니다. 인증서와 비밀번호는 이번 인증에만 쓰이고 보관되지 않습니다.
+
+Hometax products accept a joint certificate instead of simple-auth. No prior registration and no phone approval are needed, so the result can be polled right after acceptance. Omit the simple-auth fields. The certificate and password are used for this verification only and are not stored.
+
+```js
+import { readFile } from 'node:fs/promises';
+
+const accepted = await apick.requestPersonalIncome({
+  certificate: {
+    certFile: await readFile('signCert.der'),   // Buffer·Uint8Array·base64 문자열 / or a base64 string
+    keyFile: await readFile('signPri.key'),
+    password: process.env.CERT_PASSWORD
+    // businessType: 'corporate'  // 법인 인증서 / corporate certificate
+  },
+  incomeYears: 2
+});
+const income = await pollDataResult(id => apick.getPersonalIncome(id), accepted);
+```
+
+- 파일은 각각 64KB, 비밀번호는 64자까지입니다. 국세청 밖 상품에 `certificate`를 넣으면 서버를 부르기 전에 `TypeError`가 납니다. / Each file is up to 64KB and the password up to 64 characters; passing `certificate` to a non-Hometax method throws a `TypeError` before any request.
+- 비밀번호가 틀리면 `SIMPLE_AUTH_CERT_PASSWORD_INVALID`, 인증서와 개인키가 맞지 않으면 `SIMPLE_AUTH_CERT_KEY_MISMATCH`, 기간이 지났으면 `SIMPLE_AUTH_CERT_EXPIRED`, 파일을 읽지 못하면 `SIMPLE_AUTH_CERT_FILE_INVALID`가 오며 모두 과금되지 않습니다. / Wrong password, mismatched key, expired or unreadable certificates fail with the codes above and are not billed.
+- 전자세금계산서 발급 상품은 이 방식을 받지 않습니다. / Tax-invoice issuance does not accept inline certificates.
+
 근거: [APICK 개발가이드](https://apick.app/dev_guide/data_health_checkup) · [MCP 3.5.0 상태 계약](https://github.com/lead788/apick-mcp/blob/a803abcb81d07377c85f49bb0b670baf0c17ed04/TOOLS.md)
 
 지원 간편인증 방식(`authProvider`) 13종은 `AUTH_PROVIDERS`로 제공됩니다: `kakao`, `naver`, `toss`, `pass`, `samsung`, `kb`, `shinhan`, `hana`, `woori`, `ibk`, `nh`, `kakaobank`, `banksalad`.

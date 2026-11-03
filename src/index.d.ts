@@ -703,14 +703,38 @@ export interface DataRequestInput {
 	authProvider: AuthProvider;
 }
 export interface RequestEmploymentInput extends DataRequestInput { insuranceYears?: number; }
-export interface RequestPersonalIncomeInput extends DataRequestInput { incomeYears?: number; }
+/**
+ * 등록 없이 요청에 실어 보내는 공동인증서. 국세청(홈택스) 상품만 받는다.
+ * 서버는 이번 인증에만 쓰고 보관하지 않는다.
+ */
+export interface ApickCertificate {
+	/** 인증서 파일(signCert.der). Buffer·Uint8Array·ArrayBuffer 또는 base64 문자열, 64KB 이하. */
+	certFile: Uint8Array | ArrayBuffer | string;
+	/** 개인키 파일(signPri.key). Buffer·Uint8Array·ArrayBuffer 또는 base64 문자열, 64KB 이하. */
+	keyFile: Uint8Array | ArrayBuffer | string;
+	/** 인증서 비밀번호(64자 이하). */
+	password: string;
+	/** 법인 인증서면 corporate. 없으면 personal. */
+	businessType?: 'personal' | 'corporate';
+}
+/** 공동인증서로 인증할 때의 입력. 휴대폰 승인이 없고 이름·생년월일·휴대전화·인증방식은 보내지 않는다. */
+export interface CertificateAuthInput {
+	certificate: ApickCertificate;
+	name?: never;
+	birthDate?: never;
+	phone?: never;
+	authProvider?: never;
+}
+/** 국세청 상품의 인증 입력. 간편인증 또는 공동인증서 중 하나. */
+export type HometaxAuthInput = DataRequestInput | CertificateAuthInput;
+export type RequestPersonalIncomeInput = HometaxAuthInput & { incomeYears?: number };
 export interface RequestNpsJoinHistoryInput extends DataRequestInput { from?: string; to?: string; }
 export interface RequestNpsDeductionCertInput extends DataRequestInput { years?: number; }
 export interface RequestNpsCareerHistoryInput extends DataRequestInput { from?: string; to?: string; }
 export interface RequestDrivingLicenseInput extends DataRequestInput {}
 export interface RequestHealthCheckupInput extends DataRequestInput {}
-export interface RequestCashReceiptDeductionInput extends DataRequestInput { incomeYears?: number; }
-export interface RequestTaxReturnHistoryInput extends DataRequestInput { years?: number; }
+export type RequestCashReceiptDeductionInput = HometaxAuthInput & { incomeYears?: number };
+export type RequestTaxReturnHistoryInput = HometaxAuthInput & { years?: number };
 /** 주민등록표 발급 공통 입력. `sido`·`sigungu` 는 주민등록 주소지다. */
 export interface ResidentRegistrationOptions {
 	sido: string;
@@ -742,7 +766,8 @@ export interface RequestNpsBundleInput extends DataRequestInput {
 	years?: number;
 }
 /** 개인 국세 통합 조회 입력. `products` 로 조회할 상품 키를 고른다. */
-export interface RequestHometaxBundleInput extends DataRequestInput {
+export type RequestHometaxBundleInput = HometaxAuthInput & RequestHometaxBundleOptions;
+export interface RequestHometaxBundleOptions {
 	products: string[] | string;
 	incomeYears?: number;
 	years?: number;
@@ -770,7 +795,8 @@ export interface RequestHometaxBundleInput extends DataRequestInput {
  * 사업자 국세 통합 조회 입력. 사업자 조회라 대표자 본인 확인이 필요하다.
  * `bind_id` 가 없으면 `agreed` 를 true 로 보내야 한다.
  */
-export interface RequestHometaxBizBundleInput extends DataRequestInput {
+export type RequestHometaxBizBundleInput = HometaxAuthInput & RequestHometaxBizBundleOptions;
+export interface RequestHometaxBizBundleOptions {
 	products: string[] | string;
 	business_no?: string;
 	businessNo?: string;
@@ -805,7 +831,7 @@ export interface RequestHometaxBizBundleInput extends DataRequestInput {
  * `format` 은 응답 형식이고, `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터` 가 함께 온다.
  * 코드 값(`use_purpose`·`submit_to`·`itrf_cd`)은 정부 공통코드다.
  */
-export interface HometaxCertificateOptions extends DataRequestInput {
+export interface HometaxCertificateOptions {
 	year?: string;
 	use_purpose?: string;
 	submit_to?: string;
@@ -817,19 +843,22 @@ export interface HometaxCertificateOptions extends DataRequestInput {
 	fax_no?: string;
 	wallet_address?: string;
 }
-export interface RequestIncomeAmountCertInput extends HometaxCertificateOptions {}
-export interface RequestPensionCreditCertInput extends HometaxCertificateOptions {
+export type RequestIncomeAmountCertInput = HometaxAuthInput & HometaxCertificateOptions;
+export type RequestPensionCreditCertInput = HometaxAuthInput & PensionCreditCertOptions;
+export interface PensionCreditCertOptions extends HometaxCertificateOptions {
 	address_open_yn?: 'Y' | 'N';
 	resno_open_yn?: 'Y' | 'N';
 }
-export interface RequestFactCertInput extends HometaxCertificateOptions {
+export type RequestFactCertInput = HometaxAuthInput & FactCertOptions;
+export interface FactCertOptions extends HometaxCertificateOptions {
 	start_month?: string;
 	end_month?: string;
 	itrf_cd?: string;
 	issuance?: '1' | '2';
 }
 /** 소득 증빙서류 통합발급 입력. `year`·`use_purpose`·`submit_to`·`delivery` 가 필수다. */
-export interface RequestIncomeCertBundleInput extends HometaxCertificateOptions {
+export type RequestIncomeCertBundleInput = HometaxAuthInput & IncomeCertBundleOptions;
+export interface IncomeCertBundleOptions extends HometaxCertificateOptions {
 	year: string;
 	use_purpose: string;
 	submit_to: string;
@@ -844,7 +873,8 @@ export interface RequestIncomeCertBundleInput extends HometaxCertificateOptions 
  * 사업자 증빙서류 통합발급 입력. `business_no` 와 발급 입력이 필수이고,
  * `bind_id` 가 없으면 대표자 본인 확인 동의 `agreed: true` 가 있어야 접수된다.
  */
-export interface RequestBusinessCertBundleInput extends HometaxCertificateOptions {
+export type RequestBusinessCertBundleInput = HometaxAuthInput & BusinessCertBundleOptions;
+export interface BusinessCertBundleOptions extends HometaxCertificateOptions {
 	business_no: string;
 	year: string;
 	use_purpose: string;
@@ -854,7 +884,8 @@ export interface RequestBusinessCertBundleInput extends HometaxCertificateOption
 	agreed?: boolean;
 	bind_id?: string;
 }
-export interface RequestTaxClearanceCertInput extends RequestFactCertInput {
+export type RequestTaxClearanceCertInput = HometaxAuthInput & TaxClearanceCertOptions;
+export interface TaxClearanceCertOptions extends FactCertOptions {
 	cert_type?: 'B0006' | 'B0010';
 }
 /** 발급 PDF를 열어 글자를 뽑고 라벨 기준으로 만든 값. 필드는 비어 있을 수 있다. */

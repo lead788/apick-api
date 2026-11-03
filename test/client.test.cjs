@@ -37,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 111 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 111);
+test('exports a focused catalog of 115 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 115);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -1027,4 +1027,16 @@ test('registry search and issue calls use the documented REST paths', async () =
 	assert.equal(client.downloadRegistryPdf, undefined);
 	assert.throws(() => client.registryCorporateSearch({}), /corpRegNo or bizNo/);
 	assert.throws(() => client.createRegistryRealestateJob({}), /query or pin/);
+});
+
+test('form helpers reject non-data-URL images and oversized bundles before any request', async () => {
+	let fetched = 0;
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async () => {
+		fetched += 1;
+		return jsonResponse({});
+	} });
+	assert.throws(() => client.formDocument('biz_estimate', { signature_image: 'https://example.com/s.png' }), /PNG or JPEG data URL/);
+	assert.throws(() => client.formBundle([]), /non-empty array/);
+	assert.throws(() => client.formBundle(new Array(11).fill({ form: 'biz_estimate' })), /must not exceed 10/);
+	assert.equal(fetched, 0);
 });

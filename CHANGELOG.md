@@ -1,4 +1,12 @@
-﻿## 6.3.0 (2026-11-02)
+﻿## 6.4.0 (2026-11-03)
+
+서식 자동작성을 100종으로 넓히고 서명·도장·묶음 생성을 더했습니다(서비스 목록 115개).
+- `formDocument(form, options)` — `signature_image`·`stamp_image` 로 PNG·JPEG data URL(300KB 이하)을 넣으면 서명란·도장란에 그대로 들어갑니다. 지원하는 서식은 100종입니다.
+- `formBundle(forms)` — 최대 10건을 한 번에 만들어 ZIP 하나로 받습니다. 항목마다 `formDocument` 와 같은 입력을 쓰고, 성공한 건만 합계 과금하며 실패 사유는 ZIP 안 `_index.txt` 에 남습니다.
+- `formList(options)`·`formFields(form)`·`formPreview(form, options)` — 무료로 서식 목록·필드 정의·미리보기를 확인합니다.
+
+Adds signature/stamp images, 100 forms, and a 10-item ZIP bundle (115 named services). Bundle charges only successful items.
+## 6.3.0 (2026-11-02)
 
 서식 자동작성 1종을 추가했습니다(서비스 목록 111개).
 - `formDocument(form, options)` — 계약서·증명서·신고서 50종을 자유 문장(`text`) 또는 정형 필드(`data`)로 받아 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만듭니다. 없는 항목은 오류 없이 빈칸으로 남고, 문서 포맷은 호출당 100P·값 포맷은 30P 입니다.

@@ -1300,8 +1300,16 @@ export class ApickClient {
 	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
-	/** 서식 자동작성 — 계약서·증명서·신고서 50종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
-	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx' }): Promise<ApickBinaryResult>;
+	/** 서식 자동작성 — 계약서·증명서·신고서 100종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }): Promise<ApickBinaryResult>;
+	/** 서식 묶음 — 최대 10건을 한 번에 만들어 ZIP 하나로 받는다(성공한 건만 합계 과금). */
+	formBundle(forms: Array<{ form: string; text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }>): Promise<ApickBinaryResult>;
+	/** 무료 — 만들 수 있는 서식 목록(키·이름·분류·필드 수)을 돌려준다. */
+	formList(options?: { category?: string; keyword?: string }): Promise<ApickResult>;
+	/** 무료 — 서식 1종의 입력 항목(키·라벨·형식·필수 여부·예시)을 돌려준다. */
+	formFields(form: string): Promise<ApickResult>;
+	/** 무료 — 문서를 만들지 않고 인식 결과와 비어 있는 필수 항목만 돌려준다. */
+	formPreview(form: string, options?: { text?: string; data?: Record<string, unknown> }): Promise<ApickResult>;
 	jsonToExcel(data: unknown[], options?: { sheetName?: string }): Promise<ApickBinaryResult>;
 	summarize(text: string): Promise<ApickResult>;
 	polish(text: string): Promise<ApickResult>;

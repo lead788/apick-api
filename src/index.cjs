@@ -127,6 +127,10 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	createVideoJob: { endpoint: '/rest/seedance/jobs', timeoutMs: 60_000, output: 'json' },
 	htmlToPdf: { endpoint: '/rest/html_to_pdf', timeoutMs: 25_000, output: 'binary', filename: 'document.pdf' },
 	formDocument: { endpoint: '/rest/form_document', timeoutMs: 40_000, output: 'binary', json: true, filename: 'document.pdf' },
+	formBundle: { endpoint: '/rest/form_document_batch', timeoutMs: 120_000, output: 'binary', filename: 'forms_bundle.zip' },
+	formList: { endpoint: '/rest/form_list', timeoutMs: 20_000, output: 'json' },
+	formFields: { endpoint: '/rest/form_fields', timeoutMs: 20_000, output: 'json' },
+	formPreview: { endpoint: '/rest/form_preview', timeoutMs: 20_000, output: 'json' },
 	jsonToExcel: { endpoint: '/rest/json_to_excel', timeoutMs: 45_000, output: 'binary', filename: 'data.xlsx' },
 	summarize: { endpoint: '/rest/llm/text_summary', timeoutMs: 75_000, output: 'json' },
 	polish: { endpoint: '/rest/llm/text_polish', timeoutMs: 105_000, output: 'json' },
@@ -211,8 +215,37 @@ function requiredString(name, value, maxLength) {
 	return normalized;
 }
 
-function positiveInteger(name, value, defaultValue) {
-	if (value === undefined || value === null || value === '') return defaultValue;
+// 서명·도장은 data URL 만 받는다(서버가 PNG·JPEG 300KB 이하만 문서에 넣는다).
+function formImage(name, value, prefix) {
+	if (value === undefined) return undefined;
+	const label = prefix + name;
+	const text = requiredString(label, value, 420000);
+	if (!/^data:image\/(?:png|jpeg);base64,/.test(text)) {
+		throw new TypeError(`${label} must be a PNG or JPEG data URL.`);
+	}
+	return text;
+}
+
+function buildFormPayload(form, options, prefix) {
+	const config = options || {};
+	const head = prefix || '';
+	const payload = { form: requiredString(head + 'form', form) };
+	if (config.text !== undefined) payload.text = requiredString(head + 'text', config.text, 5000);
+	if (config.data !== undefined) {
+		if (!config.data || typeof config.data !== 'object' || Array.isArray(config.data)) {
+			throw new TypeError('data must be a plain object.');
+		}
+		payload.data = config.data;
+	}
+	if (config.format !== undefined) payload.format = requiredString(head + 'format', config.format);
+	const signature = formImage('signature_image', config.signature_image, head);
+	if (signature) payload.signature_image = signature;
+	const stamp = formImage('stamp_image', config.stamp_image, head);
+	if (stamp) payload.stamp_image = stamp;
+	return payload;
+}
+
+function positiveInteger(name, value, defaultValue) {	if (value === undefined || value === null || value === '') return defaultValue;
 	const number = Number(value);
 	if (!Number.isInteger(number) || number < 1) {
 		throw new RangeError(`${name} must be a positive integer.`);
@@ -1446,6 +1479,34 @@ class ApickClient {
 	}
 
 	formDocument(form, options) {
+		return this._call('formDocument', buildFormPayload(form, options));
+	}
+
+	/** 서식 묶음 — 최대 10건을 한 번에 만들어 ZIP 하나로 받는다(성공한 건만 합계 과금). */
+	formBundle(forms) {
+		if (!Array.isArray(forms) || !forms.length) throw new TypeError('forms must be a non-empty array.');
+		if (forms.length > 10) throw new RangeError('forms must not exceed 10 items.');
+		return this._call('formBundle', { forms: forms.map(function (item, index) {
+			return buildFormPayload(item && item.form, item || {}, 'forms[' + index + '].');
+		}) });
+	}
+
+	/** 무료 — 서식 목록을 분류·검색어로 좁혀 돌려준다. */
+	formList(options) {
+		const config = options || {};
+		const payload = {};
+		if (config.category !== undefined) payload.category = requiredString('category', config.category);
+		if (config.keyword !== undefined) payload.keyword = requiredString('keyword', config.keyword);
+		return this._call('formList', payload);
+	}
+
+	/** 무료 — 서식 1종의 입력 항목 정의를 돌려준다. */
+	formFields(form) {
+		return this._call('formFields', { form: requiredString('form', form) });
+	}
+
+	/** 무료 — 문서를 만들지 않고 인식 결과와 비어 있는 필수 항목만 확인한다. */
+	formPreview(form, options) {
 		const config = options || {};
 		const payload = { form: requiredString('form', form) };
 		if (config.text !== undefined) payload.text = requiredString('text', config.text, 5000);
@@ -1455,8 +1516,7 @@ class ApickClient {
 			}
 			payload.data = config.data;
 		}
-		if (config.format !== undefined) payload.format = requiredString('format', config.format);
-		return this._call('formDocument', payload);
+		return this._call('formPreview', payload);
 	}
 
 	jsonToExcel(data, options) {

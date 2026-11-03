@@ -14,7 +14,7 @@ export interface DocumentDownloadInput extends DocumentVersion { content_hash: s
 export interface DocumentAiInput { action?: 'draft' | 'fill' | 'polish' | 'summarize' | 'expand'; text: string; document?: DocumentBody; selection?: string; request_id: string; }
 export type DocumentAiResult = { kind: 'document' | 'selection'; title: string; content: DocumentNode; notes: string } | { kind: 'fields'; values: Record<string, string>; notes: string };
 
-﻿export interface ApickClientOptions {
+export interface ApickClientOptions {
 	apiKey: string;
 	baseUrl?: string;
 	timeoutMs?: number;
@@ -1356,6 +1356,7 @@ export class ApickClient {
 	documentAiWrite(options: DocumentAiInput): Promise<ApickResult<DocumentAiResult>>;
 	documentQuote(options: DocumentVersion): Promise<ApickResult<DocumentQuote>>;
 	documentDownload(options: DocumentDownloadInput): Promise<ApickBinaryResult>;
+	/** 서식 자동작성 — 계약서·증명서·신고서 130종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
 	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }): Promise<ApickBinaryResult>;
 	/** 서식 묶음 — 최대 10건을 한 번에 만들어 ZIP 하나로 받는다(성공한 건만 합계 과금). */
 	formBundle(forms: Array<{ form: string; text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }>): Promise<ApickBinaryResult>;

@@ -166,6 +166,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestResidentRegistration: { endpoint: '/rest/req_resident_registration', timeoutMs: 35_000, output: 'json' },
 	requestResidentRegistrationCho: { endpoint: '/rest/req_resident_registration_cho', timeoutMs: 35_000, output: 'json' },
 	requestGov24Bundle: { endpoint: '/rest/req_gov24_bundle', timeoutMs: 35_000, output: 'json' },
+	requestVehicleRegisterDoc: { endpoint: '/rest/req_vehicle_register_doc', timeoutMs: 35_000, output: 'json' },
 	requestNpsBundle: { endpoint: '/rest/req_nps_bundle', timeoutMs: 35_000, output: 'json' },
 	requestHometaxBundle: { endpoint: '/rest/req_hometax_bundle', timeoutMs: 60_000, output: 'json' },
 	requestHometaxBizBundle: { endpoint: '/rest/req_hometax_biz_bundle', timeoutMs: 60_000, output: 'json' }
@@ -575,6 +576,14 @@ function bundleProductsInput(value, allowed) {
 
 function gov24BundleProductsInput(value) {
 	return bundleProductsInput(value, GOV24_BUNDLE_PRODUCT_SET);
+}
+
+function vehicleRegisterInput(config) {
+	const fields = { carNumber: requiredString('carNumber', config.carNumber) };
+	for (const key of ['privacy', 'scope', 'ownerName', 'ownerRrno', 'admdstCd']) {
+		if (config[key] !== undefined) fields[key] = requiredString(key, config[key]);
+	}
+	return fields;
 }
 
 // 통합 조회의 선택 입력. 서버는 최상위 평면 필드명을 그대로 읽으므로 정해진 키만 그대로 넘긴다.
@@ -1939,12 +1948,23 @@ class ApickClient {
 		return this._call('requestResidentRegistrationCho', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_resident_registration_cho' });
 	}
 
+	requestVehicleRegisterDoc(input) {
+		const payload = dataRequestInput(input);
+		Object.assign(payload, vehicleRegisterInput(input));
+		return this._call('requestVehicleRegisterDoc', payload);
+	}
+
+	getVehicleRegisterDoc(transactionId) {
+		return this._call('requestVehicleRegisterDoc', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_vehicle_register_doc' });
+	}
+
 	// 민원서류 통합 조회. 한 번의 인증으로 고른 상품만 조회하고, 단가는 고른 상품의 합으로 정해진다.
 	requestGov24Bundle(input) {
 		const config = input || {};
 		const products = gov24BundleProductsInput(config.products);
 		const payload = dataRequestInput(config);
 		payload.products = products;
+		if (products.split(',').includes('vehicle_register_doc')) Object.assign(payload, vehicleRegisterInput(config));
 		// 등본·초본을 고를 때만 주민등록 주소지가 필요하다.
 		if (products.split(',').some(function(key) { return key.indexOf('resident_registration') === 0; })) {
 			Object.assign(payload, residentAddressInput(config));

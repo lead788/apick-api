@@ -37,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 124 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 124);
+test('exports a focused catalog of 125 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 125);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -524,6 +524,26 @@ test('implements cash-receipt deduction and tax-return history with their year o
 	for (const value of [0, 11, 2.5]) assert.throws(() => client.requestTaxReturnHistory({ ...input, years: value }), /years/);
 	assert.throws(() => client.getTaxReturnHistory('D'.repeat(32)), /transactionId/);
 	assert.equal(requests.length, 5);
+});
+
+test('requests the vehicle register and preserves both JSON content and PDF', async () => {
+	const txId = 'e'.repeat(32);
+	const section = { 발급문서: 'JVBERg==', 문서내용: { 추출상태: '추출됨', 본문: '등본', 차대번호: 'KNAGN418BBA123456' } };
+	const calls = [];
+	const client = new ApickClient({ apiKey: 'key', fetch: async (url, options) => {
+		calls.push({ url, body: Object.fromEntries(options.body) });
+		return jsonResponse({ data: { transactionId: txId, result: { vehicleRegisterDoc: section } }, api: { success: true } });
+	} });
+	const input = { name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'kakao', carNumber: '12가1234' };
+	const accepted = await client.requestVehicleRegisterDoc(input);
+	const response = await client.getVehicleRegisterDoc(accepted.data.transactionId);
+	assert.ok(calls[0].url.endsWith('/rest/req_vehicle_register_doc'));
+	assert.deepEqual(calls[0].body, input);
+	assert.ok(calls[1].url.endsWith('/rest/get_vehicle_register_doc'));
+	assert.deepEqual(calls[1].body, { transactionId: txId });
+	assert.deepEqual(response.data.result.vehicleRegisterDoc, section);
+	await client.requestGov24Bundle({ ...input, products: ['vehicle_register_doc'] });
+	assert.deepEqual(calls[2].body, { ...input, products: 'vehicle_register_doc' });
 });
 
 test('implements resident registration and the selectable Government24 bundle', async () => {

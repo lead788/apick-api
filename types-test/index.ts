@@ -9,6 +9,11 @@ import type { TtsJobData, TtsVoiceId } from '../src/index.js';
 import type { ImageAiJobData, ImageAiResultData, ImageAiPendingData } from '../src/index.js';
 
 const client = new ApickClient('test-key');
+async function vehicleRegisterVin(transactionId: string): Promise<string | undefined> {
+  const result = await client.getVehicleRegisterDoc(transactionId);
+  return result.data.result?.vehicleRegisterDoc.문서내용?.차대번호;
+}
+void vehicleRegisterVin;
 
 const business: Promise<ApickResult> = client.businessDetails('4398700761');
 const ocr: Promise<ApickResult> = client.ocr(new Uint8Array([1, 2, 3]), {

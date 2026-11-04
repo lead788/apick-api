@@ -1,5 +1,9 @@
 # apick-api English guide
 
+### Vehicle register
+
+Call `requestVehicleRegisterDoc({ name, birthDate, phone, authProvider, carNumber })` for an owner’s vehicle. After approval, poll `getVehicleRegisterDoc(transactionId)` until the result is available. Read `data.result.vehicleRegisterDoc.발급문서` for the base64 PDF and `문서내용` in the same section for its text (`본문`) and printed vehicle fields. The optional `차대번호` contains a full 17-character VIN only when readable. If extraction fails or the PDF has no text, the original PDF is still returned.
+
 ## Request and response formats
 
 All SDK requests with a body use `multipart/form-data`. Arrays use separate indexed fields such as `utterance_ids[0]`; let the SDK set the Content-Type boundary. GET requests have no body. The server continues accepting older JSON requests for compatibility.

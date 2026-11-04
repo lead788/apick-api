@@ -1,3 +1,8 @@
+## 6.8.0 (2026-11-04)
+
+- 자동차등록원부 등본 접수·결과 메서드와 PDF 본문·차대번호 타입을 추가했습니다.
+- Added typed vehicle register requests and results with the original PDF, extracted text and optional VIN.
+
 ## 6.7.0 (2026-11-04)
 
 - 문서함·AI 제안·견적·DOCX 다운로드 8개 메서드, JSON 타입, 멱등 재시도 예제를 추가했습니다.

@@ -155,6 +155,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestResidentRegistration(input)` / `getResidentRegistration(transactionId)` | 주민등록표등본 발급 / Resident registration certificate | JSON |
 | `requestResidentRegistrationCho(input)` / `getResidentRegistrationCho(transactionId)` | 주민등록표초본 발급 / Resident registration certificate (cho) | JSON |
 | `requestGov24Bundle(input)` / `getGov24Bundle(transactionId)` | 민원서류 통합 조회 / Selectable civil-document bundle | JSON |
+| `requestVehicleRegisterDoc(input)` / `getVehicleRegisterDoc(transactionId)` | 자동차등록원부 등본 PDF·본문·차대번호 / Vehicle register PDF, text and VIN when present | JSON |
 | `requestNpsBundle(input)` / `getNpsBundle(transactionId)` | 국민연금 통합 조회 / National pension bundle | JSON |
 | `requestHometaxBundle(input)` / `getHometaxBundle(transactionId)` | 개인 국세 통합 조회 / Personal tax bundle | JSON·PDF |
 | `requestHometaxBizBundle(input)` / `getHometaxBizBundle(transactionId)` | 사업자 국세 통합 조회 / Business tax bundle | JSON·PDF |

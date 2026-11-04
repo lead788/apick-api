@@ -766,7 +766,7 @@ export interface RequestResidentRegistrationChoInput extends DataRequestInput, R
  * 민원서류 통합 조회 입력. `products` 로 조회할 상품 키를 고른다.
  * 등본·초본을 고르면 `sido`·`sigungu` 가 필요하다.
  */
-export interface RequestGov24BundleInput extends DataRequestInput {
+export interface RequestGov24BundleInput extends DataRequestInput, Partial<Omit<VehicleRegisterDocInput, keyof DataRequestInput>> {
 	products: string[] | string;
 	sido?: string;
 	sigungu?: string;
@@ -967,6 +967,40 @@ export interface DataRequestResult<T> {
 }
 
 export interface EmploymentHistoryEntry { 사업장: string; 취득일: string; 상실일: string; 자격구분: string; }
+export interface VehicleRegisterDocInput extends DataRequestInput {
+	carNumber: string;
+	privacy?: string;
+	scope?: string;
+	ownerName?: string;
+	ownerRrno?: string;
+	admdstCd?: string;
+}
+export interface VehicleRegisterContent {
+	추출상태: '추출됨' | '텍스트없음' | '추출실패';
+	본문: string;
+	차대번호?: string;
+	자동차등록번호?: string;
+	제원관리번호?: string;
+	말소등록일?: string;
+	차명?: string;
+	차종?: string;
+	원동기형식?: string;
+	용도?: string;
+	'연식(모델연도)'?: string;
+	색상?: string;
+}
+export interface VehicleRegisterDocResult {
+	문서내용?: VehicleRegisterContent;
+	발급문서?: string;
+	문서확인번호?: string;
+	발급일자?: string;
+	성명?: string;
+	차량번호?: string;
+	문서파일명?: string;
+	문서해시?: string;
+	문서크기?: number;
+	조회결과?: string;
+}
 export interface EmploymentPremiumEntry {
 	사업장: string; 고지년월: string; 보수월액: number;
 	'건강보험 산정보험료': number; '건강보험 정산보험료': number; '건강보험 고지보험료': number; '건강보험 연말정산보험료': number;
@@ -1096,6 +1130,7 @@ export type BusinessCertBundleResultPayload = Record<string, unknown> & {
 	financialStatementCert?: HometaxCertificateResultPayload;
 };
 export type Gov24BundleResultPayload = Record<string, unknown> & {
+	vehicleRegisterDoc?: VehicleRegisterDocResult;
 	residentRegistration?: ResidentRegistrationInfo;
 	residentRegistrationCho?: ResidentRegistrationInfo;
 };
@@ -1413,6 +1448,8 @@ export class ApickClient {
 	requestResidentRegistrationCho(input: RequestResidentRegistrationChoInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getResidentRegistrationCho(transactionId: string): Promise<ApickResult<DataRequestResult<ResidentRegistrationChoResultPayload>>>;
 	requestGov24Bundle(input: RequestGov24BundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	requestVehicleRegisterDoc(input: VehicleRegisterDocInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getVehicleRegisterDoc(transactionId: string): Promise<ApickResult<DataRequestResult<{ vehicleRegisterDoc: VehicleRegisterDocResult }>>>;
 	getGov24Bundle(transactionId: string): Promise<ApickResult<DataRequestResult<Gov24BundleResultPayload>>>;
 	requestNpsBundle(input: RequestNpsBundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getNpsBundle(transactionId: string): Promise<ApickResult<DataRequestResult<NpsBundleResultPayload>>>;

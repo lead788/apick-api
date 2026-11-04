@@ -1,5 +1,9 @@
 # apick-api 한국어 가이드
 
+### 자동차등록원부 등본
+
+소유자 본인의 등본은 `requestVehicleRegisterDoc({ name, birthDate, phone, authProvider, carNumber })`로 접수합니다. 간편인증 승인 후 `getVehicleRegisterDoc(transactionId)`의 결과가 준비되면 `data.result.vehicleRegisterDoc`에서 `발급문서`(base64 PDF)와 `문서내용`을 함께 읽습니다. `문서내용.본문`은 등본 텍스트이고, `문서내용.차대번호`는 17자리를 확인한 때에만 제공됩니다. 텍스트가 없거나 추출이 실패해도 원본 PDF는 제공됩니다.
+
 ## 요청과 응답 형식
 
 SDK의 본문 요청은 모두 `multipart/form-data`입니다. `utterance_ids[0]`처럼 배열을 개별 필드로 전송하며 `Content-Type` 헤더를 직접 지정할 필요가 없습니다. GET 조회는 본문을 보내지 않습니다. 기존 JSON 요청도 서버에서 호환용으로 계속 처리합니다.

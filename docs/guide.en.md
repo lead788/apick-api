@@ -403,3 +403,12 @@ Create, list, get, update, delete and quote are free. Public API AI writing cost
 Methods: `documentCreate`, `documentList`, `documentGet`, `documentUpdate`, `documentDelete`, `documentAiWrite`, `documentQuote`, `documentDownload`. Each takes an options object; `documentList()` needs no argument. See the [example](../examples/documents.mjs) and [API guide](https://apick.app/dev_guide/document_create).
 
 Supply a `request_id` for create, update, AI and download; reuse it when retrying the same request. Updates require the last read `version`. Downloads require the quote's `version` and `content_hash`. On conflicts, reload or save a separate copy. AI results are proposals and are not automatically saved. Document `content` uses a JSON tree with a `doc` root, e.g. `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Hello'}]}]}`.
+
+
+## Core document workflows and verification
+
+Search 30 core profiles with `documentTemplates`, and select an edition with `documentTemplate`. Use `documentWorkflowQuote`, `documentWorkflowStart`, `documentWorkflowGet`, `documentWorkflowAnswer` and `documentWorkflowApply` in sequence. Supply a per-step `max_points` and an initial `total_max_points`; child steps inherit the total cap. Each additional step needs a new request ID and consent. Reuse the identical ID and body on retry. Cancel pending work with `documentWorkflowCancel`.
+
+`documentAssist` and `documentReview` provide assistance and review. Manage files with `documentAttachmentList`, `documentAttachmentAdd` and `documentAttachmentRemove`. Attachment review uses a separate quote/start with `action: 'attachment_review'`, `document_id` and `version`, at 20P per file, under its own budget. Unread images or objects remain unverified.
+
+Run `documentVerify` after saving. Only finalize when no blocking issues remain, using the current version and returned `verification_hash` with `documentFinalize`. Grounding does not guarantee real-world facts or legal effect. Changes require re-verification. `documentDownloadPdf` and `documentDownloadBundle` share the DOCX purchase entitlement. The original eight document methods remain compatible.

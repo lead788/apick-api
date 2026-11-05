@@ -1,7 +1,13 @@
+export interface DocumentJobReference { job_id: string; }
+export interface DocumentWorkflowInput { action?: 'attachment_review'; document_id?: string; version?: number; text?: string; form?: string; edition?: string; max_points: number; total_max_points?: number; request_id: string; }
+export type DocumentWorkflowAnswerInput = Omit<DocumentWorkflowInput, 'action' | 'document_id' | 'version' | 'text'> & { text: string; action?: never; document_id?: never; version?: never };
+export interface DocumentWorkflowJob { job_id: string; document_id?: string | null; state: 'queued' | 'running' | 'ready' | 'awaiting_answers' | 'cancelled' | 'interrupted' | 'failed'; charged_points: number; max_points: number; total_max_points: number; total_charged_points?: number; total_reserved_points?: number; remaining_points?: number; error_code?: string | null; expires_at: string; result?: Record<string, unknown> | null; }
+export interface DocumentVerification { document_version: number; verification_hash: string; content_hash: string; can_finalize: boolean; finalized?: boolean; scope: string; issues: Array<{key?: string; state: string; reason: string; blocking: boolean}>; claims: Array<Record<string, unknown>>; official: Array<Record<string, unknown>>; }
+export interface DocumentWorkflowQuote { price: number; unit: 'P'; steps: number; includes: string[]; additional_steps: string; download_included: false; action?: 'attachment_review'; attachments?: number; }
 export interface DocumentNode {
- type: 'doc' | 'paragraph' | 'heading' | 'text' | 'hardBreak' | 'bulletList' | 'orderedList' | 'listItem' | 'table' | 'tableRow' | 'tableCell' | 'tableHeader' | 'image' | 'pageBreak' | 'docField';
+ type: 'doc' | 'paragraph' | 'heading' | 'text' | 'hardBreak' | 'bulletList' | 'orderedList' | 'listItem' | 'table' | 'tableRow' | 'tableCell' | 'tableHeader' | 'image' | 'pageBreak' | 'docField' | 'formSheet';
  text?: string; attrs?: Record<string, unknown>; content?: DocumentNode[];
- marks?: Array<{ type: 'bold' | 'italic' | 'underline' | 'strike' | 'textStyle'; attrs?: Record<string, unknown> }>;
+ marks?: Array<{ type: 'bold' | 'italic' | 'underline' | 'strike' | 'textStyle' | 'highlight'; attrs?: Record<string, unknown> }>;
 }
 export interface DocumentBody { schema_version?: 1; title?: string; form?: string; content?: DocumentNode; }
 export interface SavedDocument extends DocumentBody { document_id: string; version: number; content_hash: string; updated_at: string; expires_at: string; download_price: number; }
@@ -1392,6 +1398,24 @@ export class ApickClient {
 	documentQuote(options: DocumentVersion): Promise<ApickResult<DocumentQuote>>;
 	documentDownload(options: DocumentDownloadInput): Promise<ApickBinaryResult>;
 	/** 서식 자동작성 — 계약서·증명서·신고서 130종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	documentQuota(options?: Record<string, never>): Promise<ApickResult<Record<string, unknown>>>;
+	documentTemplate(options: { form: string; edition?: string }): Promise<ApickResult<DocumentBody>>;
+	documentTemplates(options?: { query?: string }): Promise<ApickResult<Record<string, unknown>>>;
+	documentAssist(options: { text: string; document?: DocumentBody; selection?: string; request_id: string }): Promise<ApickResult<Record<string, unknown>>>;
+	documentReview(options: { document: DocumentBody; request_id: string }): Promise<ApickResult<Record<string, unknown>>>;
+	documentAttachmentList(options: DocumentReference): Promise<ApickResult<Record<string, unknown>>>;
+	documentAttachmentAdd(options: DocumentReference & { name: string; base64: string; request_id: string }): Promise<ApickResult<Record<string, unknown>>>;
+	documentAttachmentRemove(options: DocumentReference & { attachment_id: string }): Promise<ApickResult<Record<string, unknown>>>;
+	documentDownloadBundle(options: DocumentDownloadInput): Promise<ApickBinaryResult>;
+	documentDownloadPdf(options: DocumentDownloadInput): Promise<ApickBinaryResult>;
+	documentWorkflowQuote(options?: { action?: 'attachment_review'; document_id?: string; version?: number }): Promise<ApickResult<DocumentWorkflowQuote>>;
+	documentWorkflowStart(options: DocumentWorkflowInput): Promise<ApickResult<DocumentWorkflowJob>>;
+	documentWorkflowGet(options: DocumentJobReference): Promise<ApickResult<DocumentWorkflowJob>>;
+	documentWorkflowAnswer(options: DocumentJobReference & DocumentWorkflowAnswerInput): Promise<ApickResult<DocumentWorkflowJob>>;
+	documentWorkflowApply(options: DocumentJobReference & { request_id: string }): Promise<ApickResult<SavedDocument>>;
+	documentWorkflowCancel(options: DocumentJobReference): Promise<ApickResult<DocumentWorkflowJob>>;
+	documentVerify(options: DocumentVersion): Promise<ApickResult<DocumentVerification>>;
+	documentFinalize(options: DocumentVersion & { verification_hash: string }): Promise<ApickResult<DocumentVerification>>;
 	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }): Promise<ApickBinaryResult>;
 	/** 서식 묶음 — 최대 10건을 한 번에 만들어 ZIP 하나로 받는다(성공한 건만 합계 과금). */
 	formBundle(forms: Array<{ form: string; text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }>): Promise<ApickBinaryResult>;

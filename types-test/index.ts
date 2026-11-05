@@ -209,3 +209,14 @@ const documentProposal = client.documentAiWrite({ action: 'draft', text: '주간
 const documentQuote = client.documentQuote({ document_id: 'document-id-12345', version: 1 });
 const documentFile: Promise<ApickBinaryResult> = client.documentDownload({ document_id: 'document-id-12345', version: 1, content_hash: 'a'.repeat(64), request_id: 'request-id-123456' });
 const documentRemoved = client.documentDelete({ document_id: 'document-id-12345' });
+
+client.documentWorkflowStart({text:'문서 작성',max_points:20,total_max_points:100,request_id:'workflow-request-1'}).then(r=>{const remaining: number | undefined=r.data.remaining_points;void remaining;});
+client.documentWorkflowQuote({action:'attachment_review',document_id:'document-id-0001',version:1});
+client.documentFinalize({document_id:'document-id-0001',version:1,verification_hash:'hash'});
+client.documentDownloadPdf({document_id:'document-id-0001',version:1,content_hash:'hash',request_id:'download-id-001'});
+client.documentTemplate({form:'labor_contract_standard',edition:'labor-open-20250307'});
+client.documentWorkflowAnswer({job_id:'workflow-id-001',text:'추가 답변',max_points:20,request_id:'answer-request-1'});
+// @ts-expect-error 첨부 대조는 신규 접수에서만 가능하다.
+client.documentWorkflowAnswer({job_id:'workflow-id-001',text:'추가 답변',action:'attachment_review',max_points:20,request_id:'answer-request-2'});
+// @ts-expect-error 추가 답변은 본문이 필수다.
+client.documentWorkflowAnswer({job_id:'workflow-id-001',max_points:20,request_id:'answer-request-3'});

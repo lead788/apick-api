@@ -696,3 +696,20 @@ Create, list, get, update, delete and quote are free. Public API AI writing cost
 Methods: `documentCreate`, `documentList`, `documentGet`, `documentUpdate`, `documentDelete`, `documentAiWrite`, `documentQuote`, `documentDownload`. Each takes an options object; `documentList()` needs no argument. See the [example](./examples/documents.mjs) and [API guide](https://apick.app/dev_guide/document_create).
 
 Supply a `request_id` for create, update, AI and download; reuse it when retrying the same request. Updates require the last read `version`. Downloads require the quote's `version` and `content_hash`. On conflicts, reload or save a separate copy. AI results are proposals and are not automatically saved. Document `content` uses a JSON tree with a `doc` root, e.g. `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Hello'}]}]}`.
+
+
+## 핵심 문서 작성·검증
+
+핵심 30종의 목적·필수 항목은 `documentTemplates`로 검색하고 `documentTemplate`로 판본을 선택합니다. `documentWorkflowQuote` → `documentWorkflowStart` → `documentWorkflowGet` → `documentWorkflowAnswer` → `documentWorkflowApply` 순서로 작성합니다. 각 단계 `max_points`와 최초 `total_max_points`를 지정하며 후속 단계는 총 한도를 상속합니다. 추가 답변은 새 요청 ID와 단계별 동의가 필요합니다. `documentWorkflowCancel`은 미완료 작업을 취소합니다. 재시도는 같은 요청 ID와 본문을 재사용하세요.
+
+`documentAssist`·`documentReview`는 작성 보조·검토, `documentAttachmentList/Add/Remove`는 첨부 관리입니다. 첨부 대조는 `action: 'attachment_review'`, `document_id`, `version`으로 별도 견적·접수하며 파일당 20P입니다. 이 대조는 작성 흐름과 별도의 예산입니다. 읽지 못한 이미지·개체는 검증 완료로 표시하지 않습니다.
+
+저장 후 `documentVerify`로 근거·계산·공식 요건을 확인하고, 차단 항목이 없을 때 반환된 `verification_hash`와 현재 `version`으로 `documentFinalize`를 호출합니다. 자료와 일치함은 실재나 법적 효력 보증이 아닙니다. 수정하면 다시 검증해야 합니다. `documentDownloadPdf`·`documentDownloadBundle`은 DOCX와 같은 구매 권리를 사용합니다. 기존 8개 메서드는 그대로 유지합니다.
+
+## Core document workflows and verification
+
+Search 30 core profiles with `documentTemplates`, and select an edition with `documentTemplate`. Use `documentWorkflowQuote`, `documentWorkflowStart`, `documentWorkflowGet`, `documentWorkflowAnswer` and `documentWorkflowApply` in sequence. Supply a per-step `max_points` and an initial `total_max_points`; child steps inherit the total cap. Each additional step needs a new request ID and consent. Reuse the identical ID and body on retry. Cancel pending work with `documentWorkflowCancel`.
+
+`documentAssist` and `documentReview` provide assistance and review. Manage files with `documentAttachmentList`, `documentAttachmentAdd` and `documentAttachmentRemove`. Attachment review uses a separate quote/start with `action: 'attachment_review'`, `document_id` and `version`, at 20P per file, under its own budget. Unread images or objects remain unverified.
+
+Run `documentVerify` after saving. Only finalize when no blocking issues remain, using the current version and returned `verification_hash` with `documentFinalize`. Grounding does not guarantee real-world facts or legal effect. Changes require re-verification. `documentDownloadPdf` and `documentDownloadBundle` share the DOCX purchase entitlement. The original eight document methods remain compatible.

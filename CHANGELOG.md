@@ -1,3 +1,8 @@
+# 6.9.0
+
+- 문서 작성 흐름·첨부 대조·검증·PDF·ZIP 메서드 18개와 TypeScript 계약을 추가했습니다.
+- Added 18 document workflow, attachment, verification and export methods; existing methods remain compatible.
+
 ## 6.8.0 (2026-11-04)
 
 - 자동차등록원부 등본 접수·결과 메서드와 PDF 본문·차대번호 타입을 추가했습니다.

@@ -134,6 +134,24 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	documentAiWrite: { endpoint: '/rest/document_ai_write', timeoutMs: 65000, output: 'json', json: true },
 	documentQuote: { endpoint: '/rest/document_quote', timeoutMs: 30000, output: 'json', json: true },
 	documentDownload: { endpoint: '/rest/document_download', timeoutMs: 30000, output: 'binary', json: true, filename: 'document.docx' },
+	documentQuota: { endpoint: '/rest/document_quota', timeoutMs: 60000, output: 'json', json: true },
+	documentTemplate: { endpoint: '/rest/document_template', timeoutMs: 60000, output: 'json', json: true },
+	documentTemplates: { endpoint: '/rest/document_templates', timeoutMs: 60000, output: 'json', json: true },
+	documentAssist: { endpoint: '/rest/document_assist', timeoutMs: 65000, output: 'json', json: true },
+	documentReview: { endpoint: '/rest/document_review', timeoutMs: 65000, output: 'json', json: true },
+	documentAttachmentList: { endpoint: '/rest/document_attachment_list', timeoutMs: 60000, output: 'json', json: true },
+	documentAttachmentAdd: { endpoint: '/rest/document_attachment_add', timeoutMs: 60000, output: 'json', json: true },
+	documentAttachmentRemove: { endpoint: '/rest/document_attachment_remove', timeoutMs: 60000, output: 'json', json: true },
+	documentDownloadBundle: { endpoint: '/rest/document_download_bundle', timeoutMs: 60000, output: 'binary', json: true, filename: 'document.zip' },
+	documentDownloadPdf: { endpoint: '/rest/document_download_pdf', timeoutMs: 60000, output: 'binary', json: true, filename: 'document.pdf' },
+	documentWorkflowQuote: { endpoint: '/rest/document_workflow_quote', timeoutMs: 60000, output: 'json', json: true },
+	documentWorkflowStart: { endpoint: '/rest/document_workflow_start', timeoutMs: 60000, output: 'json', json: true },
+	documentWorkflowGet: { endpoint: '/rest/document_workflow_get', timeoutMs: 60000, output: 'json', json: true },
+	documentWorkflowAnswer: { endpoint: '/rest/document_workflow_answer', timeoutMs: 60000, output: 'json', json: true },
+	documentWorkflowApply: { endpoint: '/rest/document_workflow_apply', timeoutMs: 60000, output: 'json', json: true },
+	documentWorkflowCancel: { endpoint: '/rest/document_workflow_cancel', timeoutMs: 60000, output: 'json', json: true },
+	documentVerify: { endpoint: '/rest/document_verify', timeoutMs: 60000, output: 'json', json: true },
+	documentFinalize: { endpoint: '/rest/document_finalize', timeoutMs: 60000, output: 'json', json: true },
 	formDocument: { endpoint: '/rest/form_document', timeoutMs: 40_000, output: 'binary', json: true, filename: 'document.pdf' },
 	formBundle: { endpoint: '/rest/form_document_batch', timeoutMs: 120_000, output: 'binary', filename: 'forms_bundle.zip' },
 	formList: { endpoint: '/rest/form_list', timeoutMs: 20_000, output: 'json' },
@@ -1582,6 +1600,25 @@ class ApickClient {
 	documentDownload(options) {
 		return this._call('documentDownload', options);
 	}
+
+	documentQuota(options = {}) { return this._call('documentQuota', options); }
+	documentTemplate(options = {}) { return this._call('documentTemplate', options); }
+	documentTemplates(options = {}) { return this._call('documentTemplates', options); }
+	documentAssist(options = {}) { return this._call('documentAssist', options); }
+	documentReview(options = {}) { return this._call('documentReview', options); }
+	documentAttachmentList(options = {}) { return this._call('documentAttachmentList', options); }
+	documentAttachmentAdd(options = {}) { return this._call('documentAttachmentAdd', options); }
+	documentAttachmentRemove(options = {}) { return this._call('documentAttachmentRemove', options); }
+	documentDownloadBundle(options = {}) { return this._call('documentDownloadBundle', options); }
+	documentDownloadPdf(options = {}) { return this._call('documentDownloadPdf', options); }
+	documentWorkflowQuote(options = {}) { return this._call('documentWorkflowQuote', options); }
+	documentWorkflowStart(options = {}) { return this._call('documentWorkflowStart', options); }
+	documentWorkflowGet(options = {}) { return this._call('documentWorkflowGet', options); }
+	documentWorkflowAnswer(options = {}) { return this._call('documentWorkflowAnswer', options); }
+	documentWorkflowApply(options = {}) { return this._call('documentWorkflowApply', options); }
+	documentWorkflowCancel(options = {}) { return this._call('documentWorkflowCancel', options); }
+	documentVerify(options = {}) { return this._call('documentVerify', options); }
+	documentFinalize(options = {}) { return this._call('documentFinalize', options); }
 
 	formDocument(form, options) {
 		return this._call('formDocument', buildFormPayload(form, options));

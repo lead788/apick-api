@@ -2,6 +2,7 @@ import ApickClient, {
   ApickApiError,
   ApickBinaryResult,
   ApickResult,
+  DocumentAssistTurn,
   SERVICES,
   TTS_VOICE_IDS
 } from '../src/index.js';
@@ -220,3 +221,7 @@ client.documentWorkflowAnswer({job_id:'workflow-id-001',text:'추가 답변',max
 client.documentWorkflowAnswer({job_id:'workflow-id-001',text:'추가 답변',action:'attachment_review',max_points:20,request_id:'answer-request-2'});
 // @ts-expect-error 추가 답변은 본문이 필수다.
 client.documentWorkflowAnswer({job_id:'workflow-id-001',max_points:20,request_id:'answer-request-3'});
+
+// documentAssist history
+const assistTurns: DocumentAssistTurn[] = [{ role: 'user', text: '공급자는 에이픽입니다' }];
+void assistTurns;

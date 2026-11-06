@@ -1,4 +1,9 @@
-# 6.9.0
+# 6.10.0
+
+- `documentAssist`에 대화 맥락 `history` 입력과 `DocumentAssistTurn` 타입을 추가했습니다. 열린 서식과 다른 서식을 요청하면 전환 여부를 먼저 묻는 응답(`switch: true`)은 차감하지 않습니다.
+- Added the `history` option and `DocumentAssistTurn` type to `documentAssist`; the template-switch confirmation (`switch: true`) is not charged.
+
+## 6.9.0
 
 - 문서 작성 흐름·첨부 대조·검증·PDF·ZIP 메서드 18개와 TypeScript 계약을 추가했습니다.
 - Added 18 document workflow, attachment, verification and export methods; existing methods remain compatible.

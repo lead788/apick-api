@@ -8,7 +8,10 @@ export interface DocumentNode {
  type: 'doc' | 'paragraph' | 'heading' | 'text' | 'hardBreak' | 'bulletList' | 'orderedList' | 'listItem' | 'table' | 'tableRow' | 'tableCell' | 'tableHeader' | 'image' | 'pageBreak' | 'docField' | 'formSheet';
  text?: string; attrs?: Record<string, unknown>; content?: DocumentNode[];
  marks?: Array<{ type: 'bold' | 'italic' | 'underline' | 'strike' | 'textStyle' | 'highlight'; attrs?: Record<string, unknown> }>;
-}
+}
+/** 같은 대화에서 앞서 오간 말. 최근 8개, 한 말당 1,500자까지 보낸다. 근거로는 user 말만 쓴다. */
+export interface DocumentAssistTurn { role: 'user' | 'assistant'; text: string }
+
 export interface DocumentBody { schema_version?: 1; title?: string; form?: string; content?: DocumentNode; }
 export interface SavedDocument extends DocumentBody { document_id: string; version: number; content_hash: string; updated_at: string; expires_at: string; download_price: number; }
 export interface DocumentReference { document_id: string; }
@@ -1401,7 +1404,8 @@ export class ApickClient {
 	documentQuota(options?: Record<string, never>): Promise<ApickResult<Record<string, unknown>>>;
 	documentTemplate(options: { form: string; edition?: string }): Promise<ApickResult<DocumentBody>>;
 	documentTemplates(options?: { query?: string }): Promise<ApickResult<Record<string, unknown>>>;
-	documentAssist(options: { text: string; document?: DocumentBody; selection?: string; request_id: string }): Promise<ApickResult<Record<string, unknown>>>;
+	/** 작성 보조. `history`에 같은 대화의 앞선 말을 넣으면 이미 말한 값을 다시 묻지 않는다. 열린 서식과 다른 서식을 이름으로 요청하면 `switch: true` 응답으로 전환 여부를 먼저 묻고 차감하지 않는다. */
+	documentAssist(options: { text: string; document?: DocumentBody; selection?: string; history?: DocumentAssistTurn[]; request_id: string }): Promise<ApickResult<Record<string, unknown>>>;
 	documentReview(options: { document: DocumentBody; request_id: string }): Promise<ApickResult<Record<string, unknown>>>;
 	documentAttachmentList(options: DocumentReference): Promise<ApickResult<Record<string, unknown>>>;
 	documentAttachmentAdd(options: DocumentReference & { name: string; base64: string; request_id: string }): Promise<ApickResult<Record<string, unknown>>>;

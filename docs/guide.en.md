@@ -409,6 +409,8 @@ Supply a `request_id` for create, update, AI and download; reuse it when retryin
 
 Search 30 core profiles with `documentTemplates`, and select an edition with `documentTemplate`. Use `documentWorkflowQuote`, `documentWorkflowStart`, `documentWorkflowGet`, `documentWorkflowAnswer` and `documentWorkflowApply` in sequence. Supply a per-step `max_points` and an initial `total_max_points`; child steps inherit the total cap. Each additional step needs a new request ID and consent. Reuse the identical ID and body on retry. Cancel pending work with `documentWorkflowCancel`.
 
+Pass earlier turns to `documentAssist` as `history` (`{role, text}`, last 8) so values already given are filled without asking again. If the request names a template different from `document.form`, it first asks whether to switch (`switch: true`) without filling values; this confirmation is not charged.
+
 `documentAssist` and `documentReview` provide assistance and review. Manage files with `documentAttachmentList`, `documentAttachmentAdd` and `documentAttachmentRemove`. Attachment review uses a separate quote/start with `action: 'attachment_review'`, `document_id` and `version`, at 20P per file, under its own budget. Unread images or objects remain unverified.
 
 Run `documentVerify` after saving. Only finalize when no blocking issues remain, using the current version and returned `verification_hash` with `documentFinalize`. Grounding does not guarantee real-world facts or legal effect. Changes require re-verification. `documentDownloadPdf` and `documentDownloadBundle` share the DOCX purchase entitlement. The original eight document methods remain compatible.

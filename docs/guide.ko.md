@@ -420,6 +420,8 @@ TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOp
 
 핵심 30종의 목적·필수 항목은 `documentTemplates`로 검색하고 `documentTemplate`로 판본을 선택합니다. `documentWorkflowQuote` → `documentWorkflowStart` → `documentWorkflowGet` → `documentWorkflowAnswer` → `documentWorkflowApply` 순서로 작성합니다. 각 단계 `max_points`와 최초 `total_max_points`를 지정하며 후속 단계는 총 한도를 상속합니다. 추가 답변은 새 요청 ID와 단계별 동의가 필요합니다. `documentWorkflowCancel`은 미완료 작업을 취소합니다. 재시도는 같은 요청 ID와 본문을 재사용하세요.
 
+`documentAssist`의 `history`에 같은 대화의 앞선 말(`{role, text}` 최근 8개)을 넣으면 이미 말한 값을 다시 묻지 않고 채웁니다. `document.form`과 다른 서식을 이름으로 요청하면 값을 채우기 전에 `switch: true` 응답으로 전환 여부를 먼저 묻고, 이 확인은 차감하지 않습니다.
+
 `documentAssist`·`documentReview`는 작성 보조·검토, `documentAttachmentList/Add/Remove`는 첨부 관리입니다. 첨부 대조는 `action: 'attachment_review'`, `document_id`, `version`으로 별도 견적·접수하며 파일당 20P입니다. 이 대조는 작성 흐름과 별도의 예산입니다. 읽지 못한 이미지·개체는 검증 완료로 표시하지 않습니다.
 
 저장 후 `documentVerify`로 근거·계산·공식 요건을 확인하고, 차단 항목이 없을 때 반환된 `verification_hash`와 현재 `version`으로 `documentFinalize`를 호출합니다. 자료와 일치함은 실재나 법적 효력 보증이 아닙니다. 수정하면 다시 검증해야 합니다. `documentDownloadPdf`·`documentDownloadBundle`은 DOCX와 같은 구매 권리를 사용합니다. 기존 8개 메서드는 그대로 유지합니다.

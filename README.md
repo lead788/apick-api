@@ -128,7 +128,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `downloadTtsCandidate(jobId, candidateId)` | 폐기됨 / Retired | HTTP 409 |
 | `htmlToPdf(html, options)` | HTML→PDF | Binary |
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
-| `formDocument(form, options)` | 서식 자동작성(계약서·증명서·신고서 130종, 서명·도장 이미지, PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX) / Korean form generation | Binary |
+| `formDocument(form, options)` | 서식 자동작성(계약서·증명서·신고서 160종, 서명·도장 이미지, PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX) / Korean form generation | Binary |
 | `formBundle(forms)` | 서식 묶음 ZIP(최대 10건, 성공한 건만 과금) / Multi-form ZIP bundle | Binary |
 | `formList(options)` | 서식 목록(무료) / Form catalog (free) | JSON |
 | `formFields(form)` | 서식 필드 정의(무료) / Form field guide (free) | JSON |

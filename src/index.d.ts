@@ -8,7 +8,7 @@ export interface DocumentNode {
  type: 'doc' | 'paragraph' | 'heading' | 'text' | 'hardBreak' | 'bulletList' | 'orderedList' | 'listItem' | 'table' | 'tableRow' | 'tableCell' | 'tableHeader' | 'image' | 'pageBreak' | 'docField' | 'formSheet';
  text?: string; attrs?: Record<string, unknown>; content?: DocumentNode[];
  marks?: Array<{ type: 'bold' | 'italic' | 'underline' | 'strike' | 'textStyle' | 'highlight'; attrs?: Record<string, unknown> }>;
-}
+}
 /** 같은 대화에서 앞서 오간 말. 최근 8개, 한 말당 1,500자까지 보낸다. 근거로는 user 말만 쓴다. */
 export interface DocumentAssistTurn { role: 'user' | 'assistant'; text: string }
 
@@ -1391,7 +1391,7 @@ export class ApickClient {
 	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
-	/** 서식 자동작성 — 계약서·증명서·신고서 130종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	/** 서식 자동작성 — 계약서·증명서·신고서 160종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
 	documentCreate(options: DocumentCreateInput): Promise<ApickResult<SavedDocument>>;
 	documentList(options?: Record<string, never>): Promise<ApickResult<{ documents: Array<Pick<SavedDocument, 'document_id' | 'title' | 'form' | 'version' | 'updated_at' | 'expires_at'>> }>>;
 	documentGet(options: DocumentReference): Promise<ApickResult<SavedDocument>>;
@@ -1400,7 +1400,7 @@ export class ApickClient {
 	documentAiWrite(options: DocumentAiInput): Promise<ApickResult<DocumentAiResult>>;
 	documentQuote(options: DocumentVersion): Promise<ApickResult<DocumentQuote>>;
 	documentDownload(options: DocumentDownloadInput): Promise<ApickBinaryResult>;
-	/** 서식 자동작성 — 계약서·증명서·신고서 130종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	/** 서식 자동작성 — 계약서·증명서·신고서 160종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
 	documentQuota(options?: Record<string, never>): Promise<ApickResult<Record<string, unknown>>>;
 	documentTemplate(options: { form: string; edition?: string }): Promise<ApickResult<DocumentBody>>;
 	documentTemplates(options?: { query?: string }): Promise<ApickResult<Record<string, unknown>>>;

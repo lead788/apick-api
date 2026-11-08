@@ -1,3 +1,8 @@
+## 6.10.1 (2026-11-08)
+
+- AI 문서작성 서식이 160종이 됐습니다(노무·인사, 부동산, 사업·세무, 민원·채용, 생활·교육 28종 추가). `formList` 로 확인합니다.
+- Added 28 more forms (160 total) across HR, real estate, business, civil and life categories.
+
 # 6.10.0
 
 - `documentAssist`에 대화 맥락 `history` 입력과 `DocumentAssistTurn` 타입을 추가했습니다. 열린 서식과 다른 서식을 요청하면 전환 여부를 먼저 묻는 응답(`switch: true`)은 차감하지 않습니다.

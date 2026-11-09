@@ -1,3 +1,8 @@
+## 6.10.2 (2026-11-09)
+
+- AI 문서작성 서식이 200종이 됐습니다(노무·인사, 부동산, 사업·세무·금융·운영, 법무·민원·채용, 생활·교육 40종 추가). `formList` 로 확인합니다.
+- Added 40 more forms (200 total) across HR, real estate, business/tax/finance/operations, civil, and life/school categories.
+
 ## 6.10.1 (2026-11-08)
 
 - AI 문서작성 서식이 160종이 됐습니다(노무·인사, 부동산, 사업·세무, 민원·채용, 생활·교육 28종 추가). `formList` 로 확인합니다.

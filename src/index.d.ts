@@ -1391,7 +1391,7 @@ export class ApickClient {
 	/** @deprecated Retired endpoint; the service returns HTTP 409. */
 	downloadTtsCandidate(jobId: string, candidateId: string): Promise<ApickBinaryResult>;
 	htmlToPdf(html: string, options?: { pagination?: boolean }): Promise<ApickBinaryResult>;
-	/** 서식 자동작성 — 계약서·증명서·신고서 160종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	/** 서식 자동작성 — 계약서·증명서·신고서 200종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
 	documentCreate(options: DocumentCreateInput): Promise<ApickResult<SavedDocument>>;
 	documentList(options?: Record<string, never>): Promise<ApickResult<{ documents: Array<Pick<SavedDocument, 'document_id' | 'title' | 'form' | 'version' | 'updated_at' | 'expires_at'>> }>>;
 	documentGet(options: DocumentReference): Promise<ApickResult<SavedDocument>>;
@@ -1400,7 +1400,7 @@ export class ApickClient {
 	documentAiWrite(options: DocumentAiInput): Promise<ApickResult<DocumentAiResult>>;
 	documentQuote(options: DocumentVersion): Promise<ApickResult<DocumentQuote>>;
 	documentDownload(options: DocumentDownloadInput): Promise<ApickBinaryResult>;
-	/** 서식 자동작성 — 계약서·증명서·신고서 160종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
+	/** 서식 자동작성 — 계약서·증명서·신고서 200종을 PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX 로 만든다. */
 	documentQuota(options?: Record<string, never>): Promise<ApickResult<Record<string, unknown>>>;
 	documentTemplate(options: { form: string; edition?: string }): Promise<ApickResult<DocumentBody>>;
 	documentTemplates(options?: { query?: string }): Promise<ApickResult<Record<string, unknown>>>;

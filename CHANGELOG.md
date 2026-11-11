@@ -1,3 +1,10 @@
+## 6.12.0 (2026-11-11)
+
+- `tiktokProfile`·`naverShoppingProduct`·`linkedinProfile` 이 공개 전 점검으로 일시 중단됐습니다. 응답 시간·성공률이 공개 기준에 못 미쳐 문서 목록에서 뺐고, 타입 선언에 `@deprecated` 를 붙였습니다. 기존 코드가 깨지지 않도록 메서드는 남겨 두며, 호출하면 과금 없이 실패합니다. 기준을 충족하면 다시 공개합니다.
+- `coupangProduct` 를 다시 정상 제공합니다. 보통 15~30초, 최대 40초 걸립니다.
+- `tiktokProfile`, `naverShoppingProduct` and `linkedinProfile` are temporarily unavailable while under pre-release review. They are removed from the documented list and marked `@deprecated` in the type declarations; the methods stay for compatibility and fail without charge.
+- `coupangProduct` is available again (typically 15–30 s, at most 40 s).
+
 ## 6.11.0 (2026-11-11)
 
 - `exchangeRate({ month, currency })` 를 추가했습니다. 원화 기준 50여 개 통화의 월평균·연평균 환율을 월 단위로 돌려줍니다. `month`(YYYYMM)를 생략하면 지난달이고, `currency` 는 `'USD,JPY'` 또는 `['USD', 'JPY']` 로 보냅니다. JPY·IDR·VND 는 100단위(`unit`=100) 값입니다. 건당 5P, 실패하면 차감되지 않습니다. 응답 타입 `ExchangeRate`·`ExchangeRateItem` 을 함께 추가했습니다. 잠금 파일 버전도 패키지 버전에 맞췄습니다.

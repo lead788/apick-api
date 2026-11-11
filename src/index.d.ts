@@ -1344,12 +1344,15 @@ export class ApickClient {
 	googleRankCheck(keyword: string, domain: string): Promise<ApickResult<RankCheck>>;
 	instagramProfile(usernameOrUrl: string): Promise<ApickResult<InstagramProfile>>;
 	instagramPost(url: string): Promise<ApickResult<InstagramPost>>;
+	/** @deprecated 공개 전 점검으로 일시 중단됐습니다. 호출하면 과금 없이 실패합니다. Temporarily unavailable (under pre-release review); calls fail without charge. */
 	tiktokProfile(usernameOrUrl: string): Promise<ApickResult<TiktokProfile>>;
 	amazonProduct(urlOrAsin: string): Promise<ApickResult<AmazonProduct>>;
 	xProfile(usernameOrUrl: string): Promise<ApickResult<XProfile>>;
 	xPost(url: string): Promise<ApickResult<XPost>>;
 	coupangProduct(urlOrProductId: string): Promise<ApickResult<CoupangProduct>>;
+	/** @deprecated 공개 전 점검으로 일시 중단됐습니다. 호출하면 과금 없이 실패합니다. Temporarily unavailable (under pre-release review); calls fail without charge. */
 	naverShoppingProduct(url: string): Promise<ApickResult<NaverShoppingProduct>>;
+	/** @deprecated 공개 전 점검으로 일시 중단됐습니다. 호출하면 과금 없이 실패합니다. Temporarily unavailable (under pre-release review); calls fail without charge. */
 	linkedinProfile(url: string): Promise<ApickResult<LinkedinProfile>>;
 	linkedinCompany(url: string): Promise<ApickResult<LinkedinCompany>>;
 	linkedinJob(url: string): Promise<ApickResult<LinkedinJob>>;

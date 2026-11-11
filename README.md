@@ -87,13 +87,10 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `youtubeComments(url, options)` | 유튜브 댓글 / YouTube comments | JSON |
 | `instagramProfile(usernameOrUrl)` | 인스타그램 공개 프로필 / Instagram public profile | JSON |
 | `instagramPost(url)` | 인스타그램 게시물·릴스 / Instagram post or reel | JSON |
-| `tiktokProfile(usernameOrUrl)` | 틱톡 공개 프로필 / TikTok public profile | JSON |
 | `amazonProduct(urlOrAsin)` | 아마존 상품 정보 / Amazon product | JSON |
 | `xProfile(usernameOrUrl)` | X 공개 프로필·최근 게시물 / X public profile and recent posts | JSON |
 | `xPost(url)` | X 게시물 / X post | JSON |
 | `coupangProduct(urlOrProductId)` | 쿠팡 상품 정보 / Coupang product | JSON |
-| `naverShoppingProduct(url)` | 네이버 브랜드스토어 상품 정보 / Naver brand store product | JSON |
-| `linkedinProfile(url)` | 링크드인 프로필 / LinkedIn profile | JSON |
 | `linkedinCompany(url)` | 링크드인 회사 정보 / LinkedIn company | JSON |
 | `linkedinJob(url)` | 링크드인 채용공고 / LinkedIn job posting | JSON |
 | `courtAuction(caseNo, court)` | 법원 경매사건 조회 / Court auction case | JSON |

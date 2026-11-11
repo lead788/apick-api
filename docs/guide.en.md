@@ -88,7 +88,7 @@ const company = await client.linkedinCompany('https://www.linkedin.com/company/e
 const job = await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234567/');
 ```
 
-Coupang accepts a product number or a product URL (`/vp/products/{id}`) and typically takes 15–30 s (at most 40 s). LinkedIn accepts company (`/company/`) and job posting (`/jobs/view/`) URLs. `naverShoppingProduct` and `linkedinProfile` are temporarily unavailable under pre-release review (calls fail without charge). `tiktokProfile` was retired on 2026-11-12; calls return HTTP 410 without charge, and the method will be removed in the next major version.
+Coupang accepts a product number or a product URL (`/vp/products/{id}`) and typically takes 15–30 s (at most 40 s). LinkedIn accepts company (`/company/`) and job posting (`/jobs/view/`) URLs. `tiktokProfile`, `naverShoppingProduct` and `linkedinProfile` were retired on 2026-11-12; calls return HTTP 410 (`PRODUCT_RETIRED`) without charge, and the methods will be removed in the next major version.
 
 ## OCR
 

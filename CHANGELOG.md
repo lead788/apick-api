@@ -1,3 +1,8 @@
+## 6.14.0 (2026-11-12)
+
+- 네이버 브랜드스토어 상품 조회·링크드인 프로필 조회 상품이 종료돼 `naverShoppingProduct`·`linkedinProfile` 은 과금 없이 HTTP 410(`PRODUCT_RETIRED`)을 받습니다. 기존 코드가 깨지지 않도록 메서드와 타입은 남겨 두고 `tiktokProfile` 과 함께 다음 메이저 버전에서 제거합니다. 링크드인 회사(`linkedinCompany`)·채용공고(`linkedinJob`)는 그대로 제공합니다.
+- `naverShoppingProduct` and `linkedinProfile` are retired: calls return HTTP 410 (`PRODUCT_RETIRED`) without charge. The methods and types stay for compatibility and will be removed together with `tiktokProfile` in the next major version. `linkedinCompany` and `linkedinJob` remain available.
+
 ## 6.13.0 (2026-11-12)
 
 - 틱톡 프로필 조회 상품이 종료돼 `tiktokProfile` 은 과금 없이 HTTP 410(`PRODUCT_RETIRED`)을 받습니다. 기존 코드가 깨지지 않도록 메서드와 타입은 남겨 두고 다음 메이저 버전에서 제거합니다.

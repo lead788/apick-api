@@ -1350,9 +1350,9 @@ export class ApickClient {
 	xProfile(usernameOrUrl: string): Promise<ApickResult<XProfile>>;
 	xPost(url: string): Promise<ApickResult<XPost>>;
 	coupangProduct(urlOrProductId: string): Promise<ApickResult<CoupangProduct>>;
-	/** @deprecated 공개 전 점검으로 일시 중단됐습니다. 호출하면 과금 없이 실패합니다. Temporarily unavailable (under pre-release review); calls fail without charge. */
+	/** @deprecated 2026-11-12 종료된 상품입니다. 호출하면 과금 없이 HTTP 410(`PRODUCT_RETIRED`)을 받습니다. 다음 메이저 버전에서 제거됩니다. Retired on 2026-11-12; calls return HTTP 410 (`PRODUCT_RETIRED`) without charge and the method will be removed in the next major version. */
 	naverShoppingProduct(url: string): Promise<ApickResult<NaverShoppingProduct>>;
-	/** @deprecated 공개 전 점검으로 일시 중단됐습니다. 호출하면 과금 없이 실패합니다. Temporarily unavailable (under pre-release review); calls fail without charge. */
+	/** @deprecated 2026-11-12 종료된 상품입니다. 호출하면 과금 없이 HTTP 410(`PRODUCT_RETIRED`)을 받습니다. 다음 메이저 버전에서 제거됩니다. Retired on 2026-11-12; calls return HTTP 410 (`PRODUCT_RETIRED`) without charge and the method will be removed in the next major version. */
 	linkedinProfile(url: string): Promise<ApickResult<LinkedinProfile>>;
 	linkedinCompany(url: string): Promise<ApickResult<LinkedinCompany>>;
 	linkedinJob(url: string): Promise<ApickResult<LinkedinJob>>;

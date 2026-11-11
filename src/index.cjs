@@ -92,6 +92,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	buildingRegister: { endpoint: '/rest/bldrgst', timeoutMs: 35_000, output: 'json' },
 	appReviews: { endpoint: '/rest/app_reviews', timeoutMs: 35_000, output: 'json' },
 	vehicleEmission: { endpoint: '/rest/vehicle_emission', timeoutMs: 25_000, output: 'json' },
+	exchangeRate: { endpoint: '/rest/exchange_rate', timeoutMs: 25_000, output: 'json' },
 	vehicleRecall: { endpoint: '/rest/vehicle_recall', timeoutMs: 45_000, output: 'json' },
 	hipassUnpaid: { endpoint: '/rest/hipass_unpaid', timeoutMs: 30_000, output: 'json' },
 	vehicleTaxCalc: { endpoint: '/rest/vehicle_tax_calc', timeoutMs: 15_000, output: 'json' },
@@ -1202,6 +1203,19 @@ class ApickClient {
 	// 배출가스 인증정보. 차량번호가 아니라 배출가스인증번호를 받는다.
 	vehicleEmission(certNo) {
 		return this._call('vehicleEmission', { cert_no: requiredString('certNo', certNo, 40) });
+	}
+
+	// 월평균·연평균 환율(원화 기준). month 를 생략하면 지난달이고, currency 는 'USD,JPY' 또는 ['USD','JPY'] 로 받는다.
+	exchangeRate(options) {
+		const config = options === undefined || options === null ? {} : options;
+		if (typeof config !== 'object' || Array.isArray(config)) throw new TypeError('options must be an object.');
+		const input = {};
+		if (config.month !== undefined && config.month !== null && config.month !== '') input.month = requiredString('month', String(config.month), 7);
+		if (config.currency !== undefined && config.currency !== null && config.currency !== '') {
+			const list = Array.isArray(config.currency) ? config.currency : [config.currency];
+			input.currency = requiredString('currency', list.map(String).join(','), 300);
+		}
+		return this._call('exchangeRate', input);
 	}
 
 	// 자동차 리콜 대상 여부. carNo 와 vin 중 하나만 보낸다. 리콜 대상이 아니면 과금되지 않는다.

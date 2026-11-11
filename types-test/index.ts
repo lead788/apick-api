@@ -225,3 +225,9 @@ client.documentWorkflowAnswer({job_id:'workflow-id-001',max_points:20,request_id
 // documentAssist history
 const assistTurns: DocumentAssistTurn[] = [{ role: 'user', text: '공급자는 에이픽입니다' }];
 void assistTurns;
+
+// exchangeRate
+client.exchangeRate({ month: '202609', currency: ['USD', 'JPY'] }).then(r => { const unit: number | undefined = r.data.rates[0]?.unit; void unit; });
+client.exchangeRate();
+// @ts-expect-error currency 는 문자열 또는 문자열 배열이다.
+client.exchangeRate({ currency: 840 });

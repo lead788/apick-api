@@ -37,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 143 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 143);
+test('exports a focused catalog of 144 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 144);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -997,21 +997,26 @@ test('vehicle, finance and building lookups send the documented REST fields', as
 	await client.hipassUnpaid('서울12가3456');
 	await client.vehicleTaxCalc(1998, { carAgeYears: 4 });
 	await client.vehicleEmission('KMY-SY-13-24');
+	await client.exchangeRate({ month: '202609', currency: ['USD', 'JPY'] });
+	await client.exchangeRate();
 	await client.corpFinance('110111-1234567', { bizYear: '2024', type: 'summary' });
 	await client.buildingRegister({ sigunguCd: '11680', bjdongCd: '10300', bun: '12', type: 'title' });
 	await client.appReviews(1234567890, { page: 2 });
 	assert.deepEqual(requests.map(r => r.url.replace('https://api.example.test', '')), [
 		'/rest/vehicle_recall', '/rest/vehicle_recall', '/rest/hipass_unpaid', '/rest/vehicle_tax_calc',
-		'/rest/vehicle_emission', '/rest/corp_finance', '/rest/bldrgst', '/rest/app_reviews'
+		'/rest/vehicle_emission', '/rest/exchange_rate', '/rest/exchange_rate', '/rest/corp_finance', '/rest/bldrgst', '/rest/app_reviews'
 	]);
 	assert.deepEqual(requests[0].body, { car_no: '12가3456' });
 	assert.deepEqual(requests[1].body, { vin: 'KMHXX00XXXX000000' });
 	assert.deepEqual(requests[2].body, { car_no: '서울12가3456' });
 	assert.deepEqual(requests[3].body, { cc: '1998', car_age_years: '4' });
 	assert.deepEqual(requests[4].body, { cert_no: 'KMY-SY-13-24' });
-	assert.deepEqual(requests[5].body, { crno: '110111-1234567', bizYear: '2024', type: 'summary' });
-	assert.deepEqual(requests[6].body, { sigunguCd: '11680', bjdongCd: '10300', bun: '12', type: 'title' });
-	assert.deepEqual(requests[7].body, { appId: '1234567890', page: '2' });
+	assert.deepEqual(requests[5].body, { month: '202609', currency: 'USD,JPY' });
+	assert.deepEqual(requests[6].body, {});
+	assert.deepEqual(requests[7].body, { crno: '110111-1234567', bizYear: '2024', type: 'summary' });
+	assert.deepEqual(requests[8].body, { sigunguCd: '11680', bjdongCd: '10300', bun: '12', type: 'title' });
+	assert.deepEqual(requests[9].body, { appId: '1234567890', page: '2' });
+	assert.throws(() => client.exchangeRate('202609'), /options must be an object/);
 	assert.throws(() => client.vehicleRecall({}), /exactly one/);
 	assert.throws(() => client.vehicleRecall({ carNo: '12가3456', vin: 'KMHXX00XXXX000000' }), /exactly one/);
 	assert.throws(() => client.vehicleTaxCalc(), /cc is required/);

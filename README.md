@@ -111,6 +111,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `registryCorporateSearch({ corpRegNo | bizNo })` | 법인 등기 검색 / Corporate registry search | JSON |
 | `createRegistryRealestateJob(options)` / `createRegistryCorporateJob(options)` | 등기 열람·발급(접수와 PDF 수신을 한 요청, 건당 850P) / Registry view or issue with PDF in one request | PDF |
 | `vehicleEmission(certNo)` | 배출가스 인증정보 / Emission certification | JSON |
+| `exchangeRate({ month, currency })` | 월평균·연평균 환율(원화 기준, 건당 5P) / Monthly and yearly average KRW exchange rates (5P per call) | JSON |
 | `vehicleRecall({ carNo | vin })` | 자동차 리콜 대상 여부(대상 아니면 0P) / Vehicle recall check (0P when none) | JSON |
 | `hipassUnpaid(carNo)` | 하이패스 미납 여부(미납 없으면 0P) / Unpaid expressway toll check (0P when none) | JSON |
 | `vehicleTaxCalc(cc, options)` | 자동차세 계산 / Annual automobile tax | JSON |

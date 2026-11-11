@@ -531,6 +531,29 @@ export interface HipassUnpaid {
 	};
 }
 
+export interface ExchangeRateOptions {
+	/** 조회 월 YYYYMM 또는 YYYY-MM. 생략하면 지난달. 이번 달 이후는 조회할 수 없다. */
+	readonly month?: string;
+	/** 통화 코드(영문 3자리) 쉼표 문자열 또는 배열, 최대 60개. 생략하면 전체 통화. */
+	readonly currency?: string | readonly string[];
+}
+
+export interface ExchangeRateItem {
+	readonly currency: string;
+	/** 값이 나타내는 외화 단위. JPY·IDR·VND 는 100, 나머지는 1. */
+	readonly unit: number;
+	readonly monthly_average: number;
+	readonly yearly_average: number | null;
+}
+
+export interface ExchangeRate {
+	readonly month: string;
+	readonly base_currency: 'KRW';
+	readonly count: number;
+	readonly rates: readonly ExchangeRateItem[];
+	readonly missing_currencies?: readonly string[];
+}
+
 export interface VehicleTaxCalc {
 	readonly result: {
 		readonly year: number;
@@ -1343,6 +1366,7 @@ export class ApickClient {
 	buildingRegister(options: BuildingRegisterOptions): Promise<ApickResult>;
 	appReviews(appId: string | number, options?: { readonly country?: string; readonly page?: number }): Promise<ApickResult>;
 	vehicleEmission(certNo: string): Promise<ApickResult>;
+	exchangeRate(options?: ExchangeRateOptions): Promise<ApickResult<ExchangeRate>>;
 	vehicleRecall(input: { readonly carNo: string; readonly vin?: undefined } | { readonly vin: string; readonly carNo?: undefined }): Promise<ApickResult<VehicleRecall>>;
 	hipassUnpaid(carNo: string): Promise<ApickResult<HipassUnpaid>>;
 	vehicleTaxCalc(cc: number, options?: { readonly carAgeYears?: number; readonly year?: number }): Promise<ApickResult<VehicleTaxCalc>>;

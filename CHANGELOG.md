@@ -1,3 +1,8 @@
+## 6.11.0 (2026-11-11)
+
+- `exchangeRate({ month, currency })` 를 추가했습니다. 원화 기준 50여 개 통화의 월평균·연평균 환율을 월 단위로 돌려줍니다. `month`(YYYYMM)를 생략하면 지난달이고, `currency` 는 `'USD,JPY'` 또는 `['USD', 'JPY']` 로 보냅니다. JPY·IDR·VND 는 100단위(`unit`=100) 값입니다. 건당 5P, 실패하면 차감되지 않습니다. 응답 타입 `ExchangeRate`·`ExchangeRateItem` 을 함께 추가했습니다. 잠금 파일 버전도 패키지 버전에 맞췄습니다.
+- Added `exchangeRate({ month, currency })` for monthly and yearly (year-to-date for the current year) average KRW exchange rates for about 50 currencies. `month` defaults to last month; `currency` accepts a comma string or an array; JPY, IDR and VND are quoted per 100 units. 5 points per call, no charge on failure. Adds the `ExchangeRate` and `ExchangeRateItem` types and aligns the lockfile version.
+
 ## 6.10.2 (2026-11-09)
 
 - AI 문서작성 서식이 200종이 됐습니다(노무·인사, 부동산, 사업·세무·금융·운영, 법무·민원·채용, 생활·교육 40종 추가). `formList` 로 확인합니다.

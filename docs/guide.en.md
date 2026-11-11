@@ -83,7 +83,7 @@ const instagram = await client.instagramProfile('natgeo');
 const post = await client.instagramPost('https://www.instagram.com/p/DeHufcWDCjf/');
 const product = await client.amazonProduct('B0BDHWDR12');
 const x = await client.xProfile('NASA');
-const coupang = await client.coupangProduct('https://www.coupang.com/vp/products/7812020679');
+const coupang = await client.coupangProduct('https://www.coupang.com/vp/products/8314992021');
 const company = await client.linkedinCompany('https://www.linkedin.com/company/example/');
 const job = await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234567/');
 ```

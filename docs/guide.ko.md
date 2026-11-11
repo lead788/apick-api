@@ -88,7 +88,7 @@ const company = await client.linkedinCompany('https://www.linkedin.com/company/e
 const job = await client.linkedinJob('https://www.linkedin.com/jobs/view/4001234567/');
 ```
 
-쿠팡은 상품 번호나 상품 주소(`/vp/products/{번호}`)를 받으며 보통 15~30초, 최대 40초 걸립니다. 링크드인은 회사(`/company/`)·채용공고(`/jobs/view/`) 주소를 받습니다. `tiktokProfile`·`naverShoppingProduct`·`linkedinProfile` 은 공개 전 점검으로 일시 중단됐습니다(호출하면 과금 없이 실패합니다).
+쿠팡은 상품 번호나 상품 주소(`/vp/products/{번호}`)를 받으며 보통 15~30초, 최대 40초 걸립니다. 링크드인은 회사(`/company/`)·채용공고(`/jobs/view/`) 주소를 받습니다. `naverShoppingProduct`·`linkedinProfile` 은 공개 전 점검으로 일시 중단됐습니다(호출하면 과금 없이 실패합니다). `tiktokProfile` 은 2026-11-12 종료됐으며 호출하면 과금 없이 HTTP 410 을 받습니다. 다음 메이저 버전에서 메서드를 제거합니다.
 
 ## OCR
 

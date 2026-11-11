@@ -1344,7 +1344,7 @@ export class ApickClient {
 	googleRankCheck(keyword: string, domain: string): Promise<ApickResult<RankCheck>>;
 	instagramProfile(usernameOrUrl: string): Promise<ApickResult<InstagramProfile>>;
 	instagramPost(url: string): Promise<ApickResult<InstagramPost>>;
-	/** @deprecated 공개 전 점검으로 일시 중단됐습니다. 호출하면 과금 없이 실패합니다. Temporarily unavailable (under pre-release review); calls fail without charge. */
+	/** @deprecated 2026-11-12 종료된 상품입니다. 호출하면 과금 없이 HTTP 410(`PRODUCT_RETIRED`)을 받습니다. 다음 메이저 버전에서 제거됩니다. Retired on 2026-11-12; calls return HTTP 410 (`PRODUCT_RETIRED`) without charge and the method will be removed in the next major version. */
 	tiktokProfile(usernameOrUrl: string): Promise<ApickResult<TiktokProfile>>;
 	amazonProduct(urlOrAsin: string): Promise<ApickResult<AmazonProduct>>;
 	xProfile(usernameOrUrl: string): Promise<ApickResult<XProfile>>;

@@ -1,3 +1,10 @@
+## 6.13.0 (2026-11-12)
+
+- 틱톡 프로필 조회 상품이 종료돼 `tiktokProfile` 은 과금 없이 HTTP 410(`PRODUCT_RETIRED`)을 받습니다. 기존 코드가 깨지지 않도록 메서드와 타입은 남겨 두고 다음 메이저 버전에서 제거합니다.
+- `coupangProduct`: 품절 상품도 정상 응답이며 과금됩니다(`is_in_stock` 은 `false`, 판매가는 빈 값일 수 있음). 판매가 끝나 상품 페이지가 없으면 404 로 끝나고 과금되지 않습니다.
+- `tiktokProfile` is retired: calls return HTTP 410 (`PRODUCT_RETIRED`) without charge. The method and types stay for compatibility and will be removed in the next major version.
+- `coupangProduct`: sold-out items are returned and billed (`is_in_stock` is `false`, the price may be empty). Discontinued items with no product page return 404 without charge.
+
 ## 6.12.0 (2026-11-11)
 
 - `tiktokProfile`·`naverShoppingProduct`·`linkedinProfile` 이 공개 전 점검으로 일시 중단됐습니다. 응답 시간·성공률이 공개 기준에 못 미쳐 문서 목록에서 뺐고, 타입 선언에 `@deprecated` 를 붙였습니다. 기존 코드가 깨지지 않도록 메서드는 남겨 두며, 호출하면 과금 없이 실패합니다. 기준을 충족하면 다시 공개합니다.

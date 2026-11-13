@@ -144,12 +144,13 @@ test('maps authentication and business errors to ApickApiError', async (context)
 	await context.test('HTTP authentication error', async () => {
 		const client = new ApickClient({
 			apiKey: 'bad-key',
-			fetch: async () => jsonResponse({ result: { error: 'Invalid key' }, api: { success: true } }, { status: 401 })
+			fetch: async () => jsonResponse({ result: { error: '유효하지 않은 API키 입니다.', error_code: 'INVALID_API_KEY' }, api: { success: false, cost: 0 } }, { status: 401 })
 		});
 		await assert.rejects(client.dnsLookup('apick.app'), (error) => {
 			assert.ok(error instanceof ApickApiError);
 			assert.equal(error.code, 'APICK_AUTH_ERROR');
 			assert.equal(error.status, 401);
+			assert.equal(error.serviceCode, 'INVALID_API_KEY');
 			return true;
 		});
 	});

@@ -1,3 +1,8 @@
+## 6.15.0 (2026-11-13)
+
+- 서버가 오류 응답의 계약을 정비해 인증·정비·과금 거절 오류가 `api.success=false`·`cost:0` 과 `result.error_code` 로 돌아옵니다. SDK 는 이 코드를 `ApickApiError.serviceCode` 로 보존합니다(`INVALID_API_KEY`·`SERVICE_MAINTENANCE`·`PAYMENT_REQUIRED` 등).
+- Error responses now follow a consistent envelope (`api.success=false`, `cost:0`, `result.error_code`). The SDK preserves these codes on `ApickApiError.serviceCode` (e.g. `INVALID_API_KEY`, `SERVICE_MAINTENANCE`, `PAYMENT_REQUIRED`).
+
 ## 6.14.0 (2026-11-12)
 
 - 네이버 브랜드스토어 상품 조회·링크드인 프로필 조회 상품이 종료돼 `naverShoppingProduct`·`linkedinProfile` 은 과금 없이 HTTP 410(`PRODUCT_RETIRED`)을 받습니다. 기존 코드가 깨지지 않도록 메서드와 타입은 남겨 두고 `tiktokProfile` 과 함께 다음 메이저 버전에서 제거합니다. 링크드인 회사(`linkedinCompany`)·채용공고(`linkedinJob`)는 그대로 제공합니다.

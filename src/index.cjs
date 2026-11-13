@@ -691,6 +691,15 @@ function publicErrorMessage(body, fallback) {
 	return fallback;
 }
 
+// 서버 오류 응답의 기계 판독 코드를 보존한다. 데이터 오류는 data.code·data.error_code,
+// 게이트·정지·과금 거절 등은 result.error_code 에 담긴다(2026-11-13 서버 계약 정비).
+function extractServiceCode(body) {
+	if (!body || typeof body !== 'object') return undefined;
+	const dataCode = body.data && typeof (body.data.code || body.data.error_code) === 'string' ? (body.data.code || body.data.error_code) : undefined;
+	if (dataCode) return dataCode;
+	return body.result && typeof body.result.error_code === 'string' ? body.result.error_code : undefined;
+}
+
 function parseFilename(headerValue, fallback) {
 	if (typeof headerValue !== 'string') return fallback;
 	const encoded = /filename\*=UTF-8''([^;]+)/i.exec(headerValue);
@@ -912,7 +921,7 @@ class ApickClient {
 			throw new ApickApiError(failureMessage, {
 				status: response.status,
 				code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR',
-				serviceCode: body && body.data && typeof (body.data.code || body.data.error_code) === 'string' ? (body.data.code || body.data.error_code) : undefined
+				serviceCode: extractServiceCode(body)
 			});
 		}
 

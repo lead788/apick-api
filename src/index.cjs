@@ -54,6 +54,8 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	searchAddress: { endpoint: '/rest/search_juso', timeoutMs: 20_000, output: 'json' },
 	vehicleModelInfo: { endpoint: '/rest/vehicle_model_info', timeoutMs: 20_000, output: 'json' },
 	ocr: { endpoint: '/rest/ocr', timeoutMs: 35_000, output: 'json' },
+	readBusinessDocument: { endpoint: '/rest/business_doc_ocr', timeoutMs: 40_000, output: 'json' },
+	faceSimilarity: { endpoint: '/rest/face_similarity', timeoutMs: 65_000, output: 'json' },
 	maskResidentNumber: { endpoint: '/rest/hide_rrn', timeoutMs: 35_000, output: 'binary', filename: 'masked.png' },
 	maskResidenceCard: { endpoint: '/rest/identity_document_residence_card', timeoutMs: 35_000, output: 'json' },
 	maskPassport: { endpoint: '/rest/identity_document_passport', timeoutMs: 35_000, output: 'json' },
@@ -715,6 +717,7 @@ function inferImageType(filename) {
 	if (lower.endsWith('.png')) return 'image/png';
 	if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
 	if (lower.endsWith('.webp')) return 'image/webp';
+	if (lower.endsWith('.bmp')) return 'image/bmp';
 	return '';
 }
 
@@ -999,6 +1002,50 @@ class ApickClient {
 		const form = new FormData();
 		form.append('image', upload.blob, upload.filename);
 		return this._call('ocr', null, form);
+	}
+
+	// 사업자등록증·통신판매업 신고증·법인 등기사항증명서·인감증명서 판독.
+	// docType: auto(기본)·business_registration·ecommerce_registration·corporate_registry·seal_certificate.
+	// checkStatus 이면 현재 사업자 상태를 함께 확인한다(추가 요금 없음, 등기부·인감증명서는 조회 안 함). 읽지 못하면 과금되지 않는다.
+	async readBusinessDocument(image, options) {
+		const config = options || {};
+		if (typeof config !== 'object' || Array.isArray(config)) throw new TypeError('options must be an object.');
+		const docType = config.docType === undefined || config.docType === null || config.docType === '' ? undefined : String(config.docType);
+		if (docType !== undefined && !['auto', 'business_registration', 'ecommerce_registration', 'corporate_registry', 'seal_certificate'].includes(docType)) {
+			throw new RangeError('docType must be one of: auto, business_registration, ecommerce_registration, corporate_registry, seal_certificate.');
+		}
+		const upload = await normalizeImage(image, config);
+		const form = new FormData();
+		form.append('image', upload.blob, upload.filename);
+		if (docType !== undefined) form.append('doc_type', docType);
+		if (config.checkStatus) form.append('check_status', '1');
+		if (config.includeText) form.append('include_text', '1');
+		return this._call('readBusinessDocument', null, form);
+	}
+
+	// 기준 사진(image)과 비교 사진(1~10장)의 대표 얼굴이 같은 사람인지 0~1 점수로 비교한다.
+	// 비교 사진이 한 장이면 compare_image, 여러 장이면 compare_image1~N 으로 보낸다. 얼굴을 못 찾으면 과금되지 않는다.
+	async faceSimilarity(image, compareImages, options) {
+		const config = options || {};
+		if (typeof config !== 'object' || Array.isArray(config)) throw new TypeError('options must be an object.');
+		const list = Array.isArray(compareImages) ? compareImages : [compareImages];
+		if (!list.length || list.some(item => item === undefined || item === null)) throw new TypeError('compareImages is required.');
+		if (list.length > 10) throw new RangeError('compareImages must contain at most 10 images.');
+		let threshold;
+		if (config.threshold !== undefined && config.threshold !== null && config.threshold !== '') {
+			threshold = Number(config.threshold);
+			if (!Number.isFinite(threshold) || threshold < 0.2 || threshold > 0.8) throw new RangeError('threshold must be between 0.2 and 0.8.');
+		}
+		const imageOptions = { allowedTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/bmp'], typeError: 'faceSimilarity supports PNG, JPEG, WEBP and BMP images only.' };
+		const base = await normalizeImage(image, Object.assign({}, imageOptions, { filename: config.filename, contentType: config.contentType }));
+		const compares = [];
+		for (const item of list) compares.push(await normalizeImage(item, imageOptions));
+		const form = new FormData();
+		form.append('image', base.blob, base.filename);
+		if (compares.length === 1) form.append('compare_image', compares[0].blob, compares[0].filename);
+		else compares.forEach((upload, index) => form.append('compare_image' + (index + 1), upload.blob, upload.filename));
+		if (threshold !== undefined) form.append('threshold', String(threshold));
+		return this._call('faceSimilarity', null, form);
 	}
 
 	async _maskImage(serviceName, image, options, type) {

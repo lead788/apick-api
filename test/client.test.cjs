@@ -37,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 144 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 144);
+test('exports a focused catalog of 146 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 146);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -265,6 +265,55 @@ test('uploads OCR images as multipart form data', async () => {
 	assert.equal(request.options.headers['Content-Type'], undefined);
 	assert.equal(request.options.body.get('image').name, 'scan.png');
 	assert.equal(result.data.result.full_text, 'hello');
+});
+
+test('faceSimilarity and readBusinessDocument upload the documented multipart fields', async () => {
+	const requests = [];
+	const client = new ApickClient({
+		apiKey: 'key',
+		fetch: async (url, options) => {
+			requests.push({ url, options });
+			return jsonResponse({ data: { similarity: 0.62, is_match: true, level: '높음', success: 1 }, api: { success: true, cost: 10 } });
+		}
+	});
+	const png = Uint8Array.from([137, 80, 78, 71]);
+	const one = await client.faceSimilarity(png, new Blob([png], { type: 'image/jpeg' }), { filename: 'id.png', contentType: 'image/png', threshold: 0.5 });
+	assert.equal(one.data.level, '높음');
+	let body = requests[0].options.body;
+	assert.ok(requests[0].url.endsWith('/rest/face_similarity'));
+	assert.equal(body.get('image').name, 'id.png');
+	assert.ok(body.get('compare_image'));
+	assert.equal(body.get('compare_image1'), null);
+	assert.equal(body.get('threshold'), '0.5');
+	await client.faceSimilarity(png, [new Blob([png], { type: 'image/png' }), new Blob([png], { type: 'image/webp' })], { contentType: 'image/png' });
+	body = requests[1].options.body;
+	assert.equal(body.get('compare_image'), null);
+	assert.ok(body.get('compare_image1'));
+	assert.ok(body.get('compare_image2'));
+	assert.equal(body.get('threshold'), null);
+	await assert.rejects(() => client.faceSimilarity(png, [], { contentType: 'image/png' }), /compareImages is required/);
+	await assert.rejects(() => client.faceSimilarity(png, new Array(11).fill(new Blob([png], { type: 'image/png' })), { contentType: 'image/png' }), /at most 10/);
+	await assert.rejects(() => client.faceSimilarity(png, new Blob([png], { type: 'image/png' }), { contentType: 'image/png', threshold: 0.9 }), /between 0.2 and 0.8/);
+	await assert.rejects(() => client.faceSimilarity(png, new Blob([png], { type: 'image/gif' }), { contentType: 'image/png' }), /PNG, JPEG, WEBP and BMP/);
+
+	await client.readBusinessDocument(png, { filename: 'biz.png', contentType: 'image/png', docType: 'ecommerce_registration', checkStatus: true, includeText: true });
+	body = requests[2].options.body;
+	assert.ok(requests[2].url.endsWith('/rest/business_doc_ocr'));
+	assert.equal(body.get('image').name, 'biz.png');
+	assert.equal(body.get('doc_type'), 'ecommerce_registration');
+	assert.equal(body.get('check_status'), '1');
+	assert.equal(body.get('include_text'), '1');
+	await client.readBusinessDocument(png, { filename: 'biz.png', contentType: 'image/png' });
+	body = requests[3].options.body;
+	assert.equal(body.get('doc_type'), null);
+	assert.equal(body.get('check_status'), null);
+	await client.readBusinessDocument(png, { filename: 'reg.png', contentType: 'image/png', docType: 'corporate_registry' });
+	assert.equal(requests[4].options.body.get('doc_type'), 'corporate_registry');
+	await client.readBusinessDocument(png, { filename: 'seal.png', contentType: 'image/png', docType: 'seal_certificate' });
+	assert.equal(requests[5].options.body.get('doc_type'), 'seal_certificate');
+	await assert.rejects(() => client.readBusinessDocument(png, { contentType: 'image/png', docType: 'passport' }), /docType must be one of/);
+	await assert.rejects(() => client.readBusinessDocument(png, { contentType: 'image/webp' }), /PNG and JPEG/);
+	assert.equal(requests.length, 6);
 });
 
 test('uploads five identity masking services with the documented output contracts', async () => {

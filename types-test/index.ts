@@ -231,3 +231,10 @@ client.exchangeRate({ month: '202609', currency: ['USD', 'JPY'] }).then(r => { c
 client.exchangeRate();
 // @ts-expect-error currency 는 문자열 또는 문자열 배열이다.
 client.exchangeRate({ currency: 840 });
+
+import type { FaceSimilarity, BusinessDocument } from '../src/index.js';
+const faceCheck: Promise<ApickResult<FaceSimilarity>> = client.faceSimilarity('./id.jpg', ['./selfie1.jpg', './selfie2.jpg'], { threshold: 0.5 });
+const bizDoc: Promise<ApickResult<BusinessDocument>> = client.readBusinessDocument('./biz.jpg', { checkStatus: true, docType: 'business_registration' });
+const corpDoc: Promise<ApickResult<BusinessDocument>> = client.readBusinessDocument('./registry.jpg', { docType: 'corporate_registry' });
+void corpDoc.then((r) => { const officers = r.data?.fields['임원']; const kind: '개인' | '법인' | undefined = r.data?.seal_kind; return [officers, kind]; });
+void faceCheck; void bizDoc;

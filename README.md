@@ -66,6 +66,8 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `searchAddress(query, options)` | 도로명주소 검색 / Road address search | JSON |
 | `vehicleModelInfo(options)` | 차종별 차량정보 조회 / Vehicle model specifications for cars and motorcycles/scooters (승용차·이륜차 / 표기가 달라도 가장 비슷한 차종 / closest match when spelled differently · 값은 표준 표기 / standard notation values) | JSON |
 | `ocr(image, options)` | 이미지 OCR / Image OCR | JSON |
+| `readBusinessDocument(image, { docType, checkStatus, includeText })` | 사업자등록증·통신판매업 신고증·법인 등기사항증명서·인감증명서 항목 판독, 등록번호 검증·사업자 상태 확인(판독 20P, 상태 확인 추가 요금 없음, 결제 이력 필요, 주민등록번호 가림) / Business registration, e-commerce registration, corporate registry and seal certificate reading with number validation and optional business status (20P; status check free; paid account required; resident numbers masked) | JSON |
+| `faceSimilarity(image, compareImages, { threshold })` | 얼굴 유사도 비교(0~1 점수·판정, 비교 사진 최대 10장, 기본 10P·2장째부터 장당 5P, 얼굴 없으면 0P) / Face similarity between a reference photo and 1-10 photos (score and match; 10P, +5P per extra photo; 0P when no face) | JSON |
 | `dnsLookup(domain)` | DNS 조회 / DNS lookup | JSON |
 | `geolocate(address)` | 도메인·IP 위치 / Domain and IP location | JSON |
 | `whois(address)` | WHOIS 조회 / WHOIS lookup | JSON |

@@ -1,3 +1,13 @@
+## 6.16.0 (2026-11-17)
+
+- `faceSimilarity(image, compareImages, { threshold })` 를 추가했습니다. 기준 사진과 비교 사진(1~10장)의 대표 얼굴이 같은 사람인지 0~1 점수·판정(`is_match`)·구간(높음·보통·낮음)으로 돌려줍니다. 비교 사진이 한 장이면 `compare_image`, 여러 장이면 `compare_image1`~`compare_image10` 으로 보냅니다. 기본 10P, 2장째부터 장당 5P, 얼굴을 찾지 못하면 차감되지 않습니다. PNG·JPEG·WEBP·BMP 를 받습니다.
+- `readBusinessDocument(image, { docType, checkStatus, includeText })` 를 추가했습니다. 사업자등록증·통신판매업 신고증·법인 등기사항증명서(`corporate_registry`)·인감증명서(`seal_certificate`)를 항목별로 읽고 등록번호 검증 결과와 읽지 못한 필수 항목(`missing`)을 돌려줍니다. `checkStatus` 이면 현재 사업자 상태도 함께 확인합니다(추가 요금 없음). 판독 20P이며 결제 이력이 있는 계정에서 쓸 수 있고, 글자를 읽지 못했거나 사업자 서류가 아니면 차감되지 않습니다.
+- 등기부는 상호·본점·자본금·목적·임원(직위·성명), 인감증명서는 개인(가린 주민등록번호·주소)과 법인(법인등록번호·대표자)을 나눠 돌려주며 `seal_kind` 로 구분합니다. 주민등록번호는 결과와 원문 모두 뒤 6자리를 가립니다.
+- 응답 타입 `FaceSimilarity`·`BusinessDocument`·`BusinessDocumentOfficer` 와 옵션 타입을 함께 추가했습니다. 파일 이름 `.bmp` 도 이미지 형식으로 인식합니다.
+- Added `faceSimilarity(image, compareImages, { threshold })`: compares the main face in a reference photo with 1-10 photos and returns a 0-1 score, a match decision and a level. 10 points, +5 per extra photo, no charge when no face is found. Accepts PNG, JPEG, WEBP and BMP.
+- Added `readBusinessDocument(image, { docType, checkStatus, includeText })`: reads Korean business registration, e-commerce registration, corporate registry (`corporate_registry`) and seal (`seal_certificate`) certificates field by field (resident registration numbers are masked), validates the registration number, lists unread required fields, and optionally checks the current business status at no extra cost. 20 points (paid account required); no charge when nothing is read.
+- Added the `FaceSimilarity`, `BusinessDocument` and `BusinessDocumentOfficer` result types and option types; `.bmp` filenames are now recognized as images.
+
 ## 6.15.0 (2026-11-13)
 
 - 서버가 오류 응답의 계약을 정비해 인증·정비·과금 거절 오류가 `api.success=false`·`cost:0` 과 `result.error_code` 로 돌아옵니다. SDK 는 이 코드를 `ApickApiError.serviceCode` 로 보존합니다(`INVALID_API_KEY`·`SERVICE_MAINTENANCE`·`PAYMENT_REQUIRED` 등).

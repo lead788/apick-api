@@ -711,6 +711,96 @@ export interface ImageAiResultData { request_id:string; image_count:number; imag
 export interface ImageAiPendingData {request_id:string;job_id:string;status:'processing';billing_status:'pending';reserved_point:number;}
 export interface ImageAiJobData { job_id:string; status:ImageAiStatus; requested_count:number; completed_count?:number; failed_count?:number; prepaid_point?:number; charged_point?:number; refunded_point?:number; result_available?:boolean; expires_at?:string|null; error_code?:ApickImageErrorCode|null; }
 
+export interface ReadBusinessDocumentOptions extends OcrOptions {
+	/** auto(기본, 자동 판별) · business_registration(사업자등록증) · ecommerce_registration(통신판매업 신고증) · corporate_registry(법인 등기사항증명서) · seal_certificate(인감증명서) */
+	readonly docType?: 'auto' | 'business_registration' | 'ecommerce_registration' | 'corporate_registry' | 'seal_certificate';
+	/** true 이면 현재 사업자 상태(계속·휴업·폐업)와 과세유형을 함께 확인한다(추가 요금 없음, 등기부·인감증명서는 조회 안 함). */
+	readonly checkStatus?: boolean;
+	/** true 이면 판독한 전체 글자를 text 로 함께 받는다(주민등록번호 뒤 6자리는 가림). */
+	readonly includeText?: boolean;
+}
+
+export interface BusinessDocumentStatus {
+	/** 확인 · 미등록 · 조회 실패 · 조회 안 함(사업자등록번호 확인 필요) · 조회 안 함(사업자등록번호가 없는 서류) */
+	readonly 조회결과: string;
+	readonly 사업자상태: string;
+	readonly 과세유형: string;
+	readonly 폐업일: string;
+}
+
+/** 법인 등기사항증명서의 임원(주민등록번호·주소는 담지 않는다). */
+export interface BusinessDocumentOfficer {
+	readonly 직위: string;
+	readonly 성명: string;
+}
+
+export interface BusinessDocument {
+	readonly doc_type: '사업자등록증' | '통신판매업 신고증' | '법인 등기사항증명서' | '인감증명서';
+	/** 사업자등록증일 때 개인 또는 법인 */
+	readonly business_kind?: '개인' | '법인';
+	/** 인감증명서일 때 개인 또는 법인 */
+	readonly seal_kind?: '개인' | '법인';
+	/**
+	 * 항목별 값. 읽지 못한 항목은 빈 문자열이며 날짜는 YYYY-MM-DD.
+	 * 등기부의 1주의금액·발행할주식의총수·발행주식의총수·자본금은 숫자, 목적은 문자열 배열, 임원은 BusinessDocumentOfficer 배열.
+	 * 주민등록번호는 뒤 6자리를 가린 값(700101-1******)이다.
+	 */
+	readonly fields: Readonly<Record<string, string | number | readonly string[] | readonly BusinessDocumentOfficer[]>>;
+	/**
+	 * 사업자등록증·신고증: 사업자등록번호_형식·사업자등록번호_검증숫자,
+	 * 등기부·법인 인감: 법인등록번호_형식·법인등록번호_검증숫자, 개인 인감: 주민등록번호_형식. 모두 문서종류_일치를 담는다.
+	 */
+	readonly checks: {
+		readonly 사업자등록번호_형식?: boolean;
+		readonly 사업자등록번호_검증숫자?: boolean;
+		readonly 법인등록번호_형식?: boolean;
+		readonly 법인등록번호_검증숫자?: boolean;
+		readonly 주민등록번호_형식?: boolean;
+		readonly 문서종류_일치: boolean;
+	};
+	/** 읽지 못한 필수 항목 이름 */
+	readonly missing: readonly string[];
+	readonly status?: BusinessDocumentStatus;
+	readonly text?: string;
+	readonly success?: number;
+}
+
+export interface FaceSimilarityOptions extends Omit<OcrOptions, 'contentType'> {
+	/** 기준 사진의 형식. 비교 사진은 파일 이름·Blob 형식으로 판단한다. */
+	readonly contentType?: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/bmp';
+	/** 같은 사람으로 판정할 기준 점수 0.2~0.8, 기본 0.4 */
+	readonly threshold?: number;
+}
+
+export interface FaceSimilarityFace {
+	readonly face_count: number;
+	readonly face_crop: readonly [readonly [number, number], readonly [number, number]];
+	readonly det_score: number;
+}
+
+export interface FaceSimilarityItem {
+	readonly index: number;
+	readonly face_found: boolean;
+	readonly similarity: number | null;
+	readonly is_match: boolean;
+	readonly level: '높음' | '보통' | '낮음' | null;
+	readonly face: FaceSimilarityFace | null;
+}
+
+export interface FaceSimilarity {
+	/** 가장 비슷한 비교 사진의 점수 0~1 */
+	readonly similarity: number;
+	readonly is_match: boolean;
+	/** 높음 ≥ 0.5 · 보통 0.3~0.5 · 낮음 < 0.3 */
+	readonly level: '높음' | '보통' | '낮음';
+	readonly threshold: number;
+	/** 가장 비슷한 비교 사진 번호(1부터) */
+	readonly best_index: number;
+	readonly base_face: FaceSimilarityFace;
+	readonly results: readonly FaceSimilarityItem[];
+	readonly success?: number;
+}
+
 export interface MaskResidentNumberOptions extends OcrOptions {
 	type: 1 | 2 | 3 | 4;
 }
@@ -1328,6 +1418,10 @@ export class ApickClient {
 	/** Look up Korean-market vehicle specifications. Values use fixed standard notation (fuel, drive type, transmission, body type, efficiency grade; multiple values joined with `+`). */
 	vehicleModelInfo(options?: VehicleModelInfoOptions): Promise<ApickResult>;
 	ocr(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
+	/** Read a Korean business registration or e-commerce registration certificate field by field. No charge when nothing is read. */
+	readBusinessDocument(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: ReadBusinessDocumentOptions): Promise<ApickResult<BusinessDocument>>;
+	/** Compare the main face in `image` with one or up to 10 other images. No charge when no face is found. */
+	faceSimilarity(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, compareImages: string | BinaryInput | ArrayBuffer | ArrayBufferView | ReadonlyArray<string | BinaryInput | ArrayBuffer | ArrayBufferView>, options?: FaceSimilarityOptions): Promise<ApickResult<FaceSimilarity>>;
 	maskResidentNumber(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options: MaskResidentNumberOptions): Promise<ApickBinaryResult>;
 	maskResidenceCard(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
 	maskPassport(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;

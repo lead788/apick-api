@@ -46,6 +46,7 @@ const HOMETAX_BIZ_BUNDLE_PRODUCT_SET = new Set(HOMETAX_BIZ_BUNDLE_PRODUCTS);
 const SERVICE_DEFINITIONS = Object.freeze({
 	businessDetails: { endpoint: '/rest/biz_detail', timeoutMs: 50_000, output: 'json' },
 	ventureBusiness: { endpoint: '/rest/venture_biz_info', timeoutMs: 50_000, output: 'json' },
+	ecommerceRegistration: { endpoint: '/rest/ecommerce_registration', timeoutMs: 25_000, output: 'json' },
 	trackParcel: { endpoint: '/rest/parcel_tracking', timeoutMs: 30_000, output: 'json' },
 	trackParcelAuto: { endpoint: '/rest/parcel_tracking_auto', timeoutMs: 30_000, output: 'json' },
 	validateEmail: { endpoint: '/rest/check_email_valid', timeoutMs: 20_000, output: 'json' },
@@ -940,6 +941,11 @@ class ApickClient {
 
 	ventureBusiness(businessNumber) {
 		return this._call('ventureBusiness', { biz_no: normalizeBusinessNumber(businessNumber) });
+	}
+
+	// 통신판매업 신고 이력 전부. 정상영업 신고가 앞에 오며, 이력이 없으면 count 0 이고 차감되지 않는다.
+	ecommerceRegistration(businessNumber) {
+		return this._call('ecommerceRegistration', { biz_no: normalizeBusinessNumber(businessNumber) });
 	}
 
 	trackParcel(carrier, trackingNumber) {

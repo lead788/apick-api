@@ -531,6 +531,38 @@ export interface HipassUnpaid {
 	};
 }
 
+/** 통신판매업 신고 한 건. 값이 없으면 빈 문자열이며 날짜는 YYYY-MM-DD. */
+export interface EcommerceRegistrationItem {
+	readonly 신고번호: string;
+	readonly 상호: string;
+	readonly 대표자명: string;
+	/** 정상영업 · 휴업 · 폐업 등 */
+	readonly 운영상태: string;
+	readonly 신고일자: string;
+	readonly 신고기관: string;
+	readonly 시도: string;
+	readonly 소재지주소: string;
+	readonly 도로명주소: string;
+	/** 법인이면 000000-0000000, 개인사업자는 빈 문자열 */
+	readonly 법인등록번호: string;
+	readonly 대표자이메일: string;
+	readonly 담당부서: string;
+	readonly 담당부서전화: string;
+}
+
+export interface EcommerceRegistration {
+	readonly biz_no: string;
+	/** 0 이면 신고 이력이 없고 차감되지 않는다. */
+	readonly count: number;
+	/** 정상영업 신고가 한 건이라도 있으면 true */
+	readonly active: boolean;
+	readonly active_count: number;
+	/** items[0] 과 같다. 이력이 없으면 null. */
+	readonly representative: EcommerceRegistrationItem | null;
+	/** 정상영업 신고가 앞, 같은 상태 안에서는 신고일자 최신순 */
+	readonly items: readonly EcommerceRegistrationItem[];
+}
+
 export interface ExchangeRateOptions {
 	/** 조회 월 YYYYMM 또는 YYYY-MM. 생략하면 지난달. 이번 달 이후는 조회할 수 없다. */
 	readonly month?: string;
@@ -1409,6 +1441,8 @@ export class ApickClient {
 	constructor(apiKeyOrOptions: string | ApickClientOptions);
 	businessDetails(businessNumber: string): Promise<ApickResult>;
 	ventureBusiness(businessNumber: string): Promise<ApickResult>;
+	/** 통신판매업 신고 이력 전부(건당 10P, 결제 이력 필요, 이력 0건은 차감 없음). */
+	ecommerceRegistration(businessNumber: string): Promise<ApickResult<EcommerceRegistration>>;
 	trackParcel(carrier: string, trackingNumber: string): Promise<ApickResult>;
 	trackParcelAuto(trackingNumber: string): Promise<ApickResult>;
 	validateEmail(email: string): Promise<ApickResult>;

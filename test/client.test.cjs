@@ -37,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 146 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 146);
+test('exports a focused catalog of 147 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 147);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -853,6 +853,7 @@ test('validates inputs before making a request', async () => {
 	let calls = 0;
 	const client = new ApickClient({ apiKey: 'key', fetch: async () => { calls += 1; } });
 	assert.throws(() => client.businessDetails('1234'), /10 digits/);
+	assert.throws(() => client.ecommerceRegistration('1234'), /10 digits/);
 	assert.throws(() => client.holidays(1800, 1), /1900/);
 	assert.throws(() => client.createTtsJob('', { voiceId: 'Kore' }), /text/);
 	assert.throws(() => client.jsonToExcel({ value: 1 }), /array/);

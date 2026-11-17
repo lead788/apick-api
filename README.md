@@ -58,6 +58,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | --- | --- | --- |
 | `businessDetails(businessNumber)` | 사업자 정보 조회 / Business details | JSON |
 | `ventureBusiness(businessNumber)` | 벤처기업 정보 / Venture business data | JSON |
+| `ecommerceRegistration(businessNumber)` | 통신판매업 신고 이력 전부·정상영업 여부(건당 10P, 결제 이력 필요, 이력 없으면 차감 없음) / All e-commerce (mail-order) business registrations and whether one is active (10P; paid account required; no charge when none) | JSON |
 | `trackParcel(carrier, trackingNumber)` | 택배 배송조회 / Parcel tracking | JSON |
 | `trackParcelAuto(trackingNumber)` | 택배사 자동판별 배송조회 / Auto carrier tracking | JSON |
 | `validateEmail(email)` | 이메일 유효성 / Email validation | JSON |

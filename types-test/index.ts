@@ -17,6 +17,7 @@ async function vehicleRegisterVin(transactionId: string): Promise<string | undef
 void vehicleRegisterVin;
 
 const business: Promise<ApickResult> = client.businessDetails('4398700761');
+void client.ecommerceRegistration('123-45-67891').then((r) => { const active: boolean | undefined = r.data?.active; const status: string | undefined = r.data?.items[0]?.운영상태; return [active, status]; });
 const ocr: Promise<ApickResult> = client.ocr(new Uint8Array([1, 2, 3]), {
   filename: 'scan.png',
   contentType: 'image/png'

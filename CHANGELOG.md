@@ -1,3 +1,10 @@
+## 6.17.0 (2026-11-17)
+
+- `ecommerceRegistration(businessNumber)` 를 추가했습니다. 사업자등록번호로 통신판매업 신고 이력 전부(신고번호·상호·대표자명·운영상태·신고일자·신고기관·소재지 등)를 돌려주며, 정상영업 신고가 앞에 오고 같은 상태 안에서는 신고일자 최신순입니다. `active`·`active_count`·`representative` 로 지금 정상영업 중인지 바로 확인할 수 있습니다. 건당 10P이며 결제 이력이 있는 계정에서 쓸 수 있고, 신고 이력이 없거나(`count` 0) 실패하면 차감되지 않습니다.
+- 응답 타입 `EcommerceRegistration`·`EcommerceRegistrationItem` 을 추가했습니다.
+- Added `ecommerceRegistration(businessNumber)`: returns every e-commerce (mail-order) business registration filed by a Korean business (registration number, trade name, representative, operating status, filing date, filing office, address), active ones first, plus `active`, `active_count` and `representative`. 10 points (paid account required); no charge when there are no registrations or the lookup fails.
+- Added the `EcommerceRegistration` and `EcommerceRegistrationItem` result types.
+
 ## 6.16.0 (2026-11-17)
 
 - `faceSimilarity(image, compareImages, { threshold })` 를 추가했습니다. 기준 사진과 비교 사진(1~10장)의 대표 얼굴이 같은 사람인지 0~1 점수·판정(`is_match`)·구간(높음·보통·낮음)으로 돌려줍니다. 비교 사진이 한 장이면 `compare_image`, 여러 장이면 `compare_image1`~`compare_image10` 으로 보냅니다. 기본 10P, 2장째부터 장당 5P, 얼굴을 찾지 못하면 차감되지 않습니다. PNG·JPEG·WEBP·BMP 를 받습니다.

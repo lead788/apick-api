@@ -1441,6 +1441,10 @@ export class ApickApiError extends Error {
 	readonly refunded?: number;
 	/** 등기 발급 실패: 접수 후 환급을 받을 수 있는 시간(시간 단위, 24) */
 	readonly refundWindowHours?: number;
+	/** 등기 점검(serviceCode REGISTRY_MAINTENANCE): 점검 시간. window 예: '11월 19일(목) 21:00 ~ 11월 20일(금) 06:00', startAt·endAt 은 ISO 시각 */
+	readonly maintenance?: { readonly window: string; readonly startAt: string | null; readonly endAt: string | null };
+	/** 다시 시도하기까지 기다릴 초(Retry-After). 등기 점검이면 점검 종료까지 남은 초 */
+	readonly retryAfter?: number;
 	toJSON(): {
 		name: string;
 		message: string;
@@ -1449,6 +1453,8 @@ export class ApickApiError extends Error {
 		serviceCode?: string;
 		jobId?: string;
 		refunded?: number;
+		maintenance?: { window: string; startAt: string | null; endAt: string | null };
+		retryAfter?: number;
 	};
 }
 

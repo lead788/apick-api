@@ -1,3 +1,8 @@
+## 6.19.0 (2026-11-19)
+
+- 등기 점검 응답(HTTP 503 `REGISTRY_MAINTENANCE`)에 점검 시간이 실리면 `ApickApiError.maintenance`(`window`·`startAt`·`endAt`)로 돌려주고, `Retry-After`를 `retryAfter`(초)로 담습니다. 검색·접수·결과 조회 모두 같습니다. 점검 시간을 모르는 응답은 이전과 같습니다.
+- Registry maintenance responses (HTTP 503 `REGISTRY_MAINTENANCE`) that include the maintenance window now surface it as `ApickApiError.maintenance` (`window`, `startAt`, `endAt`), and `Retry-After` as `retryAfter` (seconds), for search, submit and result calls. Responses without a window behave as before.
+
 ## 6.18.0 (2026-11-19)
 
 - 등기 열람·발급을 서버의 '접수 → 결과 조회' 2단계에 맞췄습니다. 이전 버전의 `createRegistryRealestateJob`·`createRegistryCorporateJob`은 접수 뒤 대기 응답을 받으면 `job_id` 없이 `REGISTRY_PDF_PREPARING` 오류로 끝나 PDF를 받을 수 없었습니다. 이제 접수한 뒤 `POST /rest/registry_jobs/:job_id/download`를 반복 조회(기본 4초 간격, 최대 10분)해 PDF(`ApickBinaryResult`, `jobId` 포함)를 돌려줍니다. 호출 형태와 반환 타입은 같고, 기다리는 방식은 `waitTimeoutMs`·`pollIntervalMs`·`signal`로 정합니다.

@@ -286,6 +286,9 @@ Registry view and issue runs search → submit → result. Find the target with 
 `jobId`는 재다운로드에 필요하므로 PDF와 함께 보관하세요. 발급 완료 후 90일 동안 다시 받을 수 있습니다(건당 30P). 과금·환급 조건은 [개발가이드](https://apick.app/dev_guide/registry_realestate_jobs)를 따릅니다.
 Keep `jobId` with the PDF for later downloads (30P each, available for 90 days after issue). See the [developer guide](https://apick.app/dev_guide/registry_realestate_jobs) for charges and refunds.
 
+등기 시스템 점검 중에는 검색·접수가 HTTP 503 `REGISTRY_MAINTENANCE`(차감 없음)로 끝납니다. 점검 시간이 알려져 있으면 `ApickApiError.maintenance`에 `window`(예: `11월 19일(목) 21:00 ~ 11월 20일(금) 06:00`)·`startAt`·`endAt`(ISO 시각)이 담기고, `retryAfter`는 점검 종료까지 남은 초입니다.
+During registry maintenance, search and submit end with HTTP 503 `REGISTRY_MAINTENANCE` (no charge). When the maintenance window is known, `ApickApiError.maintenance` carries `window` (e.g. `11월 19일(목) 21:00 ~ 11월 20일(금) 06:00`), `startAt` and `endAt` (ISO times), and `retryAfter` is the number of seconds until it ends.
+
 ```js
 import { readFile, writeFile } from 'node:fs/promises';
 

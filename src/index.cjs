@@ -670,6 +670,22 @@ function numberOrNull(value) {
 	return Number.isFinite(number) ? number : null;
 }
 
+// 등기 점검(503 REGISTRY_MAINTENANCE) 응답에 실린 점검 시간. 없으면 undefined.
+function maintenanceOf(body) {
+	const data = body && body.data && typeof body.data === 'object' ? body.data : null;
+	if (!data || typeof data.maintenance_window !== 'string' || !data.maintenance_window) return undefined;
+	return Object.freeze({
+		window: data.maintenance_window,
+		startAt: typeof data.maintenance_start === 'string' ? data.maintenance_start : null,
+		endAt: typeof data.maintenance_end === 'string' ? data.maintenance_end : null
+	});
+}
+
+function retryAfterOf(response) {
+	const value = Number(response && response.headers && response.headers.get('retry-after'));
+	return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
 // 등기 접수·결과 조회의 JSON 응답. 실패(422·410 등)는 작업 번호·환급 결과를 담은 ApickApiError 로 던진다.
 // 대기 중(202)과 접수 완료는 status 'waiting', 완료된 작업(재접수·format json 결과)은 'completed' 다.
 function registryJsonResult(response, body, bodyFailed, failureMessage, definition) {
@@ -683,7 +699,9 @@ function registryJsonResult(response, body, bodyFailed, failureMessage, definiti
 			serviceCode: extractServiceCode(body) || (data.error && typeof data.error.code === 'string' ? data.error.code : undefined),
 			jobId: jobId || undefined,
 			refunded,
-			refundWindowHours: data.refund_window_hours === undefined ? undefined : Number(data.refund_window_hours) || 0
+			refundWindowHours: data.refund_window_hours === undefined ? undefined : Number(data.refund_window_hours) || 0,
+			maintenance: maintenanceOf(body),
+			retryAfter: retryAfterOf(response)
 		});
 	}
 	const retryAfter = Number(response.headers.get('retry-after'));
@@ -857,6 +875,9 @@ class ApickApiError extends Error {
 		if (options && options.jobId) this.jobId = String(options.jobId);
 		if (options && options.refunded !== undefined) this.refunded = options.refunded;
 		if (options && options.refundWindowHours !== undefined) this.refundWindowHours = options.refundWindowHours;
+		// 등기 점검(REGISTRY_MAINTENANCE): 점검 시간 { window, startAt, endAt } 과 다시 시도할 때까지의 초(Retry-After).
+		if (options && options.maintenance) this.maintenance = options.maintenance;
+		if (options && options.retryAfter !== undefined) this.retryAfter = options.retryAfter;
 	}
 
 	toJSON() {
@@ -869,6 +890,8 @@ class ApickApiError extends Error {
 		};
 		if (this.jobId !== undefined) json.jobId = this.jobId;
 		if (this.refunded !== undefined) json.refunded = this.refunded;
+		if (this.maintenance !== undefined) json.maintenance = this.maintenance;
+		if (this.retryAfter !== undefined) json.retryAfter = this.retryAfter;
 		return json;
 	}
 }
@@ -1032,7 +1055,9 @@ class ApickClient {
 			throw new ApickApiError(failureMessage, {
 				status: response.status,
 				code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR',
-				serviceCode: extractServiceCode(body)
+				serviceCode: extractServiceCode(body),
+				maintenance: maintenanceOf(body),
+				retryAfter: retryAfterOf(response)
 			});
 		}
 

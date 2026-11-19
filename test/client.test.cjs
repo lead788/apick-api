@@ -1260,3 +1260,17 @@ test('formAiFill sends form, text and fixed values as JSON and returns the value
 	assert.equal(result.data.values.emp_name, '김철수');
 	assert.equal(result.meta.cost, 20);
 });
+
+test('registry maintenance (503) carries the maintenance window and Retry-After for submit and search', async () => {
+	const body = { data: { error: '등기 발급 시스템 점검 중입니다(점검시간 11월 19일(목) 21:00 ~ 11월 20일(금) 06:00). 점검이 끝난 뒤 다시 시도해 주세요. 포인트는 차감되지 않습니다.', error_code: 'REGISTRY_MAINTENANCE',
+		maintenance_window: '11월 19일(목) 21:00 ~ 11월 20일(금) 06:00', maintenance_start: '2026-11-19T21:00:00+09:00', maintenance_end: '2026-11-20T06:00:00+09:00' }, api: { success: false, cost: 0 } };
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async () => new Response(JSON.stringify(body), { status: 503, headers: { 'content-type': 'application/json', 'retry-after': '25683' } }) });
+	const check = error => error instanceof ApickApiError && error.status === 503 && error.serviceCode === 'REGISTRY_MAINTENANCE'
+		&& error.maintenance.window === '11월 19일(목) 21:00 ~ 11월 20일(금) 06:00'
+		&& error.maintenance.startAt === '2026-11-19T21:00:00+09:00' && error.maintenance.endAt === '2026-11-20T06:00:00+09:00'
+		&& error.retryAfter === 25683 && error.toJSON().maintenance.window === error.maintenance.window;
+	await assert.rejects(() => client.submitRegistryCorporateJob({ corpRegNo: '1101110000000' }), check);
+	await assert.rejects(() => client.registryRealestateSearch('서울특별시 가상구 가상로 1'), check);
+	const plain = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async () => jsonResponse({ data: { error: '점검 중', error_code: 'REGISTRY_MAINTENANCE' }, api: { success: false, cost: 0 } }, { status: 503 }) });
+	await assert.rejects(() => plain.submitRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1' }), error => error.maintenance === undefined && error.retryAfter === undefined);
+});

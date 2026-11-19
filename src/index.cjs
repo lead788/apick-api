@@ -670,6 +670,91 @@ function numberOrNull(value) {
 	return Number.isFinite(number) ? number : null;
 }
 
+// 등기 접수·결과 조회의 JSON 응답. 실패(422·410 등)는 작업 번호·환급 결과를 담은 ApickApiError 로 던진다.
+// 대기 중(202)과 접수 완료는 status 'waiting', 완료된 작업(재접수·format json 결과)은 'completed' 다.
+function registryJsonResult(response, body, bodyFailed, failureMessage, definition) {
+	const data = body && body.data && typeof body.data === 'object' ? body.data : {};
+	const jobId = typeof data.job_id === 'string' && data.job_id ? data.job_id : (response.headers.get('x-apick-job-id') || definition.registryJobId || null);
+	if (!response.ok || bodyFailed || data.status === 'failed') {
+		const refunded = data.refunded === undefined ? undefined : Number(data.refunded) || 0;
+		throw new ApickApiError(failureMessage, {
+			status: response.status,
+			code: response.status === 401 ? 'APICK_AUTH_ERROR' : 'APICK_API_ERROR',
+			serviceCode: extractServiceCode(body) || (data.error && typeof data.error.code === 'string' ? data.error.code : undefined),
+			jobId: jobId || undefined,
+			refunded,
+			refundWindowHours: data.refund_window_hours === undefined ? undefined : Number(data.refund_window_hours) || 0
+		});
+	}
+	const retryAfter = Number(response.headers.get('retry-after'));
+	const estimate = Number(data.estimate_seconds);
+	return Object.freeze({
+		status: data.status === 'completed' ? 'completed' : 'waiting',
+		jobId,
+		pdf: null,
+		data,
+		estimateSeconds: Number.isFinite(estimate) && estimate > 0 ? estimate : (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null),
+		meta: responseMeta(body && body.api, response.headers)
+	});
+}
+
+function normalizeRegistryJobId(jobId) {
+	if (typeof jobId !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(jobId.trim())) {
+		throw new TypeError('jobId must be the job_id returned when the registry job was submitted.');
+	}
+	return jobId.trim();
+}
+
+function waitDelay(ms, signal) {
+	return new Promise((resolve, reject) => {
+		if (signal && signal.aborted) return reject(signal.reason || new Error('Aborted'));
+		const onAbort = () => { clearTimeout(timer); reject(signal.reason || new Error('Aborted')); };
+		const timer = setTimeout(() => { if (signal) signal.removeEventListener('abort', onAbort); resolve(); }, ms);
+		if (signal) signal.addEventListener('abort', onAbort, { once: true });
+	});
+}
+
+function registryRealestatePayload(options) {
+	const config = options || {};
+	if (!config.query && !config.pin) throw new TypeError('query or pin is required.');
+	return compact({
+		query: config.query === undefined ? undefined : requiredString('query', config.query, 200),
+		pin: config.pin === undefined ? undefined : requiredString('pin', config.pin, 20),
+		index: optionalRangeInteger('index', config.index, 1, 100),
+		usage: config.usage,
+		record_scope: config.recordScope,
+		include_cancelled: config.includeCancelled === undefined ? undefined : String(Boolean(config.includeCancelled)),
+		publish_resident_no: config.publishResidentNo === undefined ? undefined : String(Boolean(config.publishResidentNo)),
+		idempotency_key: config.idempotencyKey === undefined ? undefined : requiredString('idempotencyKey', config.idempotencyKey, 128)
+	});
+}
+
+function pickWait(options) {
+	const config = options || {};
+	return { timeoutMs: config.waitTimeoutMs, intervalMs: config.pollIntervalMs, signal: config.signal };
+}
+
+function registryCorporatePayload(options) {
+	const config = options || {};
+	return Object.assign(registryCorporateTarget(config), compact({
+		usage: config.usage,
+		idempotency_key: config.idempotencyKey === undefined ? undefined : requiredString('idempotencyKey', config.idempotencyKey, 128)
+	}));
+}
+
+// 결과 조회 대기 설정. 간격 기본 4초(1~60초), 전체 대기 기본 10분(1초~1시간).
+function registryWaitOptions(options) {
+	const config = options || {};
+	const intervalMs = optionalRangeInteger('intervalMs', config.intervalMs, 1000, 60000) ?? 4000;
+	const timeoutMs = optionalRangeInteger('timeoutMs', config.timeoutMs, 1000, 3600000) ?? 600000;
+	const format = config.format;
+	if (format !== undefined && format !== 'pdf' && format !== 'json') throw new RangeError('format must be pdf or json.');
+	if (config.signal !== undefined && (!config.signal || typeof config.signal.addEventListener !== 'function')) {
+		throw new TypeError('signal must be an AbortSignal.');
+	}
+	return { intervalMs, timeoutMs, format, signal: config.signal };
+}
+
 function responseMeta(api, headers) {
 	const metadata = api && typeof api === 'object' ? api : {};
 	const readHeader = (name) => headers && typeof headers.get === 'function' ? headers.get(name) : null;
@@ -768,16 +853,23 @@ class ApickApiError extends Error {
 		this.code = options && options.code || 'APICK_API_ERROR';
 		this.serviceCode = options && options.serviceCode || undefined;
 		if (options && options.details !== undefined) this.details = options.details;
+		// 등기 열람·발급: 접수된 작업 번호와 결과 조회 때의 환급 결과(포인트)·환급 가능 시간.
+		if (options && options.jobId) this.jobId = String(options.jobId);
+		if (options && options.refunded !== undefined) this.refunded = options.refunded;
+		if (options && options.refundWindowHours !== undefined) this.refundWindowHours = options.refundWindowHours;
 	}
 
 	toJSON() {
-		return {
+		const json = {
 			name: this.name,
 			message: this.message,
 			status: this.status,
 			code: this.code,
 			serviceCode: this.serviceCode
 		};
+		if (this.jobId !== undefined) json.jobId = this.jobId;
+		if (this.refunded !== undefined) json.refunded = this.refunded;
+		return json;
 	}
 }
 
@@ -852,7 +944,7 @@ class ApickClient {
 		const timeoutMs = this.#timeoutMs || definition.timeoutMs || DEFAULT_TIMEOUT_MS;
 		const timer = setTimeout(() => controller.abort(), timeoutMs);
 		const headers = {
-			Accept: definition.output === 'binary' ? '*/*' : 'application/json',
+			Accept: definition.output === 'binary' || definition.output === 'registry' ? '*/*' : 'application/json',
 			Authorization: `Bearer ${this.#apiKey}`
 		};
 		const method = definition.method || 'POST';
@@ -884,6 +976,19 @@ class ApickClient {
 		const contentType = String(response.headers.get('content-type') || '').toLowerCase();
 		const isJson = contentType.includes('application/json') || contentType.includes('+json');
 
+		// 등기 접수·결과 조회: PDF 본문이면 완료 결과로 감싼다(JSON 은 아래에서 대기·실패를 가린다).
+		if (definition.output === 'registry' && !isJson && response.ok) {
+			const bytes = new Uint8Array(await response.arrayBuffer());
+			const jobId = response.headers.get('x-apick-job-id') || definition.registryJobId || null;
+			const pdf = new ApickBinaryResult(bytes, {
+				contentType: contentType.split(';')[0] || 'application/octet-stream',
+				filename: parseFilename(response.headers.get('content-disposition'), definition.filename),
+				meta: responseMeta(null, response.headers),
+				jobId
+			});
+			return Object.freeze({ status: 'completed', jobId, pdf, data: null, estimateSeconds: null, meta: pdf.meta });
+		}
+
 		if (definition.output === 'binary' && !isJson && response.ok) {
 			const bytes = new Uint8Array(await response.arrayBuffer());
 			const registryIssue = serviceName === 'createRegistryRealestateJob' || serviceName === 'createRegistryCorporateJob';
@@ -914,11 +1019,13 @@ class ApickClient {
 		);
 		// PDF 확보가 끝나지 않은 정상 응답(data.pdf === 'preparing', 0P)은 재전송으로 받는다.
 		// 바이너리를 기대한 호출이 JSON 성공 본문을 받으면 준비 중으로 안내한다.
+		if (definition.output === 'registry') return registryJsonResult(response, body, bodyFailed, failureMessage, definition);
 		if (definition.output === 'binary' && response.ok && !bodyFailed && body && body.data && body.data.pdf === 'preparing') {
-			throw new ApickApiError('APICK is still preparing the PDF. Resend with the same idempotencyKey.', {
+			throw new ApickApiError('APICK has accepted the job but the PDF is not ready yet.', {
 				status: response.status,
 				code: 'APICK_PDF_PREPARING',
-				serviceCode: 'REGISTRY_PDF_PREPARING'
+				serviceCode: 'REGISTRY_PDF_PREPARING',
+				jobId: typeof body.data.job_id === 'string' ? body.data.job_id : undefined
 			});
 		}
 		if (!response.ok || bodyFailed || definition.output === 'binary') {
@@ -1409,31 +1516,75 @@ class ApickClient {
 		return this._call('registryCorporateSearch', registryCorporateTarget(input));
 	}
 
-	// 부동산 등기 열람·발급. 접수와 PDF 수신을 한 요청으로 끝내고 PDF 를 돌려준다(건당 850P).
-	// PDF 확보가 늦으면 HTTP 202(`serviceCode: REGISTRY_PDF_PREPARING`, 0P)로 ApickApiError 가 난다.
-	// 같은 요청을 다시 보낼 때는 같은 idempotencyKey 를 넣으면 추가 과금 없이 PDF 를 받는다.
-	createRegistryRealestateJob(options) {
-		const config = options || {};
-		if (!config.query && !config.pin) throw new TypeError('query or pin is required.');
-		return this._call('createRegistryRealestateJob', compact({
-			query: config.query === undefined ? undefined : requiredString('query', config.query, 200),
-			pin: config.pin === undefined ? undefined : requiredString('pin', config.pin, 20),
-			index: optionalRangeInteger('index', config.index, 1, 100),
-			usage: config.usage,
-			record_scope: config.recordScope,
-			include_cancelled: config.includeCancelled === undefined ? undefined : String(Boolean(config.includeCancelled)),
-			publish_resident_no: config.publishResidentNo === undefined ? undefined : String(Boolean(config.publishResidentNo)),
-			idempotency_key: config.idempotencyKey === undefined ? undefined : requiredString('idempotencyKey', config.idempotencyKey, 128)
-		}));
+	// 등기 열람·발급은 '접수 → 결과 조회' 2단계다(서버 2026-11-17 변경).
+	// 접수 때 열람·발급 금액이 차감되고 job_id 를 받는다. 결과 조회는 대기 중 0P, 완료 첫 조회 0P, 재조회 30P.
+	// 발급이 실패하면 결과 조회를 호출할 때 접수 차감분을 환급한다(접수 후 24시간 이내). 조회하지 않으면 환급되지 않는다.
+
+	// 접수만 하고 { status, jobId, ... } 를 돌려준다. 이후 waitRegistryResult(jobId) 로 PDF 를 받는다.
+	submitRegistryRealestateJob(options) {
+		return this._call('createRegistryRealestateJob', registryRealestatePayload(options), null, { output: 'registry' });
 	}
 
-	// 법인 등기 열람·발급. 접수와 PDF 수신을 한 요청으로 끝내고 PDF 를 돌려준다(건당 850P).
+	submitRegistryCorporateJob(options) {
+		return this._call('createRegistryCorporateJob', registryCorporatePayload(options), null, { output: 'registry' });
+	}
+
+	// 결과 조회 1회. 완료면 { status: 'completed', pdf }, 처리 중이면 { status: 'waiting', estimateSeconds }.
+	// 실패면 jobId·refunded(이번 조회에서 환급한 포인트)를 담은 ApickApiError 를 던진다.
+	getRegistryResult(jobId, options) {
+		const id = normalizeRegistryJobId(jobId);
+		const { format } = registryWaitOptions({ format: options && options.format });
+		return this._call('createRegistryRealestateJob', format ? { format } : {}, null, {
+			endpoint: '/rest/registry_jobs/' + encodeURIComponent(id) + '/download',
+			json: true,
+			output: 'registry',
+			timeoutMs: 120000,
+			filename: 'registry-' + id + '.pdf',
+			registryJobId: id
+		});
+	}
+
+	// 완료·실패가 될 때까지 결과 조회를 반복한다(기본 4초 간격, 최대 10분). 대기 중 조회는 과금되지 않는다.
+	// 시간 안에 끝나지 않으면 code 'APICK_PDF_PREPARING'·jobId 를 담은 오류를 던진다. 나중에 같은 jobId 로 다시 부르면 된다.
+	async waitRegistryResult(jobId, options) {
+		const id = normalizeRegistryJobId(jobId);
+		const wait = registryWaitOptions(options);
+		const deadline = Date.now() + wait.timeoutMs;
+		for (;;) {
+			if (wait.signal && wait.signal.aborted) throw wait.signal.reason || new Error('Aborted');
+			const result = await this.getRegistryResult(id, { format: wait.format });
+			if (result.status === 'completed') return result;
+			if (Date.now() + wait.intervalMs > deadline) {
+				throw new ApickApiError(`The registry job is still being processed after ${wait.timeoutMs} ms. Call waitRegistryResult(error.jobId) again later.`, {
+					status: 202,
+					code: 'APICK_PDF_PREPARING',
+					serviceCode: 'REGISTRY_PDF_PREPARING',
+					jobId: id
+				});
+			}
+			await waitDelay(wait.intervalMs, wait.signal);
+		}
+	}
+
+	async _issueRegistry(serviceName, payload, wait) {
+		const accepted = await this._call(serviceName, payload, null, { output: 'registry' });
+		if (accepted.pdf) return accepted.pdf;
+		if (!accepted.jobId) throw new ApickApiError('APICK did not return a registry job_id.', { status: 0, code: 'APICK_INVALID_RESPONSE' });
+		const done = await this.waitRegistryResult(accepted.jobId, { intervalMs: wait.intervalMs, timeoutMs: wait.timeoutMs, signal: wait.signal });
+		return done.pdf;
+	}
+
+	// 부동산 등기 열람·발급: 접수 후 완료될 때까지 기다려 PDF(ApickBinaryResult, jobId 포함)를 돌려준다.
+	// 기다리는 시간은 waitTimeoutMs(기본 10분)·pollIntervalMs(기본 4초)·signal 로 정한다.
+	createRegistryRealestateJob(options) {
+		const payload = registryRealestatePayload(options);
+		return this._issueRegistry('createRegistryRealestateJob', payload, registryWaitOptions(pickWait(options)));
+	}
+
+	// 법인 등기 열람·발급: 부동산과 같은 방식으로 PDF 를 돌려준다.
 	createRegistryCorporateJob(options) {
-		const config = options || {};
-		return this._call('createRegistryCorporateJob', Object.assign(registryCorporateTarget(config), compact({
-			usage: config.usage,
-			idempotency_key: config.idempotencyKey === undefined ? undefined : requiredString('idempotencyKey', config.idempotencyKey, 128)
-		})));
+		const payload = registryCorporatePayload(options);
+		return this._issueRegistry('createRegistryCorporateJob', payload, registryWaitOptions(pickWait(options)));
 	}
 
 	screenshot(url) {

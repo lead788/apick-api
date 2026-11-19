@@ -621,7 +621,7 @@ export interface RegistryRealestateJobOptions {
 	readonly query?: string;
 	/** 부동산고유번호 14자리 */
 	readonly pin?: string;
-	/** 검색 결과 행 번호(1부터), 기본 1 */
+	/** 주소(query) 접수 때 입력 주소와 맞는 결과 중 순번(1부터), 기본 1(맨 위). 특정 대상은 pin 접수를 권장한다. */
 	readonly index?: number;
 	readonly usage?: 'view' | 'issue' | 'transfer-gov24' | 'transfer-court';
 	readonly recordScope?: 'all' | 'part';
@@ -629,6 +629,45 @@ export interface RegistryRealestateJobOptions {
 	readonly publishResidentNo?: boolean;
 	/** 같은 접수를 다시 보낼 때 중복 접수·과금을 막는 키 */
 	readonly idempotencyKey?: string;
+}
+
+export type RegistryCorporateJobOptions = RegistryCorporateTarget & {
+	readonly usage?: 'view' | 'issue';
+	/** 같은 접수를 다시 보낼 때 중복 접수·과금을 막는 키 */
+	readonly idempotencyKey?: string;
+};
+
+/** createRegistry*Job 이 결과를 기다리는 방식 */
+export interface RegistryIssueWaitOptions {
+	/** 결과를 기다리는 최대 시간(밀리초, 1,000~3,600,000), 기본 600,000(10분). 넘으면 jobId 를 담은 APICK_PDF_PREPARING 오류 */
+	readonly waitTimeoutMs?: number;
+	/** 결과 조회 간격(밀리초, 1,000~60,000), 기본 4,000 */
+	readonly pollIntervalMs?: number;
+	readonly signal?: AbortSignal;
+}
+
+export interface RegistryWaitOptions {
+	/** 최대 대기 시간(밀리초, 1,000~3,600,000), 기본 600,000(10분) */
+	readonly timeoutMs?: number;
+	/** 결과 조회 간격(밀리초, 1,000~60,000), 기본 4,000 */
+	readonly intervalMs?: number;
+	/** pdf(기본) 또는 json(등기 항목을 구조화한 JSON) */
+	readonly format?: 'pdf' | 'json';
+	readonly signal?: AbortSignal;
+}
+
+/**
+ * 등기 접수·결과 조회 결과. waiting 은 아직 처리 중(과금 없음), completed 는 완료다.
+ * 완료이고 format 이 pdf 면 pdf 에 문서가, json 이면 data 에 구조화 결과가 담긴다. 실패는 ApickApiError 로 던진다.
+ */
+export interface RegistryJobResult {
+	readonly status: 'waiting' | 'completed';
+	readonly jobId: string | null;
+	readonly pdf: ApickBinaryResult | null;
+	readonly data: Record<string, unknown> | null;
+	/** 처리 중일 때 예상 대기 시간(초) */
+	readonly estimateSeconds: number | null;
+	readonly meta: ApickMeta;
 }
 
 export interface GeoNeighborhoodInput extends GeoTarget {
@@ -1396,12 +1435,20 @@ export class ApickApiError extends Error {
 	readonly serviceCode?: string;
 	/** Skills 오류의 부가 정보. 예: INVALID_INPUT 의 `errors` 목록 */
 	readonly details?: Record<string, unknown>;
+	/** 등기 열람·발급: 접수된 작업 번호. 대기 시간 초과·실패 때 담긴다. */
+	readonly jobId?: string;
+	/** 등기 발급 실패: 이번 결과 조회에서 환급한 포인트(0이면 환급 없음 — 이미 환급했거나 24시간이 지났거나 결제가 나간 경우) */
+	readonly refunded?: number;
+	/** 등기 발급 실패: 접수 후 환급을 받을 수 있는 시간(시간 단위, 24) */
+	readonly refundWindowHours?: number;
 	toJSON(): {
 		name: string;
 		message: string;
 		status: number;
 		code: string;
 		serviceCode?: string;
+		jobId?: string;
+		refunded?: number;
 	};
 }
 
@@ -1516,8 +1563,16 @@ export class ApickClient {
 	geoNeighborhood(input: string | GeoNeighborhoodInput): Promise<ApickResult>;
 	registryRealestateSearch(query: string): Promise<ApickResult>;
 	registryCorporateSearch(input: RegistryCorporateTarget): Promise<ApickResult>;
-	createRegistryRealestateJob(options: RegistryRealestateJobOptions): Promise<ApickBinaryResult>;
-	createRegistryCorporateJob(options: RegistryCorporateTarget & { readonly usage?: 'view' | 'issue'; readonly idempotencyKey?: string }): Promise<ApickBinaryResult>;
+	/** 접수 후 완료될 때까지 결과 조회를 반복해 PDF 를 돌려준다(jobId 포함). 실패면 jobId·refunded 를 담은 ApickApiError. */
+	createRegistryRealestateJob(options: RegistryRealestateJobOptions & RegistryIssueWaitOptions): Promise<ApickBinaryResult>;
+	createRegistryCorporateJob(options: RegistryCorporateJobOptions & RegistryIssueWaitOptions): Promise<ApickBinaryResult>;
+	/** 접수만 한다. 접수 때 열람·발급 금액이 차감되며 jobId 를 돌려준다. */
+	submitRegistryRealestateJob(options: RegistryRealestateJobOptions): Promise<RegistryJobResult>;
+	submitRegistryCorporateJob(options: RegistryCorporateJobOptions): Promise<RegistryJobResult>;
+	/** 결과 조회 1회(POST /rest/registry_jobs/:job_id/download). 대기 중 0P, 완료 첫 조회 0P, 재조회 30P. 실패면 이때 환급한다(접수 후 24시간 이내). */
+	getRegistryResult(jobId: string, options?: { readonly format?: 'pdf' | 'json' }): Promise<RegistryJobResult>;
+	/** 완료·실패까지 결과 조회를 반복한다. */
+	waitRegistryResult(jobId: string, options?: RegistryWaitOptions): Promise<RegistryJobResult>;
 	screenshot(url: string): Promise<ApickBinaryResult>;
 	youtubeMetadata(url: string): Promise<ApickResult<YoutubeMetadata>>;
 	youtubeThumbnail(url: string): Promise<ApickBinaryResult>;

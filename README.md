@@ -109,7 +109,9 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `buildingRegister(options)` | 건축물대장 / Building register | JSON |
 | `registryRealestateSearch(query)` | 부동산 등기 검색 / Real-estate registry search | JSON |
 | `registryCorporateSearch({ corpRegNo | bizNo })` | 법인 등기 검색 / Corporate registry search | JSON |
-| `createRegistryRealestateJob(options)` / `createRegistryCorporateJob(options)` | 등기 열람·발급(접수와 PDF 수신을 한 요청, 건당 850P) / Registry view or issue with PDF in one request | PDF |
+| `createRegistryRealestateJob(options)` / `createRegistryCorporateJob(options)` | 등기 열람·발급: 접수 후 완료까지 기다려 PDF 반환(열람 850P·발급 1250P, 실패 시 결과 조회 때 환급) / Registry view or issue: submits and waits for the PDF (refund on the result call when it fails) | PDF |
+| `submitRegistryRealestateJob(options)` / `submitRegistryCorporateJob(options)` | 등기 접수만(`jobId` 반환) / Submit a registry job only | JSON |
+| `getRegistryResult(jobId, { format })` / `waitRegistryResult(jobId, options)` | 등기 결과 조회 1회·완료까지 반복(처리 중 0P, 완료 첫 조회 0P, 재조회 30P) / Registry result once or until done | PDF·JSON |
 | `vehicleEmission(certNo)` | 배출가스 인증정보 / Emission certification | JSON |
 | `exchangeRate({ month, currency })` | 월평균·연평균 환율(원화 기준, 건당 5P) / Monthly and yearly average KRW exchange rates (5P per call) | JSON |
 | `vehicleRecall({ carNo | vin })` | 자동차 리콜 대상 여부(대상 아니면 0P) / Vehicle recall check (0P when none) | JSON |
@@ -273,30 +275,38 @@ const nearby = await client.geoNeighborhood({ address: '서울특별시 강남�
 `vehicleRecall({ carNo })`·`vehicleRecall({ vin })`는 둘 중 하나만 받습니다. 리콜 대상이 아니면(`recall_target: false`), `hipassUnpaid(carNo)`는 미납이 없으면(`unpaid_target: false`) 과금되지 않습니다. `vehicleTaxCalc(cc, { carAgeYears })`는 비영업용 승용차의 연간 자동차세·지방교육세를 계산합니다.
 `vehicleRecall` takes exactly one of `carNo` or `vin`. It is free when the vehicle has no recall (`recall_target: false`), and `hipassUnpaid(carNo)` is free when nothing is unpaid (`unpaid_target: false`). `vehicleTaxCalc(cc, { carAgeYears })` calculates the annual tax for a non-commercial passenger car.
 
-등기 열람·발급은 검색 → 발급 두 단계입니다. 검색(`registryRealestateSearch`·`registryCorporateSearch`)으로 대상을 확인하고, `createRegistry*Job`으로 발급을 요청하면 접수·결제·PDF 확보를 한 요청에서 끝내고 PDF를 돌려줍니다(건당 850P, PDF 전송 포함). PDF 확보가 늦으면 HTTP 200·`serviceCode: REGISTRY_PDF_PREPARING`(0P)로 `ApickApiError`가 나니 같은 `idempotencyKey`로 다시 보내면 추가 과금 없이 PDF를 받습니다. 과금·환급 조건은 [개발가이드](https://apick.app/dev_guide/registry_realestate_jobs)를 따릅니다.
-Registry view and issue takes two steps: find the target with a search (`registryRealestateSearch`·`registryCorporateSearch`), then call `createRegistry*Job`, which submits, pays, obtains the PDF and returns it in the same request (850P per issue, PDF transfer included). If the PDF is not ready yet the call throws `ApickApiError` with `serviceCode` `REGISTRY_PDF_PREPARING` (no charge); resend with the same `idempotencyKey` to get the PDF without another charge. See the [developer guide](https://apick.app/dev_guide/registry_realestate_jobs) for charges and refunds.
+등기 열람·발급은 검색 → 접수 → 결과 조회 순서입니다. 검색(`registryRealestateSearch`·`registryCorporateSearch`, 건당 40P — 정상 검색이면 결과가 없어도 차감)으로 대상을 확인합니다. 접수 때 열람 850P·발급 1250P가 차감되며, 2026-11-23 00:00(KST)부터는 열람 1300P·발급 1700P입니다. 접수하면 `job_id`를 받고, 결과 조회 `POST /rest/registry_jobs/:job_id/download`로 PDF를 받습니다. 결과 조회는 처리 중이면 0P, 완료 후 첫 조회 0P, 두 번째 조회부터 30P입니다. `createRegistry*Job`은 접수한 뒤 완료될 때까지 결과 조회를 반복(기본 4초 간격, 최대 10분)해 PDF(`ApickBinaryResult`, `jobId` 포함)를 돌려줍니다.
+Registry view and issue runs search → submit → result. Find the target with a search (`registryRealestateSearch`·`registryCorporateSearch`, 40P each; charged even when a completed search finds nothing). Submitting charges 850P for view or 1250P for issue (1300P / 1700P from 2026-11-23 00:00 KST) and returns a `job_id`; the PDF comes from the result endpoint `POST /rest/registry_jobs/:job_id/download` (no charge while processing, the first download after completion is free, then 30P per download). `createRegistry*Job` submits and polls the result endpoint (every 4 seconds, up to 10 minutes by default) until it returns the PDF as `ApickBinaryResult` with `jobId`.
 
-성공한 등기 PDF의 `jobId`는 응답 헤더 `X-Apick-Job-Id` 값입니다. 재다운로드에 필요하므로 PDF와 함께 보관하세요. 재다운로드는 건당 30P이며 발급 완료 후 90일 동안 가능합니다. 다른 바이너리 API에는 `jobId`가 없습니다.
-For a successful registry PDF, `jobId` contains the `X-Apick-Job-Id` response header. Save it with the PDF for a later download (30P per download, available for 90 days after issue). Other binary APIs do not provide `jobId`.
+- 주소(`query`)로 접수하면 입력 주소와 정확히 맞는 등기부 중 맨 위 대상을 발급합니다. 특정 건물·호실은 검색 결과의 `pin`(부동산고유번호)으로 접수하세요. / An address (`query`) submission issues the top matching register for that exact address; submit with the `pin` from the search result for a specific building or unit.
+- **환급은 결과 조회 때만 합니다.** 발급이 실패하면 같은 `job_id`로 결과 조회를 호출할 때 접수 때 차감한 금액을 환급하고, 그 결과는 `ApickApiError`의 `jobId`·`refunded`(이번 조회에서 환급한 포인트)로 알려 줍니다. 결과 조회를 하지 않으면 환급되지 않으며, 접수 후 24시간이 지난 조회는 환급되지 않습니다. `createRegistry*Job`·`waitRegistryResult`는 실패를 확인하는 조회를 직접 하므로 별도 호출이 필요 없습니다. / **Refunds happen only on the result call.** When issuance fails, calling the result endpoint with the same `job_id` refunds the submission charge; the thrown `ApickApiError` carries `jobId` and `refunded` (points refunded by that call). Without a result call there is no refund, and calls more than 24 hours after submission are not refunded. `createRegistry*Job` and `waitRegistryResult` make that call for you.
+- 대기 시간(`waitTimeoutMs`) 안에 끝나지 않으면 `code: 'APICK_PDF_PREPARING'`·`jobId`를 담은 오류가 납니다. 같은 `jobId`로 `waitRegistryResult(jobId)`를 다시 부르세요. 접수를 다시 보내지 마세요. / If the wait limit (`waitTimeoutMs`) passes, the error has `code: 'APICK_PDF_PREPARING'` and `jobId`; call `waitRegistryResult(jobId)` again instead of resubmitting.
+- 접수와 조회를 나누려면 `submitRegistryRealestateJob`·`submitRegistryCorporateJob`(접수만), `getRegistryResult(jobId, { format })`(조회 1회: `status`가 `waiting` 또는 `completed`), `waitRegistryResult(jobId, { intervalMs, timeoutMs, format, signal })`를 씁니다. `format: 'json'`이면 PDF 대신 등기 항목을 구조화한 JSON(`data`)을 받습니다. / To split the steps, use `submitRegistry*Job` (submit only), `getRegistryResult(jobId, { format })` (one call; `status` is `waiting` or `completed`) and `waitRegistryResult(jobId, { intervalMs, timeoutMs, format, signal })`; `format: 'json'` returns structured register data in `data` instead of the PDF.
+
+`jobId`는 재다운로드에 필요하므로 PDF와 함께 보관하세요. 발급 완료 후 90일 동안 다시 받을 수 있습니다(건당 30P). 과금·환급 조건은 [개발가이드](https://apick.app/dev_guide/registry_realestate_jobs)를 따릅니다.
+Keep `jobId` with the PDF for later downloads (30P each, available for 90 days after issue). See the [developer guide](https://apick.app/dev_guide/registry_realestate_jobs) for charges and refunds.
 
 ```js
 import { readFile, writeFile } from 'node:fs/promises';
 
-const pdf = await apick.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 1, idempotencyKey: 'order-1001' });
-await pdf.save('registry.pdf');
-if (!pdf.jobId) throw new Error('등기 작업 ID가 응답에 없습니다.');
-await writeFile('registry-job-id.txt', pdf.jobId, 'utf8');
+try {
+  const pdf = await apick.createRegistryRealestateJob({ pin: '11461996012345', usage: 'view', idempotencyKey: 'order-1001' });
+  await pdf.save('registry.pdf');
+  await writeFile('registry-job-id.txt', pdf.jobId, 'utf8');
+} catch (error) {
+  if (error.code === 'APICK_PDF_PREPARING' && error.jobId) {
+    await writeFile('registry-job-id.txt', error.jobId, 'utf8'); // 나중에 waitRegistryResult(jobId)
+  } else if (error.jobId) {
+    console.error('발급 실패', error.serviceCode, '환급', error.refunded, 'P');
+  } else {
+    throw error;
+  }
+}
 
-// 나중에 저장한 ID로 PDF를 다시 받습니다. 이 요청은 건당 30P입니다.
-const jobId = await readFile('registry-job-id.txt', 'utf8');
-const response = await fetch(`https://apick.app/rest/registry_jobs/${encodeURIComponent(jobId)}/download`, {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${process.env.APICK_API_KEY}` },
-  body: new FormData()
-});
-if (!response.ok) throw new Error(`재다운로드 실패: HTTP ${response.status}`);
-if (!response.headers.get('content-type')?.toLowerCase().includes('application/pdf')) throw new Error('PDF 응답이 아닙니다.');
-await writeFile('registry-again.pdf', new Uint8Array(await response.arrayBuffer()));
+// 나중에 저장한 ID로 결과를 받습니다. 완료 후 첫 조회는 0P, 이미 받은 PDF를 다시 받으면 건당 30P입니다.
+const jobId = (await readFile('registry-job-id.txt', 'utf8')).trim();
+const result = await apick.waitRegistryResult(jobId);
+await result.pdf.save('registry-again.pdf');
 ```
 
 ## 비동기 TTS Jobs / Asynchronous TTS Jobs

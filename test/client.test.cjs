@@ -1113,44 +1113,125 @@ test('geo methods send JSON bodies so lists and GeoJSON keep their shape', async
 	assert.throws(() => client.geoGeojsonAnalyze(null), /geojson/);
 });
 
-test('registry search and issue calls use the documented REST paths', async () => {
+function registryBody(options) {
+	if (!options.body) return null;
+	if (typeof options.body === 'string') return JSON.parse(options.body);
+	return Object.fromEntries(options.body);
+}
+
+function pdfResponse(jobId) {
+	return new Response(new Uint8Array([37, 80, 68, 70]), {
+		status: 200,
+		headers: { 'content-type': 'application/pdf', 'content-disposition': `attachment; filename="registry-${jobId}.pdf"`, 'X-Apick-Job-Id': jobId }
+	});
+}
+
+test('registry issue submits, polls the result endpoint and returns the PDF', async () => {
 	const requests = [];
-	let preparing = false;
+	const waits = { ['a'.repeat(32)]: 1, ['b'.repeat(32)]: 0 };
 	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
-		requests.push({ url: url.replace('https://api.example.test', ''), method: options.method, body: options.body ? Object.fromEntries(options.body) : null });
-		if (!url.includes('_jobs')) return jsonResponse({ data: { targets: [] }, api: { success: true, cost: 0 } });
-		if (preparing) return jsonResponse({ data: { job_id: 'a'.repeat(32), pdf: 'preparing', error_code: 'REGISTRY_PDF_PREPARING' }, api: { success: true, cost: 0 } }, { status: 200 });
-		return new Response(new Uint8Array([37, 80, 68, 70]), {
-			status: 200,
-			headers: { 'content-type': 'application/pdf', 'content-disposition': 'attachment; filename="registry-a.pdf"', 'X-Apick-Job-Id': url.includes('corporate') ? 'b'.repeat(32) : 'a'.repeat(32) }
-		});
+		const path = url.replace('https://api.example.test', '');
+		requests.push({ url: path, method: options.method, body: registryBody(options) });
+		if (path.endsWith('_search')) return jsonResponse({ data: { targets: [] }, api: { success: true, cost: 40 } });
+		if (path.endsWith('_jobs')) {
+			const jobId = path.includes('corporate') ? 'b'.repeat(32) : 'a'.repeat(32);
+			return jsonResponse({ data: { pdf: 'preparing', replay_hint: true, job_id: jobId, status: 'waiting' }, api: { success: true, cost: 0 } }, { status: 202 });
+		}
+		const jobId = path.split('/')[3];
+		if (waits[jobId] > 0) {
+			waits[jobId] -= 1;
+			return jsonResponse({ data: { job_id: jobId, status: 'waiting', estimate_seconds: 20 }, api: { success: true, cost: 0 } }, { status: 202 });
+		}
+		return pdfResponse(jobId);
 	} });
 	await client.registryRealestateSearch('서울특별시 가상구 가상로 1');
 	await client.registryCorporateSearch({ corpRegNo: '110111-0000001' });
-	const realestate = await client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', index: 2, usage: 'view', includeCancelled: false, idempotencyKey: 'order-1' });
+	const realestate = await client.createRegistryRealestateJob({ pin: '11461996012345', usage: 'view', includeCancelled: false, idempotencyKey: 'order-1', pollIntervalMs: 1000 });
 	const corporate = await client.createRegistryCorporateJob({ bizNo: '123-45-67890', usage: 'issue' });
 	assert.deepEqual(requests.map(r => r.method + ' ' + r.url), [
-		'POST /rest/registry_realestate_search', 'POST /rest/registry_corporate_search', 'POST /rest/registry_realestate_jobs',
-		'POST /rest/registry_corporate_jobs'
+		'POST /rest/registry_realestate_search', 'POST /rest/registry_corporate_search',
+		'POST /rest/registry_realestate_jobs', `POST /rest/registry_jobs/${'a'.repeat(32)}/download`, `POST /rest/registry_jobs/${'a'.repeat(32)}/download`,
+		'POST /rest/registry_corporate_jobs', `POST /rest/registry_jobs/${'b'.repeat(32)}/download`
 	]);
 	assert.deepEqual(requests[1].body, { corp_reg_no: '1101110000001' });
-	assert.deepEqual(requests[2].body, { query: '서울특별시 가상구 가상로 1', index: '2', usage: 'view', include_cancelled: 'false', idempotency_key: 'order-1' });
-	assert.deepEqual(requests[3].body, { biz_no: '1234567890', usage: 'issue' });
+	assert.deepEqual(requests[2].body, { pin: '11461996012345', usage: 'view', include_cancelled: 'false', idempotency_key: 'order-1' });
+	assert.deepEqual(requests[3].body, {});
+	assert.deepEqual(requests[5].body, { biz_no: '1234567890', usage: 'issue' });
 	assert.ok(realestate instanceof ApickBinaryResult);
 	assert.ok(corporate instanceof ApickBinaryResult);
 	assert.equal(realestate.contentType, 'application/pdf');
-	assert.equal(realestate.filename, 'registry-a.pdf');
+	assert.equal(realestate.filename, `registry-${'a'.repeat(32)}.pdf`);
 	assert.equal(realestate.jobId, 'a'.repeat(32));
 	assert.equal(corporate.jobId, 'b'.repeat(32));
-	preparing = true;
-	await assert.rejects(
-		() => client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', idempotencyKey: 'order-1' }),
-		error => error.serviceCode === 'REGISTRY_PDF_PREPARING' && error.code === 'APICK_PDF_PREPARING'
-	);
 	assert.equal(client.getRegistryJob, undefined);
 	assert.equal(client.downloadRegistryPdf, undefined);
 	assert.throws(() => client.registryCorporateSearch({}), /corpRegNo or bizNo/);
 	assert.throws(() => client.createRegistryRealestateJob({}), /query or pin/);
+	assert.throws(() => client.createRegistryRealestateJob({ pin: '11461996012345', waitTimeoutMs: 10 }), /timeoutMs/);
+	assert.throws(() => client.getRegistryResult('../x'), /jobId/);
+	assert.throws(() => client.getRegistryResult('a'.repeat(32), { format: 'xml' }), /format/);
+});
+
+test('registry submit and single result calls expose waiting, completed and json results', async () => {
+	const jobId = 'c'.repeat(32);
+	let step = 0;
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
+		requests.push({ url: url.replace('https://api.example.test', ''), body: registryBody(options) });
+		if (url.endsWith('_jobs')) return jsonResponse({ data: { pdf: 'preparing', job_id: jobId, status: 'waiting' }, api: { success: true, cost: 0 } }, { status: 202 });
+		step += 1;
+		if (step === 1) return new Response(JSON.stringify({ data: { job_id: jobId, status: 'waiting', estimate_seconds: 25 }, api: { success: true, cost: 0 } }), { status: 202, headers: { 'content-type': 'application/json', 'retry-after': '25' } });
+		if (step === 2) return pdfResponse(jobId);
+		return jsonResponse({ data: { job_id: jobId, status: 'completed', structured: { 표제부: [] }, structured_available: true }, api: { success: true, cost: 30 } });
+	} });
+	const accepted = await client.submitRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1', usage: 'issue' });
+	assert.equal(accepted.status, 'waiting');
+	assert.equal(accepted.jobId, jobId);
+	assert.equal(accepted.pdf, null);
+	const waiting = await client.getRegistryResult(jobId);
+	assert.equal(waiting.status, 'waiting');
+	assert.equal(waiting.estimateSeconds, 25);
+	const done = await client.getRegistryResult(jobId);
+	assert.equal(done.status, 'completed');
+	assert.ok(done.pdf instanceof ApickBinaryResult);
+	assert.equal(done.pdf.jobId, jobId);
+	const json = await client.getRegistryResult(jobId, { format: 'json' });
+	assert.equal(json.status, 'completed');
+	assert.equal(json.pdf, null);
+	assert.equal(json.data.structured_available, true);
+	assert.deepEqual(requests[3].body, { format: 'json' });
+});
+
+test('registry failures carry the job id and the refund made by the result call', async () => {
+	const jobId = 'd'.repeat(32);
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url) => {
+		if (url.endsWith('_jobs')) return jsonResponse({ data: { pdf: 'preparing', job_id: jobId, status: 'waiting' }, api: { success: true, cost: 0 } }, { status: 202 });
+		return jsonResponse({ data: { error: '발급에 실패했습니다.', error_code: 'REGISTRY_ADDRESS_NOT_FOUND', job_id: jobId, refunded: 1250, refund_window_hours: 24 }, api: { success: false, cost: 0 } }, { status: 422 });
+	} });
+	await assert.rejects(
+		() => client.createRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1' }),
+		error => error instanceof ApickApiError && error.status === 422 && error.serviceCode === 'REGISTRY_ADDRESS_NOT_FOUND'
+			&& error.jobId === jobId && error.refunded === 1250 && error.refundWindowHours === 24
+			&& error.toJSON().jobId === jobId && error.toJSON().refunded === 1250
+	);
+});
+
+test('registry wait stops at the time limit with the job id so the caller can resume', async () => {
+	const jobId = 'e'.repeat(32);
+	let polls = 0;
+	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url) => {
+		if (url.endsWith('_jobs')) return jsonResponse({ data: { pdf: 'preparing', job_id: jobId, status: 'waiting' }, api: { success: true, cost: 0 } }, { status: 202 });
+		polls += 1;
+		return jsonResponse({ data: { job_id: jobId, status: 'waiting', estimate_seconds: 30 }, api: { success: true, cost: 0 } }, { status: 202 });
+	} });
+	await assert.rejects(
+		() => client.createRegistryCorporateJob({ corpRegNo: '1101110000001', waitTimeoutMs: 1500, pollIntervalMs: 1000 }),
+		error => error.code === 'APICK_PDF_PREPARING' && error.serviceCode === 'REGISTRY_PDF_PREPARING' && error.jobId === jobId
+	);
+	assert.equal(polls, 2);
+	const controller = new AbortController();
+	controller.abort(new Error('stop'));
+	await assert.rejects(() => client.waitRegistryResult(jobId, { signal: controller.signal }), /stop/);
 });
 
 test('form helpers reject non-data-URL images and oversized bundles before any request', async () => {

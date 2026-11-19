@@ -1,3 +1,13 @@
+## 6.18.0 (2026-11-19)
+
+- 등기 열람·발급을 서버의 '접수 → 결과 조회' 2단계에 맞췄습니다. 이전 버전의 `createRegistryRealestateJob`·`createRegistryCorporateJob`은 접수 뒤 대기 응답을 받으면 `job_id` 없이 `REGISTRY_PDF_PREPARING` 오류로 끝나 PDF를 받을 수 없었습니다. 이제 접수한 뒤 `POST /rest/registry_jobs/:job_id/download`를 반복 조회(기본 4초 간격, 최대 10분)해 PDF(`ApickBinaryResult`, `jobId` 포함)를 돌려줍니다. 호출 형태와 반환 타입은 같고, 기다리는 방식은 `waitTimeoutMs`·`pollIntervalMs`·`signal`로 정합니다.
+- 새 메서드: `submitRegistryRealestateJob`·`submitRegistryCorporateJob`(접수만, `jobId` 반환), `getRegistryResult(jobId, { format })`(결과 조회 1회, `status`가 `waiting`·`completed`), `waitRegistryResult(jobId, options)`(완료까지 반복). `format: 'json'`이면 등기 항목을 구조화한 JSON을 받습니다.
+- 발급이 실패하면 결과 조회 때 접수 차감분을 환급합니다(접수 후 24시간 이내, 조회하지 않으면 환급 없음). 던지는 `ApickApiError`에 `jobId`·`refunded`(이번 조회에서 환급한 포인트)·`refundWindowHours`를 담습니다. 대기 시간을 넘기면 `code: 'APICK_PDF_PREPARING'`과 `jobId`를 담으므로 `waitRegistryResult(jobId)`로 이어서 받으면 됩니다.
+- 문서: 주소(`query`) 접수는 맞는 등기부 중 맨 위 대상을 발급하므로 특정 대상은 검색 결과의 `pin`으로 접수하도록 안내했습니다. 단가(열람 850P·발급 1250P, 2026-11-23 00:00 KST부터 1300P·1700P), 검색 40P, 결과 조회(처리 중 0P·완료 첫 조회 0P·재조회 30P)도 함께 적었습니다.
+- Registry view/issue now follows the server's submit → result flow. Previously `createRegistryRealestateJob` and `createRegistryCorporateJob` threw `REGISTRY_PDF_PREPARING` without a `job_id` once the server queued the job, so the PDF could not be retrieved. They now submit and poll `POST /rest/registry_jobs/:job_id/download` (every 4 seconds, up to 10 minutes by default) and return the PDF as `ApickBinaryResult` with `jobId`; the call signature and return type are unchanged, and `waitTimeoutMs`, `pollIntervalMs` and `signal` control the wait.
+- New methods: `submitRegistryRealestateJob` / `submitRegistryCorporateJob` (submit only, returns `jobId`), `getRegistryResult(jobId, { format })` (one result call; `status` is `waiting` or `completed`) and `waitRegistryResult(jobId, options)` (poll until done). `format: 'json'` returns structured register data.
+- Failed issuance is refunded on the result call (within 24 hours of submission; no result call, no refund). The thrown `ApickApiError` carries `jobId`, `refunded` (points refunded by that call) and `refundWindowHours`. When the wait limit passes, the error has `code: 'APICK_PDF_PREPARING'` and `jobId`; resume with `waitRegistryResult(jobId)`.
+
 ## 6.17.1 (2026-11-19)
 
 - 등기 PDF 재다운로드 가능 기간 안내를 72시간에서 90일로 고쳤습니다(서버 보관 기간 연장). 코드·메서드·응답 형식은 바뀌지 않았습니다.

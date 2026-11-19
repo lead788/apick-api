@@ -1,3 +1,8 @@
+## 6.17.1 (2026-11-19)
+
+- 등기 PDF 재다운로드 가능 기간 안내를 72시간에서 90일로 고쳤습니다(서버 보관 기간 연장). 코드·메서드·응답 형식은 바뀌지 않았습니다.
+- Updated the registry PDF re-download window from 72 hours to 90 days (longer server-side retention). No code, method or response changes.
+
 ## 6.17.0 (2026-11-17)
 
 - `ecommerceRegistration(businessNumber)` 를 추가했습니다. 사업자등록번호로 통신판매업 신고 이력 전부(신고번호·상호·대표자명·운영상태·신고일자·신고기관·소재지 등)를 돌려주며, 정상영업 신고가 앞에 오고 같은 상태 안에서는 신고일자 최신순입니다. `active`·`active_count`·`representative` 로 지금 정상영업 중인지 바로 확인할 수 있습니다. 건당 10P이며 결제 이력이 있는 계정에서 쓸 수 있고, 신고 이력이 없거나(`count` 0) 실패하면 차감되지 않습니다.

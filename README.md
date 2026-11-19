@@ -276,8 +276,8 @@ const nearby = await client.geoNeighborhood({ address: '서울특별시 강남�
 등기 열람·발급은 검색 → 발급 두 단계입니다. 검색(`registryRealestateSearch`·`registryCorporateSearch`)으로 대상을 확인하고, `createRegistry*Job`으로 발급을 요청하면 접수·결제·PDF 확보를 한 요청에서 끝내고 PDF를 돌려줍니다(건당 850P, PDF 전송 포함). PDF 확보가 늦으면 HTTP 200·`serviceCode: REGISTRY_PDF_PREPARING`(0P)로 `ApickApiError`가 나니 같은 `idempotencyKey`로 다시 보내면 추가 과금 없이 PDF를 받습니다. 과금·환급 조건은 [개발가이드](https://apick.app/dev_guide/registry_realestate_jobs)를 따릅니다.
 Registry view and issue takes two steps: find the target with a search (`registryRealestateSearch`·`registryCorporateSearch`), then call `createRegistry*Job`, which submits, pays, obtains the PDF and returns it in the same request (850P per issue, PDF transfer included). If the PDF is not ready yet the call throws `ApickApiError` with `serviceCode` `REGISTRY_PDF_PREPARING` (no charge); resend with the same `idempotencyKey` to get the PDF without another charge. See the [developer guide](https://apick.app/dev_guide/registry_realestate_jobs) for charges and refunds.
 
-성공한 등기 PDF의 `jobId`는 응답 헤더 `X-Apick-Job-Id` 값입니다. 재다운로드에 필요하므로 PDF와 함께 보관하세요. 재다운로드는 건당 30P이며 발급 완료 후 72시간 동안 가능합니다. 다른 바이너리 API에는 `jobId`가 없습니다.
-For a successful registry PDF, `jobId` contains the `X-Apick-Job-Id` response header. Save it with the PDF for a later download (30P per download, available for 72 hours after issue). Other binary APIs do not provide `jobId`.
+성공한 등기 PDF의 `jobId`는 응답 헤더 `X-Apick-Job-Id` 값입니다. 재다운로드에 필요하므로 PDF와 함께 보관하세요. 재다운로드는 건당 30P이며 발급 완료 후 90일 동안 가능합니다. 다른 바이너리 API에는 `jobId`가 없습니다.
+For a successful registry PDF, `jobId` contains the `X-Apick-Job-Id` response header. Save it with the PDF for a later download (30P per download, available for 90 days after issue). Other binary APIs do not provide `jobId`.
 
 ```js
 import { readFile, writeFile } from 'node:fs/promises';

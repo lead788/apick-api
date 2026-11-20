@@ -940,6 +940,29 @@ export type RequestPersonalIncomeInput = HometaxAuthInput & { incomeYears?: numb
 export interface RequestNpsJoinHistoryInput extends DataRequestInput { from?: string; to?: string; }
 export interface RequestNpsDeductionCertInput extends DataRequestInput { years?: number; }
 export interface RequestNpsCareerHistoryInput extends DataRequestInput { from?: string; to?: string; }
+/**
+ * 국민연금 증명서 발급 9종의 공통 입력. 기본은 조회값만 받고,
+ * `pdf: true` 또는 `format: 'pdf' | 'both'` 이면 증명서 PDF 를 발급해 `발급.발급문서`(base64)로 받는다.
+ */
+export interface NpsCertificateInput extends DataRequestInput {
+	/** 발급 용도. 01 개인 확인용(기본) · 02 공공기관 제출용 · 03 금융기관 제출용 · 04 기타 */
+	purpose?: '01' | '02' | '03' | '04';
+	/** true 이면 PDF 를 함께 발급한다. 기본 false(조회만). */
+	pdf?: boolean;
+	/** 응답 형식. json 조회값만(기본) · pdf PDF 만 · both 둘 다 */
+	format?: 'json' | 'pdf' | 'both';
+}
+/** 국문·영문 발급이 되는 증명서의 언어. K 국문(기본) · E 영문 */
+export interface NpsLangInput { lang?: 'K' | 'E'; }
+export type RequestNpsJoinCertInput = NpsCertificateInput & NpsLangInput;
+export type RequestNpsCareerCertInput = NpsCertificateInput & NpsLangInput;
+export type RequestNpsLumpSumCertInput = NpsCertificateInput & NpsLangInput;
+export type RequestNpsRehabilitationCertInput = NpsCertificateInput;
+export type RequestNpsPensionTaxCertInput = NpsCertificateInput & { year?: string };
+export type RequestNpsPensionPaymentCertInput = NpsCertificateInput & NpsLangInput;
+export type RequestNpsMemberCertInput = NpsCertificateInput & { maskRrn?: boolean };
+export type RequestNpsPaidCertInput = NpsCertificateInput & { workplaceNo?: string; fromYear?: string; toYear?: string };
+export type RequestNpsContributionUnpaidCertInput = NpsCertificateInput;
 export interface RequestDrivingLicenseInput extends DataRequestInput {}
 export interface RequestHealthCheckupInput extends DataRequestInput {}
 export type RequestCashReceiptDeductionInput = HometaxAuthInput & { incomeYears?: number };
@@ -1230,6 +1253,30 @@ export interface NpsJoinHistoryInfo {
 	가입내역: NpsJoinHistoryEntry[];
 }
 export interface NpsJoinHistoryResultPayload { npsJoinHistory: NpsJoinHistoryInfo; }
+
+/** 국민연금 증명서 발급 결과의 공통 "발급" 절. PDF 를 요청했을 때만 온다. */
+export interface NpsCertificateIssued {
+	발급번호: string;
+	발급용도: string;
+	PDF: '발급됨' | '발급하지 못함';
+	/** format 이 pdf·both 이고 발급됐을 때만 온다. */
+	문서파일명?: string;
+	/** PDF 원본의 base64. format 이 pdf·both 이고 발급됐을 때만 온다. */
+	발급문서?: string;
+	/** 발급하지 못했을 때의 오류 코드 */
+	발급오류?: string;
+}
+/** 증명서별 조회값(개발가이드 응답 표 참고)과 선택적 발급 절. */
+export type NpsCertificateInfo = Record<string, unknown> & { 발급?: NpsCertificateIssued };
+export interface NpsJoinCertResultPayload { npsJoinCert: NpsCertificateInfo; }
+export interface NpsCareerCertResultPayload { npsCareerCert: NpsCertificateInfo; }
+export interface NpsLumpSumCertResultPayload { npsLumpSumCert: NpsCertificateInfo; }
+export interface NpsRehabilitationCertResultPayload { npsRehabilitationCert: NpsCertificateInfo; }
+export interface NpsPensionTaxCertResultPayload { npsPensionTaxCert: NpsCertificateInfo; }
+export interface NpsPensionPaymentCertResultPayload { npsPensionPaymentCert: NpsCertificateInfo; }
+export interface NpsMemberCertResultPayload { npsMemberCert: NpsCertificateInfo; }
+export interface NpsPaidCertResultPayload { npsPaidCert: NpsCertificateInfo; }
+export interface NpsContributionUnpaidCertResultPayload { npsContributionUnpaidCert: NpsCertificateInfo; }
 
 export interface NpsDeductionCertYearEntry {
 	발급연도: string; 사업장가입자고지금액: number; 지역가입자등납부금액: number;
@@ -1667,6 +1714,24 @@ export class ApickClient {
 	getNpsDeductionCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsDeductionCertResultPayload>>>;
 	requestNpsCareerHistory(input: RequestNpsCareerHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getNpsCareerHistory(transactionId: string): Promise<ApickResult<DataRequestResult<NpsCareerHistoryResultPayload>>>;
+	requestNpsJoinCert(input: RequestNpsJoinCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsJoinCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsJoinCertResultPayload>>>;
+	requestNpsCareerCert(input: RequestNpsCareerCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsCareerCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsCareerCertResultPayload>>>;
+	requestNpsLumpSumCert(input: RequestNpsLumpSumCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsLumpSumCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsLumpSumCertResultPayload>>>;
+	requestNpsRehabilitationCert(input: RequestNpsRehabilitationCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsRehabilitationCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsRehabilitationCertResultPayload>>>;
+	requestNpsPensionTaxCert(input: RequestNpsPensionTaxCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsPensionTaxCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsPensionTaxCertResultPayload>>>;
+	requestNpsPensionPaymentCert(input: RequestNpsPensionPaymentCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsPensionPaymentCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsPensionPaymentCertResultPayload>>>;
+	requestNpsMemberCert(input: RequestNpsMemberCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsMemberCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsMemberCertResultPayload>>>;
+	requestNpsPaidCert(input: RequestNpsPaidCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsPaidCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsPaidCertResultPayload>>>;
+	requestNpsContributionUnpaidCert(input: RequestNpsContributionUnpaidCertInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNpsContributionUnpaidCert(transactionId: string): Promise<ApickResult<DataRequestResult<NpsContributionUnpaidCertResultPayload>>>;
 	requestDrivingLicense(input: RequestDrivingLicenseInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getDrivingLicense(transactionId: string): Promise<ApickResult<DataRequestResult<DrivingLicenseResultPayload>>>;
 	requestHealthCheckup(input: RequestHealthCheckupInput): Promise<ApickResult<DataRequestAcceptedData>>;

@@ -151,6 +151,15 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestNpsJoinHistory(input)` / `getNpsJoinHistory(transactionId)` | 국민연금 가입내역조회 / National Pension join history | JSON |
 | `requestNpsDeductionCert(input)` / `getNpsDeductionCert(transactionId)` | 국민연금 소득공제용 납부확인서 / National Pension payment certificate for income deduction | JSON |
 | `requestNpsCareerHistory(input)` / `getNpsCareerHistory(transactionId)` | 국민연금 경력 이력 조회 / National Pension career history | JSON |
+| `requestNpsJoinCert(input)` / `getNpsJoinCert(transactionId)` | 국민연금 가입자 가입증명 발급 / NPS enrollment certificate | JSON·PDF |
+| `requestNpsCareerCert(input)` / `getNpsCareerCert(transactionId)` | 국민연금 연금산정용 가입내역 확인서 발급 / NPS contribution record for pension calculation | JSON·PDF |
+| `requestNpsLumpSumCert(input)` / `getNpsLumpSumCert(transactionId)` | 국민연금 일시금 지급내역 발급 / NPS lump-sum payment record | JSON·PDF |
+| `requestNpsRehabilitationCert(input)` / `getNpsRehabilitationCert(transactionId)` | 국민연금 개인회생 신청용 확인서 발급 / NPS statement for personal rehabilitation filing | JSON·PDF |
+| `requestNpsPensionTaxCert(input)` / `getNpsPensionTaxCert(transactionId)` | 국민연금 연금소득 원천징수영수증 발급 / NPS pension income withholding receipt | JSON·PDF |
+| `requestNpsPensionPaymentCert(input)` / `getNpsPensionPaymentCert(transactionId)` | 국민연금 수급증명서 재발급 / NPS pension recipient certificate (reissue) | JSON·PDF |
+| `requestNpsMemberCert(input)` / `getNpsMemberCert(transactionId)` | 국민연금 가입자증명서 발급 / NPS subscriber certificate | JSON·PDF |
+| `requestNpsPaidCert(input)` / `getNpsPaidCert(transactionId)` | 국민연금보험료 납부확인서 발급 / NPS contribution payment confirmation | JSON·PDF |
+| `requestNpsContributionUnpaidCert(input)` / `getNpsContributionUnpaidCert(transactionId)` | 국민연금보험료 미납증명 발급 / NPS unpaid contribution certificate | JSON·PDF |
 | `requestDrivingLicense(input)` / `getDrivingLicense(transactionId)` | 운전면허 조회 / Driver's license check | JSON |
 | `requestHealthCheckup(input)` / `getHealthCheckup(transactionId)` | 국가 건강검진 결과 조회 / National health checkup results | JSON |
 | `requestCashReceiptDeduction(input)` / `getCashReceiptDeduction(transactionId)` | 현금영수증 소득공제 내역 / Cash receipt income deductions | JSON |
@@ -530,6 +539,15 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 국민연금 가입내역 / NPS join history | `requestNpsJoinHistory` / `getNpsJoinHistory` | `from`, `to` (`YYYY-MM`) |
 | 국민연금 소득공제용 납부확인서 / NPS payment certificate | `requestNpsDeductionCert` / `getNpsDeductionCert` | `years` (1–5) |
 | 국민연금 경력 이력 / NPS career history | `requestNpsCareerHistory` / `getNpsCareerHistory` | `from`, `to` (`YYYY-MM`) |
+| 국민연금 가입자 가입증명 발급 / NPS enrollment certificate | `requestNpsJoinCert` / `getNpsJoinCert` | `lang`, `purpose`, `pdf`, `format` |
+| 국민연금 연금산정용 가입내역 확인서 발급 / NPS contribution record for pension calculation | `requestNpsCareerCert` / `getNpsCareerCert` | `lang`, `purpose`, `pdf`, `format` |
+| 국민연금 일시금 지급내역 발급 / NPS lump-sum payment record | `requestNpsLumpSumCert` / `getNpsLumpSumCert` | `lang`, `purpose`, `pdf`, `format` |
+| 국민연금 개인회생 신청용 확인서 발급 / NPS statement for personal rehabilitation filing | `requestNpsRehabilitationCert` / `getNpsRehabilitationCert` | `purpose`, `pdf`, `format` |
+| 국민연금 연금소득 원천징수영수증 발급 / NPS pension income withholding receipt | `requestNpsPensionTaxCert` / `getNpsPensionTaxCert` | `year` (`YYYY`, 생략 시 작년 / default last year), `purpose`, `pdf`, `format` |
+| 국민연금 수급증명서 재발급 / NPS pension recipient certificate (reissue) | `requestNpsPensionPaymentCert` / `getNpsPensionPaymentCert` | `lang`, `purpose`, `pdf`, `format` |
+| 국민연금 가입자증명서 발급 / NPS subscriber certificate | `requestNpsMemberCert` / `getNpsMemberCert` | `maskRrn` (boolean, 기본 / default `true`), `purpose`, `pdf`, `format` |
+| 국민연금보험료 납부확인서 발급 / NPS contribution payment confirmation | `requestNpsPaidCert` / `getNpsPaidCert` | `workplaceNo`, `fromYear`, `toYear` (`YYYY`), `purpose`, `pdf`, `format` |
+| 국민연금보험료 미납증명 발급 / NPS unpaid contribution certificate | `requestNpsContributionUnpaidCert` / `getNpsContributionUnpaidCert` | `purpose`, `pdf`, `format` |
 | 운전면허 조회 / Driver's license | `requestDrivingLicense` / `getDrivingLicense` | — |
 | 국가 건강검진 결과 / Health checkup | `requestHealthCheckup` / `getHealthCheckup` | — |
 | 현금영수증 소득공제 내역 / Cash receipt deductions | `requestCashReceiptDeduction` / `getCashReceiptDeduction` | `incomeYears` (1–3) |
@@ -550,6 +568,17 @@ Acceptance is billed at a flat rate; the result is billed only on its first succ
 | 부가가치세 과세표준증명 발급 / VAT tax base certificate | `requestVatTaxBaseCert` / `getVatTaxBaseCert` | `business_no`, `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `period`(`1`·`2`·`all`), `engl_yn`, `format` |
 | 표준재무제표증명 발급 / Financial statements certificate | `requestFinancialStatementCert` / `getFinancialStatementCert` | `business_no`, `year`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `engl_yn`, `format` |
 | 폐업사실증명 발급 / Business closure certificate | `requestClosureCert` / `getClosureCert` | `business_no`, `use_purpose`, `submit_to`, `delivery` (필수 / required), `engl_yn`, `format` |
+
+국민연금 증명서 발급 9종(`requestNps*Cert`)은 공통으로 `purpose`(발급 용도 `01` 개인 확인용·`02` 공공기관 제출용·`03` 금융기관 제출용·`04` 기타, 기본 `01`), `pdf`(boolean), `format`(`json`·`pdf`·`both`, 기본 `json`)을 받습니다. 기본은 조회값만 받고, `pdf: true` 또는 `format: 'pdf' | 'both'` 이면 증명서 PDF를 발급해 결과의 `발급` 절에 발급번호와 함께 `발급문서`(PDF base64, `format` 이 `pdf`·`both` 일 때)로 담습니다. 접수 20P, 최초 결과 60P(PDF 발급도 같은 금액)이며 재조회는 무료입니다.
+The nine National Pension certificate methods (`requestNps*Cert`) share `purpose` (`01` personal use, `02` public agency, `03` financial institution, `04` other; default `01`), `pdf` (boolean) and `format` (`json`, `pdf` or `both`; default `json`). By default only the looked-up values are returned; with `pdf: true` or `format: 'pdf' | 'both'` the certificate PDF is issued and the result's `발급` section carries the issue number and `발급문서` (PDF as base64, when `format` is `pdf` or `both`). Acceptance is 20 points and the first result is 60 points (the same with a PDF); re-reads are free.
+
+```js
+const accepted = await client.requestNpsJoinCert({ name: '홍길동', birthDate: '19900101', phone: '01012345678', authProvider: 'kakao', format: 'both' });
+// 휴대폰 승인 뒤 / after the phone approval
+const result = await client.getNpsJoinCert(accepted.data.transactionId);
+const issued = result.data.result?.npsJoinCert.발급;
+if (issued?.발급문서) fs.writeFileSync('nps_join_cert.pdf', Buffer.from(issued.발급문서, 'base64'));
+```
 
 세무 민원증명은 발급 1건 60P 정액이고 `format` 으로 응답을 고릅니다(`pdf`·`json`·`both`, 기본 `both`). `json`·`both` 이면 발급된 PDF를 파싱한 `PDF데이터.필드` 가 함께 오며, 표 구조에 따라 필드가 비어 있을 수 있습니다. 구조화 값의 정본은 결과 본문(`문서확인번호`·`귀속연도` 등)입니다.
 Hometax certificates cost a flat 60P per issuance. `format` selects the response (`pdf`, `json`, or `both`; default `both`). With `json`/`both` the parsed PDF fields arrive in `PDF데이터.필드`; some fields may be empty depending on the table layout. The structured values in the result body (`문서확인번호`, `귀속연도`, …) are authoritative.

@@ -37,8 +37,8 @@ test('vehicle free-text queries preserve all supplied constraints and zero-cost 
 	assert.deepEqual(requests[1].body, { model: 'PANAMERA GTS 19년', modelYear: '19', trim: 'GTS' });
 });
 
-test('exports a focused catalog of 147 named services', () => {
-	assert.equal(Object.keys(SERVICES).length, 147);
+test('exports a focused catalog of 156 named services', () => {
+	assert.equal(Object.keys(SERVICES).length, 156);
 	for (const name of Object.keys(SERVICES)) {
 		assert.equal(typeof ApickClient.prototype[name], 'function');
 		assert.match(SERVICES[name].endpoint, /^\/rest\//);
@@ -1273,4 +1273,47 @@ test('registry maintenance (503) carries the maintenance window and Retry-After 
 	await assert.rejects(() => client.registryRealestateSearch('서울특별시 가상구 가상로 1'), check);
 	const plain = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async () => jsonResponse({ data: { error: '점검 중', error_code: 'REGISTRY_MAINTENANCE' }, api: { success: false, cost: 0 } }, { status: 503 }) });
 	await assert.rejects(() => plain.submitRegistryRealestateJob({ query: '서울특별시 가상구 가상로 1' }), error => error.maintenance === undefined && error.retryAfter === undefined);
+});
+
+test('국민연금 증명서 발급 9종은 공통·상품별 발급 입력을 폼 필드로 보내고 잘못된 값은 호출 전에 거절한다', async () => {
+	const txId = 'd'.repeat(32);
+	const requests = [];
+	const client = new ApickClient({ apiKey: 'key', fetch: async (url, options) => {
+		requests.push({ url, body: Object.fromEntries(options.body) });
+		return jsonResponse({ data: { transactionId: txId, status: 'AUTH_REQUESTED', resultAvailable: false, charged: true, sources: [], message: '', success: 1 }, api: { success: true, cost: 20 } });
+	} });
+	const user = { name: '홍길동', birthDate: '19900101', phone: '01011112222', authProvider: 'toss' };
+	const products = [
+		['NpsJoinCert', 'nps_join_cert'], ['NpsCareerCert', 'nps_career_cert'], ['NpsLumpSumCert', 'nps_lump_sum_cert'],
+		['NpsRehabilitationCert', 'nps_rehabilitation_cert'], ['NpsPensionTaxCert', 'nps_pension_tax_cert'],
+		['NpsPensionPaymentCert', 'nps_pension_payment_cert'], ['NpsMemberCert', 'nps_member_cert'],
+		['NpsPaidCert', 'nps_paid_cert'], ['NpsContributionUnpaidCert', 'nps_contribution_unpaid_cert']
+	];
+	for (const [name, key] of products) {
+		await client['request' + name](user);
+		assert.ok(requests.at(-1).url.endsWith('/rest/req_' + key));
+		assert.deepEqual(requests.at(-1).body, user);
+		await client['get' + name](txId);
+		assert.ok(requests.at(-1).url.endsWith('/rest/get_' + key));
+		assert.deepEqual(requests.at(-1).body, { transactionId: txId });
+	}
+	await client.requestNpsJoinCert({ ...user, lang: 'E', purpose: '03', pdf: true, format: 'both' });
+	assert.deepEqual(requests.at(-1).body, { ...user, lang: 'E', purpose: '03', pdf: 'true', format: 'both' });
+	await client.requestNpsMemberCert({ ...user, maskRrn: false });
+	assert.equal(requests.at(-1).body.maskRrn, 'false');
+	await client.requestNpsPaidCert({ ...user, workplaceNo: '12345678901', fromYear: 2020, toYear: '2023' });
+	assert.deepEqual(requests.at(-1).body, { ...user, workplaceNo: '12345678901', fromYear: '2020', toYear: '2023' });
+	await client.requestNpsPensionTaxCert({ ...user, year: '2025' });
+	assert.equal(requests.at(-1).body.year, '2025');
+	const before = requests.length;
+	assert.throws(() => client.requestNpsJoinCert({ ...user, lang: 'J' }), /lang/);
+	assert.throws(() => client.requestNpsRehabilitationCert({ ...user, purpose: '05' }), /purpose/);
+	assert.throws(() => client.requestNpsContributionUnpaidCert({ ...user, format: 'xml' }), /format/);
+	assert.throws(() => client.requestNpsMemberCert({ ...user, maskRrn: 'false' }), /maskRrn/);
+	assert.throws(() => client.requestNpsPaidCert({ ...user, fromYear: '20' }), /fromYear/);
+	assert.throws(() => client.requestNpsCareerCert({ ...user, pdf: 'Y' }), /pdf/);
+	assert.equal(requests.length, before);
+	// 상품별 입력이 아닌 값은 보내지 않는다.
+	await client.requestNpsRehabilitationCert({ ...user, lang: 'E', year: '2025' });
+	assert.deepEqual(requests.at(-1).body, user);
 });

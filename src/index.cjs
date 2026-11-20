@@ -171,6 +171,15 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestNpsJoinHistory: { endpoint: '/rest/req_nps_join_history', timeoutMs: 35_000, output: 'json' },
 	requestNpsDeductionCert: { endpoint: '/rest/req_nps_deduction_cert', timeoutMs: 35_000, output: 'json' },
 	requestNpsCareerHistory: { endpoint: '/rest/req_nps_career_history', timeoutMs: 35_000, output: 'json' },
+	requestNpsJoinCert: { endpoint: '/rest/req_nps_join_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsCareerCert: { endpoint: '/rest/req_nps_career_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsLumpSumCert: { endpoint: '/rest/req_nps_lump_sum_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsRehabilitationCert: { endpoint: '/rest/req_nps_rehabilitation_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsPensionTaxCert: { endpoint: '/rest/req_nps_pension_tax_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsPensionPaymentCert: { endpoint: '/rest/req_nps_pension_payment_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsMemberCert: { endpoint: '/rest/req_nps_member_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsPaidCert: { endpoint: '/rest/req_nps_paid_cert', timeoutMs: 35_000, output: 'json' },
+	requestNpsContributionUnpaidCert: { endpoint: '/rest/req_nps_contribution_unpaid_cert', timeoutMs: 35_000, output: 'json' },
 	requestDrivingLicense: { endpoint: '/rest/req_driving_license', timeoutMs: 35_000, output: 'json' },
 	requestHealthCheckup: { endpoint: '/rest/req_health_checkup', timeoutMs: 35_000, output: 'json' },
 	requestCashReceiptDeduction: { endpoint: '/rest/req_cash_receipt_deduction', timeoutMs: 35_000, output: 'json' },
@@ -399,6 +408,38 @@ function normalizeYearMonth(name, value) {
 	const text = requiredString(name, value);
 	if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(text)) throw new TypeError(`${name} must be in YYYY-MM format.`);
 	return text;
+}
+
+// 국민연금 증명서 발급 9종의 입력. 공통(purpose·pdf·format)에 상품별 입력(extra)을 더한다.
+// 불리언은 폼 글자 'true'/'false' 로 보낸다. 비어 있으면 보내지 않아 서버 기본값을 쓴다.
+function optionalBoolean(name, value) {
+	if (value === undefined || value === null || value === '') return undefined;
+	if (typeof value !== 'boolean') throw new TypeError(`${name} must be a boolean.`);
+	return value ? 'true' : 'false';
+}
+
+function optionalYear(name, value) {
+	if (value === undefined || value === null || value === '') return undefined;
+	const text = String(value);
+	if (!/^\d{4}$/.test(text)) throw new TypeError(`${name} must be a 4-digit year.`);
+	return text;
+}
+
+function npsCertPayload(input, extra) {
+	const payload = dataRequestInput(input);
+	const config = input || {};
+	const values = {
+		purpose: optionalChoice('purpose', config.purpose, ['01', '02', '03', '04']),
+		pdf: optionalBoolean('pdf', config.pdf),
+		format: optionalChoice('format', config.format, ['json', 'pdf', 'both'])
+	};
+	for (const key of extra || []) {
+		if (key === 'lang') values.lang = optionalChoice('lang', config.lang, ['K', 'E']);
+		else if (key === 'maskRrn') values.maskRrn = optionalBoolean('maskRrn', config.maskRrn);
+		else if (key === 'workplaceNo') values.workplaceNo = config.workplaceNo === undefined || config.workplaceNo === null || config.workplaceNo === '' ? undefined : requiredString('workplaceNo', config.workplaceNo, 20);
+		else values[key] = optionalYear(key, config[key]);
+	}
+	return Object.assign(payload, compact(values));
 }
 
 // 정해진 값 중 하나. 비어 있으면 서버 기본값을 쓰도록 보내지 않는다.
@@ -2087,6 +2128,80 @@ class ApickClient {
 
 	getNpsCareerHistory(transactionId) {
 		return this._call('requestNpsCareerHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_career_history' });
+	}
+
+	// 국민연금 증명서 발급 9종. 기본은 조회값만, pdf: true 또는 format: 'pdf'|'both' 면 PDF 를 발급한다.
+
+	requestNpsJoinCert(input) {
+		return this._call('requestNpsJoinCert', npsCertPayload(input, ['lang']));
+	}
+
+	getNpsJoinCert(transactionId) {
+		return this._call('requestNpsJoinCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_join_cert' });
+	}
+
+	requestNpsCareerCert(input) {
+		return this._call('requestNpsCareerCert', npsCertPayload(input, ['lang']));
+	}
+
+	getNpsCareerCert(transactionId) {
+		return this._call('requestNpsCareerCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_career_cert' });
+	}
+
+	requestNpsLumpSumCert(input) {
+		return this._call('requestNpsLumpSumCert', npsCertPayload(input, ['lang']));
+	}
+
+	getNpsLumpSumCert(transactionId) {
+		return this._call('requestNpsLumpSumCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_lump_sum_cert' });
+	}
+
+	requestNpsRehabilitationCert(input) {
+		return this._call('requestNpsRehabilitationCert', npsCertPayload(input, []));
+	}
+
+	getNpsRehabilitationCert(transactionId) {
+		return this._call('requestNpsRehabilitationCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_rehabilitation_cert' });
+	}
+
+	requestNpsPensionTaxCert(input) {
+		return this._call('requestNpsPensionTaxCert', npsCertPayload(input, ['year']));
+	}
+
+	getNpsPensionTaxCert(transactionId) {
+		return this._call('requestNpsPensionTaxCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_pension_tax_cert' });
+	}
+
+	requestNpsPensionPaymentCert(input) {
+		return this._call('requestNpsPensionPaymentCert', npsCertPayload(input, ['lang']));
+	}
+
+	getNpsPensionPaymentCert(transactionId) {
+		return this._call('requestNpsPensionPaymentCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_pension_payment_cert' });
+	}
+
+	requestNpsMemberCert(input) {
+		return this._call('requestNpsMemberCert', npsCertPayload(input, ['maskRrn']));
+	}
+
+	getNpsMemberCert(transactionId) {
+		return this._call('requestNpsMemberCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_member_cert' });
+	}
+
+	requestNpsPaidCert(input) {
+		return this._call('requestNpsPaidCert', npsCertPayload(input, ['workplaceNo', 'fromYear', 'toYear']));
+	}
+
+	getNpsPaidCert(transactionId) {
+		return this._call('requestNpsPaidCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_paid_cert' });
+	}
+
+	requestNpsContributionUnpaidCert(input) {
+		return this._call('requestNpsContributionUnpaidCert', npsCertPayload(input, []));
+	}
+
+	getNpsContributionUnpaidCert(transactionId) {
+		return this._call('requestNpsContributionUnpaidCert', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nps_contribution_unpaid_cert' });
 	}
 
 	requestDrivingLicense(input) {

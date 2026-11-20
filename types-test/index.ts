@@ -117,6 +117,22 @@ const npsCareerRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.r
   name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", from: "1988-01", to: "2026-09"
 });
 const npsCareerResult: Promise<ApickResult<DataRequestResult<NpsCareerHistoryResultPayload>>> = client.getNpsCareerHistory("a".repeat(32));
+const npsJoinCertRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsJoinCert({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", lang: "E", purpose: "03", pdf: true, format: "both"
+});
+const npsJoinCertResult = client.getNpsJoinCert("a".repeat(32));
+npsJoinCertResult.then((result) => { const pdf: string | undefined = result.data.result?.npsJoinCert.발급?.발급문서; void pdf; });
+const npsPaidCertRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsPaidCert({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", workplaceNo: "12345678901", fromYear: "2020", toYear: "2023"
+});
+const npsMemberCertRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsMemberCert({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", maskRrn: false
+});
+const npsPensionTaxCertRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestNpsPensionTaxCert({
+  name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", year: "2025"
+});
+// @ts-expect-error 개인회생 확인서는 lang 을 받지 않는다.
+client.requestNpsRehabilitationCert({ name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "toss", lang: "E" });
 const licenseRequest: Promise<ApickResult<DataRequestAcceptedData>> = client.requestDrivingLicense({
   name: "홍길동", birthDate: "19900101", phone: "01011112222", authProvider: "pass"
 });

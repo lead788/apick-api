@@ -200,7 +200,19 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	requestVehicleRegisterDoc: { endpoint: '/rest/req_vehicle_register_doc', timeoutMs: 35_000, output: 'json' },
 	requestNpsBundle: { endpoint: '/rest/req_nps_bundle', timeoutMs: 35_000, output: 'json' },
 	requestHometaxBundle: { endpoint: '/rest/req_hometax_bundle', timeoutMs: 60_000, output: 'json' },
-	requestHometaxBizBundle: { endpoint: '/rest/req_hometax_biz_bundle', timeoutMs: 60_000, output: 'json' }
+	requestHometaxBizBundle: { endpoint: '/rest/req_hometax_biz_bundle', timeoutMs: 60_000, output: 'json' },
+	requestEmploymentInsuranceBurden: { endpoint: '/rest/req_employment_insurance_burden', timeoutMs: 35_000, output: 'json' },
+	requestGwangjuWaterBill: { endpoint: '/rest/req_gwangju_water_bill', timeoutMs: 35_000, output: 'json' },
+	requestTechCertVerify: { endpoint: '/rest/req_tech_cert_verify', timeoutMs: 35_000, output: 'json' },
+	requestSocialInsuranceWorkplace: { endpoint: '/rest/req_social_insurance_workplace', timeoutMs: 35_000, output: 'json' },
+	requestNhisPremiumStatus: { endpoint: '/rest/req_nhis_premium_status', timeoutMs: 35_000, output: 'json' },
+	requestAccidentFree7y: { endpoint: '/rest/req_accident_free_7y', timeoutMs: 35_000, output: 'json' },
+	requestFranchiseSalesTotal: { endpoint: '/rest/req_franchise_sales_total', timeoutMs: 35_000, output: 'json' },
+	requestBizPurchaseTotal: { endpoint: '/rest/req_biz_purchase_total', timeoutMs: 35_000, output: 'json' },
+	requestConsumerUsageTotal: { endpoint: '/rest/req_consumer_usage_total', timeoutMs: 35_000, output: 'json' },
+	requestStandardPayHistory: { endpoint: '/rest/req_standard_pay_history', timeoutMs: 35_000, output: 'json' },
+	requestPassportStatus: { endpoint: '/rest/req_passport_status', timeoutMs: 35_000, output: 'json' },
+	requestPassportHistory: { endpoint: '/rest/req_passport_history', timeoutMs: 35_000, output: 'json' }
 });
 
 const SERVICES = Object.freeze(Object.fromEntries(
@@ -2420,6 +2432,146 @@ class ApickClient {
 
 	getHometaxBizBundle(transactionId) {
 		return this._call('requestHometaxBizBundle', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_hometax_biz_bundle' });
+	}
+
+	// 정부24 간편인증 조회 12종(2026-11-21): 접수(request*) 뒤 결과 조회(get*)로 폴링한다.
+	requestEmploymentInsuranceBurden(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		payload.bizRegNo = requiredString('bizRegNo', config.bizRegNo, 30);
+		const insuranceYear = optionalYear('insuranceYear', config.insuranceYear);
+		if (insuranceYear !== undefined) payload.insuranceYear = insuranceYear;
+		if (config.rounding !== undefined) payload.rounding = optionalChoice('rounding', config.rounding, ['Y', 'N']);
+		if (config.repRrno !== undefined && config.repRrno !== '') payload.repRrno = String(config.repRrno);
+		return this._call('requestEmploymentInsuranceBurden', payload);
+	}
+
+	getEmploymentInsuranceBurden(transactionId) {
+		return this._call('requestEmploymentInsuranceBurden', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_employment_insurance_burden' });
+	}
+
+	requestGwangjuWaterBill(input) {
+		const payload = dataRequestInput(input);
+		payload.receiptNo = requiredString('receiptNo', (input || {}).receiptNo, 50);
+		return this._call('requestGwangjuWaterBill', payload);
+	}
+
+	getGwangjuWaterBill(transactionId) {
+		return this._call('requestGwangjuWaterBill', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_gwangju_water_bill' });
+	}
+
+	requestTechCertVerify(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		payload.certNo = requiredString('certNo', config.certNo, 50);
+		if (config.instCd !== undefined && config.instCd !== '') payload.instCd = String(config.instCd);
+		return this._call('requestTechCertVerify', payload);
+	}
+
+	getTechCertVerify(transactionId) {
+		return this._call('requestTechCertVerify', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_tech_cert_verify' });
+	}
+
+	requestSocialInsuranceWorkplace(input) {
+		const payload = dataRequestInput(input);
+		payload.unifiedNo = requiredString('unifiedNo', (input || {}).unifiedNo, 50);
+		return this._call('requestSocialInsuranceWorkplace', payload);
+	}
+
+	getSocialInsuranceWorkplace(transactionId) {
+		return this._call('requestSocialInsuranceWorkplace', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_social_insurance_workplace' });
+	}
+
+	requestNhisPremiumStatus(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		if (config.se !== undefined && config.se !== '') payload.se = String(config.se);
+		if (config.fromYm !== undefined && config.fromYm !== '') payload.fromYm = String(config.fromYm);
+		if (config.toYm !== undefined && config.toYm !== '') payload.toYm = String(config.toYm);
+		return this._call('requestNhisPremiumStatus', payload);
+	}
+
+	getNhisPremiumStatus(transactionId) {
+		return this._call('requestNhisPremiumStatus', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_nhis_premium_status' });
+	}
+
+	requestAccidentFree7y(input) {
+		return this._call('requestAccidentFree7y', dataRequestInput(input));
+	}
+
+	getAccidentFree7y(transactionId) {
+		return this._call('requestAccidentFree7y', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_accident_free_7y' });
+	}
+
+	requestFranchiseSalesTotal(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		payload.bizNo = requiredString('bizNo', config.bizNo, 10);
+		const year = optionalYear('year', config.year);
+		if (year !== undefined) payload.year = year;
+		return this._call('requestFranchiseSalesTotal', payload);
+	}
+
+	getFranchiseSalesTotal(transactionId) {
+		return this._call('requestFranchiseSalesTotal', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_franchise_sales_total' });
+	}
+
+	requestBizPurchaseTotal(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		payload.bizNo = requiredString('bizNo', config.bizNo, 10);
+		const year = optionalYear('year', config.year);
+		if (year !== undefined) payload.year = year;
+		return this._call('requestBizPurchaseTotal', payload);
+	}
+
+	getBizPurchaseTotal(transactionId) {
+		return this._call('requestBizPurchaseTotal', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_biz_purchase_total' });
+	}
+
+	requestConsumerUsageTotal(input) {
+		const payload = dataRequestInput(input);
+		const year = optionalYear('year', (input || {}).year);
+		if (year !== undefined) payload.year = year;
+		return this._call('requestConsumerUsageTotal', payload);
+	}
+
+	getConsumerUsageTotal(transactionId) {
+		return this._call('requestConsumerUsageTotal', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_consumer_usage_total' });
+	}
+
+	requestStandardPayHistory(input) {
+		const payload = dataRequestInput(input);
+		const config = input || {};
+		if (config.insrncSe !== undefined && config.insrncSe !== '') payload.insrncSe = String(config.insrncSe);
+		payload.workplaceName = requiredString('workplaceName', config.workplaceName, 100);
+		payload.ownerName = requiredString('ownerName', config.ownerName, 50);
+		payload.ownerRrno = requiredString('ownerRrno', config.ownerRrno, 13);
+		const insuranceYear = optionalYear('insuranceYear', config.insuranceYear);
+		if (insuranceYear !== undefined) payload.insuranceYear = insuranceYear;
+		return this._call('requestStandardPayHistory', payload);
+	}
+
+	getStandardPayHistory(transactionId) {
+		return this._call('requestStandardPayHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_standard_pay_history' });
+	}
+
+	requestPassportStatus(input) {
+		const payload = dataRequestInput(input);
+		payload.unityRcptNo = requiredString('unityRcptNo', (input || {}).unityRcptNo, 50);
+		return this._call('requestPassportStatus', payload);
+	}
+
+	getPassportStatus(transactionId) {
+		return this._call('requestPassportStatus', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_passport_status' });
+	}
+
+	requestPassportHistory(input) {
+		return this._call('requestPassportHistory', dataRequestInput(input));
+	}
+
+	getPassportHistory(transactionId) {
+		return this._call('requestPassportHistory', { transactionId: normalizeTransactionId(transactionId) }, null, { endpoint: '/rest/get_passport_history' });
 	}
 
 	// 설치형 에이전트의 JSON 요청·응답 공용 전송.

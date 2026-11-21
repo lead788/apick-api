@@ -171,6 +171,18 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `requestNpsBundle(input)` / `getNpsBundle(transactionId)` | 국민연금 통합 조회 / National pension bundle | JSON |
 | `requestHometaxBundle(input)` / `getHometaxBundle(transactionId)` | 개인 국세 통합 조회 / Personal tax bundle | JSON·PDF |
 | `requestHometaxBizBundle(input)` / `getHometaxBizBundle(transactionId)` | 사업자 국세 통합 조회 / Business tax bundle | JSON·PDF |
+| `requestEmploymentInsuranceBurden(input)` / `getEmploymentInsuranceBurden(transactionId)` | 고용·산재보험 사업장별 보험료 부담 조회 / Employment & accident insurance premium burden | JSON |
+| `requestGwangjuWaterBill(input)` / `getGwangjuWaterBill(transactionId)` | 광주 상수도 요금 조회 / Gwangju water bill | JSON |
+| `requestTechCertVerify(input)` / `getTechCertVerify(transactionId)` | 자격증 진위확인 / Technical certificate verification | JSON |
+| `requestSocialInsuranceWorkplace(input)` / `getSocialInsuranceWorkplace(transactionId)` | 4대보험 사업장 가입 현황 조회 / Social insurance workplace enrollment | JSON |
+| `requestNhisPremiumStatus(input)` / `getNhisPremiumStatus(transactionId)` | 건보료 납부 현황 조회 / NHIS premium payment status | JSON |
+| `requestAccidentFree7y(input)` / `getAccidentFree7y(transactionId)` | 7년 무사고 운전 경력 확인 / 7-year accident-free driving record | JSON |
+| `requestFranchiseSalesTotal(input)` / `getFranchiseSalesTotal(transactionId)` | 프랜차이즈 총매출 조회 / Franchise total sales | JSON |
+| `requestBizPurchaseTotal(input)` / `getBizPurchaseTotal(transactionId)` | 기업 총구매액 조회 / Business total purchase | JSON |
+| `requestConsumerUsageTotal(input)` / `getConsumerUsageTotal(transactionId)` | 소비자 총사용액 조회 / Consumer total usage | JSON |
+| `requestStandardPayHistory(input)` / `getStandardPayHistory(transactionId)` | 기준급여 이력 조회 / Standard pay history | JSON |
+| `requestPassportStatus(input)` / `getPassportStatus(transactionId)` | 여권 발급 상태 조회 / Passport issuance status | JSON |
+| `requestPassportHistory(input)` / `getPassportHistory(transactionId)` | 여권 발급 이력 조회 / Passport issuance history | JSON |
 | `requestIncomeAmountCert(input)` / `getIncomeAmountCert(transactionId)` | 소득금액증명 발급 / Income amount certificate | PDF·JSON |
 | `requestPensionCreditCert(input)` / `getPensionCreditCert(transactionId)` | 연금보험료등 소득세액 공제확인서 발급 / Pension credit certificate | PDF·JSON |
 | `requestFactCert(input)` / `getFactCert(transactionId)` | 납부내역증명(납세사실증명) 발급 / Tax payment fact certificate | PDF·JSON |
@@ -760,3 +772,6 @@ Pass earlier turns to `documentAssist` as `history` (`{role, text}`, last 8) so 
 `documentAssist` and `documentReview` provide assistance and review. Manage files with `documentAttachmentList`, `documentAttachmentAdd` and `documentAttachmentRemove`. Attachment review uses a separate quote/start with `action: 'attachment_review'`, `document_id` and `version`, at 20P per file, under its own budget. Unread images or objects remain unverified.
 
 Run `documentVerify` after saving. Only finalize when no blocking issues remain, using the current version and returned `verification_hash` with `documentFinalize`. Grounding does not guarantee real-world facts or legal effect. Changes require re-verification. `documentDownloadPdf` and `documentDownloadBundle` share the DOCX purchase entitlement. The original eight document methods remain compatible.
+## 프록시 HTTP 압축 정책 전수조사 결과 (2026-11-12)
+
+전수조사(2026-11-05~2026-11-12 변경 폴더 대상) 결과, 이 프로젝트에는 프록시를 경유하는 HTTP 요청이 없다(직접 연결·브라우저 네트워크 스택 위임·진단/방어 전용 등). 따라서 응답 압축 협상(`Accept-Encoding`) 최대화 정책의 적용 대상이 없다.

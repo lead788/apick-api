@@ -1057,6 +1057,41 @@ export interface RequestHometaxBizBundleOptions {
 	bind_id?: string;
 	agreed?: boolean;
 }
+/** 고용·산재보험 사업장별 보험료 부담 조회 입력. 사업자관리번호가 필요하다. */
+export interface RequestEmploymentInsuranceBurdenInput extends DataRequestInput {
+	bizRegNo: string;
+	insuranceYear?: string;
+	rounding?: 'Y' | 'N';
+	repRrno?: string;
+}
+/** 광주 상수도 요금 조회 입력. 민원접수번호가 필요하다. */
+export interface RequestGwangjuWaterBillInput extends DataRequestInput { receiptNo: string; }
+/** 자격증 진위확인 입력. 자격증번호가 필요하다. */
+export interface RequestTechCertVerifyInput extends DataRequestInput { certNo: string; instCd?: string; }
+/** 4대보험 사업장 가입 현황 조회 입력. 통합납부번호가 필요하다. */
+export interface RequestSocialInsuranceWorkplaceInput extends DataRequestInput { unifiedNo: string; }
+/** 건보료 납부 현황 조회 입력. 조회 기간(YYYYMM)을 선택할 수 있다. */
+export interface RequestNhisPremiumStatusInput extends DataRequestInput { se?: string; fromYm?: string; toYm?: string; }
+/** 7년 무사고 운전 경력 확인 입력. */
+export interface RequestAccidentFree7yInput extends DataRequestInput {}
+/** 프랜차이즈 총매출 조회 입력. 사업자등록번호 10자리가 필요하다. */
+export interface RequestFranchiseSalesTotalInput extends DataRequestInput { bizNo: string; year?: string; }
+/** 기업 총구매액 조회 입력. 사업자등록번호 10자리가 필요하다. */
+export interface RequestBizPurchaseTotalInput extends DataRequestInput { bizNo: string; year?: string; }
+/** 소비자 총사용액 조회 입력. */
+export interface RequestConsumerUsageTotalInput extends DataRequestInput { year?: string; }
+/** 기준급여 이력 조회 입력. 사업장명·대표자명·대표자 주민등록번호 13자리가 필요하다. */
+export interface RequestStandardPayHistoryInput extends DataRequestInput {
+	insrncSe?: string;
+	workplaceName: string;
+	ownerName: string;
+	ownerRrno: string;
+	insuranceYear?: string;
+}
+/** 여권 발급 상태 조회 입력. 통합접수번호가 필요하다. */
+export interface RequestPassportStatusInput extends DataRequestInput { unityRcptNo: string; }
+/** 여권 발급 이력 조회 입력. */
+export interface RequestPassportHistoryInput extends DataRequestInput {}
 
 /**
  * 세무 민원증명 발급 조건. 신청인 본인명의 발급이고 발급 1건 60P 정액이다.
@@ -1766,6 +1801,30 @@ export class ApickClient {
 	getHometaxBundle(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxBundleResultPayload>>>;
 	requestHometaxBizBundle(input: RequestHometaxBizBundleInput): Promise<ApickResult<DataRequestAcceptedData>>;
 	getHometaxBizBundle(transactionId: string): Promise<ApickResult<DataRequestResult<HometaxBizBundleResultPayload>>>;
+	requestEmploymentInsuranceBurden(input: RequestEmploymentInsuranceBurdenInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getEmploymentInsuranceBurden(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestGwangjuWaterBill(input: RequestGwangjuWaterBillInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getGwangjuWaterBill(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestTechCertVerify(input: RequestTechCertVerifyInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getTechCertVerify(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestSocialInsuranceWorkplace(input: RequestSocialInsuranceWorkplaceInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getSocialInsuranceWorkplace(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestNhisPremiumStatus(input: RequestNhisPremiumStatusInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getNhisPremiumStatus(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestAccidentFree7y(input: RequestAccidentFree7yInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getAccidentFree7y(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestFranchiseSalesTotal(input: RequestFranchiseSalesTotalInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getFranchiseSalesTotal(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestBizPurchaseTotal(input: RequestBizPurchaseTotalInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getBizPurchaseTotal(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestConsumerUsageTotal(input: RequestConsumerUsageTotalInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getConsumerUsageTotal(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestStandardPayHistory(input: RequestStandardPayHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getStandardPayHistory(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestPassportStatus(input: RequestPassportStatusInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getPassportStatus(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
+	requestPassportHistory(input: RequestPassportHistoryInput): Promise<ApickResult<DataRequestAcceptedData>>;
+	getPassportHistory(transactionId: string): Promise<ApickResult<DataRequestResult<Record<string, unknown>>>>;
 	/** @deprecated REQEO로 이전. 네트워크 요청 없이 SKILLS_MOVED(410)를 반환합니다. */
 
 	searchSkills(options?: SkillSearchOptions): Promise<ApickResult<SkillPage<SkillSummary>>>;

@@ -754,7 +754,7 @@ Skill sales and execution have moved to [REQEO](https://reqeo.com/dev_guide/skil
 
 만들기·수정·AI·다운로드에는 `request_id`를 전달하고 같은 요청을 재시도할 때 같은 값을 사용합니다. 수정에는 읽은 `version`, 다운로드에는 견적의 `version`과 `content_hash`가 필요합니다. 충돌 응답을 받으면 문서를 다시 읽거나 사본으로 저장하세요. AI 결과는 제안이며 자동 저장되지 않습니다.
 
-`content`는 `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'본문'}]}]}` 구조입니다. 표·목록·이미지·명시적 페이지 나누기도 지원합니다. 자세한 제한과 요청 필드는 [문서 개발가이드](https://apick.app/dev_guide/document_create)를 확인하세요.
+`content`는 `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'본문'}]}]}` 구조입니다. 표·목록·이미지·명시적 페이지 나누기도 지원합니다. 서명·도장·이미지를 글자 사이에 넣으려면 문단 안에 `{type:'inlineImage',attrs:{src:'data:image/png;base64,...',kind:'stamp',layout:'front',width:64}}` 노드를 넣습니다. `kind`는 `signature`·`stamp`·`image`, `layout`은 `inline`(글자처럼 취급)·`front`(글자 위에 표시)이며 PNG·JPEG 2MB 이하, 문서당 12개까지입니다. 자세한 제한과 요청 필드는 [문서 개발가이드](https://apick.app/dev_guide/document_create)를 확인하세요.
 
 ## Documents and DOCX
 
@@ -762,7 +762,7 @@ Create, list, get, update, delete and quote are free. Public API AI writing cost
 
 Methods: `documentCreate`, `documentList`, `documentGet`, `documentUpdate`, `documentDelete`, `documentAiWrite`, `documentQuote`, `documentDownload`. Each takes an options object; `documentList()` needs no argument. See the [example](./examples/documents.mjs) and [API guide](https://apick.app/dev_guide/document_create).
 
-Supply a `request_id` for create, update, AI and download; reuse it when retrying the same request. Updates require the last read `version`. Downloads require the quote's `version` and `content_hash`. On conflicts, reload or save a separate copy. AI results are proposals and are not automatically saved. Document `content` uses a JSON tree with a `doc` root, e.g. `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Hello'}]}]}`.
+Supply a `request_id` for create, update, AI and download; reuse it when retrying the same request. Updates require the last read `version`. Downloads require the quote's `version` and `content_hash`. On conflicts, reload or save a separate copy. AI results are proposals and are not automatically saved. Document `content` uses a JSON tree with a `doc` root, e.g. `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Hello'}]}]}`. To place a signature, stamp or image between characters, put an `{type:'inlineImage',attrs:{src:'data:image/png;base64,...',kind:'stamp',layout:'front',width:64}}` node inside a paragraph. `kind` is `signature`, `stamp` or `image`; `layout` is `inline` (treated like a character) or `front` (drawn over the text). PNG or JPEG up to 2MB, up to 12 per document.
 
 
 ## 핵심 문서 작성·검증

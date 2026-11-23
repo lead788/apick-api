@@ -399,7 +399,7 @@ Create, list, get, update, delete and quote are free. Public API AI writing cost
 
 Methods: `documentCreate`, `documentList`, `documentGet`, `documentUpdate`, `documentDelete`, `documentAiWrite`, `documentQuote`, `documentDownload`. Each takes an options object; `documentList()` needs no argument. See the [example](../examples/documents.mjs) and [API guide](https://apick.app/dev_guide/document_create).
 
-Supply a `request_id` for create, update, AI and download; reuse it when retrying the same request. Updates require the last read `version`. Downloads require the quote's `version` and `content_hash`. On conflicts, reload or save a separate copy. AI results are proposals and are not automatically saved. Document `content` uses a JSON tree with a `doc` root, e.g. `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Hello'}]}]}`.
+Supply a `request_id` for create, update, AI and download; reuse it when retrying the same request. Updates require the last read `version`. Downloads require the quote's `version` and `content_hash`. On conflicts, reload or save a separate copy. AI results are proposals and are not automatically saved. Document `content` uses a JSON tree with a `doc` root, e.g. `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Hello'}]}]}`. To place a signature, stamp or image between characters, put an `{type:'inlineImage',attrs:{src:'data:image/png;base64,...',kind:'stamp',layout:'front',width:64}}` node inside a paragraph. `kind` is `signature`, `stamp` or `image`; `layout` is `inline` (treated like a character) or `front` (drawn over the text). PNG or JPEG up to 2MB, up to 12 per document.
 
 
 ## Core document workflows and verification

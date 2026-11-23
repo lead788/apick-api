@@ -410,7 +410,7 @@ TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOp
 
 만들기·수정·AI·다운로드에는 `request_id`를 전달하고 같은 요청을 재시도할 때 같은 값을 사용합니다. 수정에는 읽은 `version`, 다운로드에는 견적의 `version`과 `content_hash`가 필요합니다. 충돌 응답을 받으면 문서를 다시 읽거나 사본으로 저장하세요. AI 결과는 제안이며 자동 저장되지 않습니다.
 
-`content`는 `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'본문'}]}]}` 구조입니다. 표·목록·이미지·명시적 페이지 나누기도 지원합니다. 자세한 제한과 요청 필드는 [문서 개발가이드](https://apick.app/dev_guide/document_create)를 확인하세요.
+`content`는 `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'본문'}]}]}` 구조입니다. 표·목록·이미지·명시적 페이지 나누기도 지원합니다. 서명·도장·이미지를 글자 사이에 넣으려면 문단 안에 `{type:'inlineImage',attrs:{src:'data:image/png;base64,...',kind:'stamp',layout:'front',width:64}}` 노드를 넣습니다. `kind`는 `signature`·`stamp`·`image`, `layout`은 `inline`(글자처럼 취급)·`front`(글자 위에 표시)이며 PNG·JPEG 2MB 이하, 문서당 12개까지입니다. 자세한 제한과 요청 필드는 [문서 개발가이드](https://apick.app/dev_guide/document_create)를 확인하세요.
 
 
 ## 핵심 문서 작성·검증

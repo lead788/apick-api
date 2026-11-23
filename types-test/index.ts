@@ -7,6 +7,7 @@ import ApickClient, {
   TTS_VOICE_IDS
 } from '../src/index.js';
 import type { TtsJobData, TtsVoiceId } from '../src/index.js';
+import type { DocumentInlineImageAttrs } from '../src/index.js';
 import type { ImageAiJobData, ImageAiResultData, ImageAiPendingData } from '../src/index.js';
 
 const client = new ApickClient('test-key');
@@ -227,6 +228,9 @@ void premiumImage;
 // @ts-expect-error 공개 품질은 basic·advanced·premium 뿐이다
 client.generateImages("제품 사진", { quality: "high" });
 
+const stampAttrs: DocumentInlineImageAttrs = { src: 'data:image/png;base64,AAAA', kind: 'stamp', layout: 'front', width: 64 };
+const stampedDraft = client.documentCreate({ request_id: 'request-id-123457', content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '(인)' }, { type: 'inlineImage', attrs: { ...stampAttrs } }] }] } });
+void stampedDraft;
 const documentDraft = client.documentCreate({ request_id: 'request-id-123456', title: '문서', content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '본문' }] }] } });
 const documentList = client.documentList();
 const documentResult = client.documentGet({ document_id: 'document-id-12345' });

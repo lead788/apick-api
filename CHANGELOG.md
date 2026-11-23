@@ -1,3 +1,10 @@
+## 6.23.0 (2026-11-23)
+
+- 문서 JSON에 글 속 이미지 노드 `inlineImage`를 추가했습니다. 문단·표 칸 안의 글자 사이에 서명·도장·이미지를 넣으며, `layout`으로 글자처럼 취급(`inline`) 또는 글자 위에 표시(`front`)를 고릅니다. PNG·JPEG 2MB 이하, 문서당 12개까지입니다. 기존 노드와 `image`는 그대로입니다.
+- 타입 `DocumentInlineImageAttrs`를 추가하고 `DocumentNode.type`에 `'inlineImage'`를 더했습니다.
+- Added the inline image node `inlineImage` to document JSON. It places a signature, stamp or image between characters in a paragraph or table cell; `layout` chooses `inline` (treated like a character) or `front` (drawn over the text). PNG or JPEG up to 2MB, up to 12 per document. Existing nodes, including `image`, are unchanged.
+- Added the `DocumentInlineImageAttrs` type and `'inlineImage'` to `DocumentNode.type`.
+
 ## 6.22.1 (2026-11-23)
 
 - 차량목록 조회 `vehicleCatalog(options)` 가 무료가 되었습니다. 포인트가 차감되지 않으며 입력 오류·서버 오류는 `data.error`로 응답합니다. 호출 방식과 응답 형식은 그대로입니다.

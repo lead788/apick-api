@@ -5,9 +5,30 @@ export interface DocumentWorkflowJob { job_id: string; document_id?: string | nu
 export interface DocumentVerification { document_version: number; verification_hash: string; content_hash: string; can_finalize: boolean; finalized?: boolean; scope: string; issues: Array<{key?: string; state: string; reason: string; blocking: boolean}>; claims: Array<Record<string, unknown>>; official: Array<Record<string, unknown>>; }
 export interface DocumentWorkflowQuote { price: number; unit: 'P'; steps: number; includes: string[]; additional_steps: string; download_included: false; action?: 'attachment_review'; attachments?: number; }
 export interface DocumentNode {
- type: 'doc' | 'paragraph' | 'heading' | 'text' | 'hardBreak' | 'bulletList' | 'orderedList' | 'listItem' | 'table' | 'tableRow' | 'tableCell' | 'tableHeader' | 'image' | 'pageBreak' | 'docField' | 'formSheet';
+ type: 'doc' | 'paragraph' | 'heading' | 'text' | 'hardBreak' | 'bulletList' | 'orderedList' | 'listItem' | 'table' | 'tableRow' | 'tableCell' | 'tableHeader' | 'image' | 'pageBreak' | 'docField' | 'formSheet' | 'inlineImage';
  text?: string; attrs?: Record<string, unknown>; content?: DocumentNode[];
  marks?: Array<{ type: 'bold' | 'italic' | 'underline' | 'strike' | 'textStyle' | 'highlight'; attrs?: Record<string, unknown> }>;
+}
+/**
+ * 글 속 이미지(inlineImage) 노드의 attrs. 문단·표 칸 안의 글자 사이에 서명·도장·이미지를 넣는다. 문서당 12개까지.
+ * src 는 PNG·JPEG data URL(2MB 이하)이며 저장할 때 PNG 로 바뀐다(서명·도장은 흰 배경이 투명해진다).
+ * Attributes of an inline image node (signature, stamp or image placed between characters). Up to 12 per document.
+ */
+export interface DocumentInlineImageAttrs {
+ /** PNG·JPEG data URL, 2MB 이하. */
+ src: string;
+ /** 기본 image. */
+ kind?: 'signature' | 'stamp' | 'image';
+ /** inline: 글자처럼 취급, front: 글자 위에 표시. 기본값은 서명·도장 front, 이미지 inline. */
+ layout?: 'inline' | 'front';
+ /** 16~624px. 기본값은 서명 120, 도장 64, 이미지 160. */
+ width?: number;
+ /** front 일 때 놓인 자리 기준 가로 이동(px, -800~800). */
+ offsetX?: number;
+ /** front 일 때 줄 가운데 기준 세로 이동(px, -800~800). */
+ offsetY?: number;
+ /** 대체 글, 100자 이하. */
+ alt?: string;
 }
 /** 같은 대화에서 앞서 오간 말. 최근 8개, 한 말당 1,500자까지 보낸다. 근거로는 user 말만 쓴다. */
 export interface DocumentAssistTurn { role: 'user' | 'assistant'; text: string }

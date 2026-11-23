@@ -54,6 +54,7 @@ const SERVICE_DEFINITIONS = Object.freeze({
 	holidays: { endpoint: '/rest/holiday_info', timeoutMs: 35_000, output: 'json' },
 	searchAddress: { endpoint: '/rest/search_juso', timeoutMs: 20_000, output: 'json' },
 	vehicleModelInfo: { endpoint: '/rest/vehicle_model_info', timeoutMs: 20_000, output: 'json' },
+	vehicleCatalog: { endpoint: '/rest/vehicle_catalog', timeoutMs: 20_000, output: 'json' },
 	ocr: { endpoint: '/rest/ocr', timeoutMs: 35_000, output: 'json' },
 	readBusinessDocument: { endpoint: '/rest/business_doc_ocr', timeoutMs: 40_000, output: 'json' },
 	faceSimilarity: { endpoint: '/rest/face_similarity', timeoutMs: 65_000, output: 'json' },
@@ -1185,6 +1186,22 @@ class ApickClient {
 			model: optionalText('model', config.model, 60),
 			modelYear: optionalText('modelYear', config.modelYear, 60),
 			trim: optionalText('trim', config.trim, 60)
+		});
+	}
+
+	// 차량목록 조회(건당 10P). 제조사만 넣으면 그 제조사의 전체 목록, 모두 비우면 전체 차량 목록을 돌려준다.
+	// 한 번에 최대 10,000건이고 응답의 다음오프셋을 offset 으로 넘겨 이어 조회한다.
+	// 정상 조회는 0건이어도 과금되며, 입력 오류·서버 오류만 과금되지 않는다.
+	vehicleCatalog(options) {
+		const config = options || {};
+		return this._call('vehicleCatalog', {
+			maker: optionalText('maker', config.maker, 60),
+			model: optionalText('model', config.model, 60),
+			modelYear: optionalText('modelYear', config.modelYear, 60),
+			trim: optionalText('trim', config.trim, 60),
+			tireOnly: optionalBoolean('tireOnly', config.tireOnly),
+			limit: optionalRangeInteger('limit', config.limit, 1, 10000),
+			offset: optionalRangeInteger('offset', config.offset, 0, Number.MAX_SAFE_INTEGER)
 		});
 	}
 

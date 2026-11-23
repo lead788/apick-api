@@ -1,3 +1,10 @@
+## 6.22.0 (2026-11-23)
+
+- 차량목록 조회 메서드 `vehicleCatalog(options)` 를 추가했습니다(`POST /rest/vehicle_catalog`, 건당 10P). 제조사만 넣으면 그 제조사의 전체 목록을, 모두 비우면 전체 차량 목록을 돌려줍니다. 한 번에 최대 10,000건이며 `다음오프셋`으로 이어 조회합니다. 정상 조회는 0건이어도 과금되고, 입력 오류·서버 오류는 과금되지 않습니다. `limit`(1~10,000)·`tireOnly`(boolean)는 호출 전에 `RangeError`·`TypeError`로 검사합니다.
+- 타입 `VehicleCatalogOptions`·`VehicleCatalogItem`·`VehicleCatalogData`를 추가했습니다.
+- Added `vehicleCatalog(options)` for `POST /rest/vehicle_catalog` (10 points per call). Pass only `maker` for a brand's full list or nothing for every vehicle; up to 10,000 rows per call, continued with `다음오프셋`. Normal calls are charged even when empty; input and server errors are free. `limit` (1–10,000) and `tireOnly` (boolean) are validated before the call with `RangeError`/`TypeError`.
+- Added `VehicleCatalogOptions`, `VehicleCatalogItem` and `VehicleCatalogData` types.
+
 ## 6.21.0 (2026-11-21)
 
 - 정부24 간편인증 조회 12종 메서드를 추가했습니다: `requestEmploymentInsuranceBurden`/`getEmploymentInsuranceBurden`(고용·산재보험 사업장별 보험료 부담 조회), `requestGwangjuWaterBill`/`getGwangjuWaterBill`(광주 상수도 요금 조회), `requestTechCertVerify`/`getTechCertVerify`(자격증 진위확인), `requestSocialInsuranceWorkplace`/`getSocialInsuranceWorkplace`(4대보험 사업장 가입 현황 조회), `requestNhisPremiumStatus`/`getNhisPremiumStatus`(건보료 납부 현황 조회), `requestAccidentFree7y`/`getAccidentFree7y`(7년 무사고 운전 경력 확인), `requestFranchiseSalesTotal`/`getFranchiseSalesTotal`(프랜차이즈 총매출 조회), `requestBizPurchaseTotal`/`getBizPurchaseTotal`(기업 총구매액 조회), `requestConsumerUsageTotal`/`getConsumerUsageTotal`(소비자 총사용액 조회), `requestStandardPayHistory`/`getStandardPayHistory`(기준급여 이력 조회), `requestPassportStatus`/`getPassportStatus`(여권 발급 상태 조회), `requestPassportHistory`/`getPassportHistory`(여권 발급 이력 조회). 필수 필드는 호출 전에 `TypeError`로 거절하고 연도는 4자리로 검사합니다.

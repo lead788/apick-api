@@ -66,6 +66,7 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `holidays(year, month)` | 대한민국 공휴일 / Korean holidays | JSON |
 | `searchAddress(query, options)` | 도로명주소 검색 / Road address search | JSON |
 | `vehicleModelInfo(options)` | 차종별 차량정보 조회 / Vehicle model specifications for cars and motorcycles/scooters (승용차·이륜차 / 표기가 달라도 가장 비슷한 차종 / closest match when spelled differently · 값은 표준 표기 / standard notation values) | JSON |
+| `vehicleCatalog(options)` | 차량목록 조회(제조사·차명·연식·등급, 건당 10P, 최대 10,000건) / Vehicle catalog list by brand, model, year and trim (10 points per call, up to 10,000 rows) | JSON |
 | `ocr(image, options)` | 이미지 OCR / Image OCR | JSON |
 | `readBusinessDocument(image, { docType, checkStatus, includeText })` | 사업자등록증·통신판매업 신고증·법인 등기사항증명서·인감증명서 항목 판독, 등록번호 검증·사업자 상태 확인(판독 20P, 상태 확인 추가 요금 없음, 결제 이력 필요, 주민등록번호 가림) / Business registration, e-commerce registration, corporate registry and seal certificate reading with number validation and optional business status (20P; status check free; paid account required; resident numbers masked) | JSON |
 | `faceSimilarity(image, compareImages, { threshold })` | 얼굴 유사도 비교(0~1 점수·판정, 비교 사진 최대 10장, 기본 10P·2장째부터 장당 5P, 얼굴 없으면 0P) / Face similarity between a reference photo and 1-10 photos (score and match; 10P, +5P per extra photo; 0P when no face) | JSON |
@@ -719,6 +720,17 @@ Put the model, trim, year and seat count in model (for example, PANAMERA GTS 19�
 
 ```js
 await client.vehicleModelInfo({ model: "파나메라 gts 4인승 19년식" });
+```
+
+### 차량목록 조회 / Vehicle catalog
+
+제조사만 넣으면 그 제조사의 전체 차량 목록(차명·연식·등급, 타이어 규격이 있으면 전륜·후륜 타이어와 휠 크기)을 받습니다. 모두 비우면 전체 차량 목록입니다. 한 번에 최대 10,000건이며 응답의 `다음오프셋`을 `offset`으로 넘겨 이어 받습니다. 차명이 정확히 일치하지 않으면 그 글자가 들어간 차명으로 찾고 `안내`에 적습니다. 건당 10P이며 정상 조회는 0건이어도 환불되지 않습니다. 입력 오류(알 수 없는 브랜드 포함)·서버 오류는 과금되지 않습니다.
+
+Pass only `maker` to get that brand's full list (model, year, trim, and front/rear tire and wheel size when known); leave everything empty for every vehicle. Up to 10,000 rows per call; pass the response's `다음오프셋` as `offset` to continue. If no model name matches exactly, models containing the text are returned with a `안내` notice. 10 points per call; a normal call is charged even when it returns no rows. Input errors (including unknown brands) and server errors are free.
+
+```js
+const { data } = await client.vehicleCatalog({ maker: "테슬라", limit: 10000 });
+console.log(data.총건수, data.차량목록[0]);
 ```
 
 ### 차량정보 안내 / Vehicle information notices

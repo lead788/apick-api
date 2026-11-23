@@ -263,3 +263,9 @@ const bizDoc: Promise<ApickResult<BusinessDocument>> = client.readBusinessDocume
 const corpDoc: Promise<ApickResult<BusinessDocument>> = client.readBusinessDocument('./registry.jpg', { docType: 'corporate_registry' });
 void corpDoc.then((r) => { const officers = r.data?.fields['임원']; const kind: '개인' | '법인' | undefined = r.data?.seal_kind; return [officers, kind]; });
 void faceCheck; void bizDoc;
+
+// vehicleCatalog
+client.vehicleCatalog({ maker: '테슬라', limit: 10000 }).then(r => { const total: number = r.data.총건수; const tire: string | undefined = r.data.차량목록[0]?.전륜타이어; void total; void tire; });
+client.vehicleCatalog();
+// @ts-expect-error tireOnly 는 boolean 이다.
+client.vehicleCatalog({ tireOnly: 'yes' });

@@ -1569,6 +1569,43 @@ export interface VehicleModelInfoOptions {
 	trim?: string;
 }
 
+/** Vehicle catalog filters — all optional. Leave everything empty to page through every vehicle. */
+export interface VehicleCatalogOptions {
+	/** 제조사(브랜드). Brand, e.g. 현대, Tesla. */
+	maker?: string;
+	/** 차명. Model name; if no exact match, models containing this text are returned with a notice. */
+	model?: string;
+	/** 연식(2026·26·26년식). Model year. */
+	modelYear?: string;
+	/** 등급. Trim. */
+	trim?: string;
+	/** true 이면 타이어 규격이 있는 차량만. Only vehicles with tire sizes. */
+	tireOnly?: boolean;
+	/** 1~10,000, 기본 1,000. Default 1,000, max 10,000. */
+	limit?: number;
+	/** 응답의 다음오프셋을 넣어 이어 조회. Pass the previous response's 다음오프셋. */
+	offset?: number;
+}
+
+export interface VehicleCatalogItem {
+	제조사: string;
+	차명: string;
+	연식: number | null;
+	등급: string | null;
+	항목수: number;
+	타이어있음: boolean;
+	전륜타이어?: string;
+	후륜타이어?: string;
+	휠크기?: string;
+}
+
+export interface VehicleCatalogData {
+	차량목록: VehicleCatalogItem[];
+	총건수: number;
+	다음오프셋?: number;
+	안내?: string;
+}
+
 export class ApickClient {
 	createVideoJob(model: VideoModel, prompt: string, options?: VideoJobOptions): Promise<ApickResult<VideoJobData>>;
 	getVideoJob(model: VideoModel, jobId: string): Promise<ApickResult<VideoJobData>>;
@@ -1586,6 +1623,8 @@ export class ApickClient {
 	searchAddress(query: string, options?: { page?: number }): Promise<ApickResult>;
 	/** Look up Korean-market vehicle specifications. Values use fixed standard notation (fuel, drive type, transmission, body type, efficiency grade; multiple values joined with `+`). */
 	vehicleModelInfo(options?: VehicleModelInfoOptions): Promise<ApickResult>;
+	/** 차량목록 조회(건당 10P, 최대 10,000건). Flat vehicle list by brand/model/year/trim; 10 points per call, charged even when empty (input and server errors are free). */
+	vehicleCatalog(options?: VehicleCatalogOptions): Promise<ApickResult<VehicleCatalogData>>;
 	ocr(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
 	/** Read a Korean business registration or e-commerce registration certificate field by field. No charge when nothing is read. */
 	readBusinessDocument(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: ReadBusinessDocumentOptions): Promise<ApickResult<BusinessDocument>>;

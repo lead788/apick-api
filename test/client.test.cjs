@@ -41,16 +41,20 @@ test('vehicleCatalog sends brand-only and paging filters and validates limits be
 	const requests = [];
 	const client = new ApickClient({ apiKey: 'test-key', baseUrl: 'https://api.example.test', fetch: async (url, options) => {
 		requests.push({ url, body: Object.fromEntries(options.body) });
-		return jsonResponse({ data: { 차량목록: [], 총건수: 0 }, api: { success: true, cost: 10 } });
+		return jsonResponse({ data: { 차량목록: [], 총건수: 0 }, api: { success: true, cost: 0 } });
 	} });
 	await client.vehicleCatalog({ maker: '테슬라', limit: 10000 });
 	await client.vehicleCatalog({ model: '그랜', tireOnly: true, offset: 1000 });
 	assert.equal(requests[0].url, 'https://api.example.test/rest/vehicle_catalog');
 	assert.deepEqual(requests[0].body, { maker: '테슬라', limit: '10000' });
 	assert.deepEqual(requests[1].body, { model: '그랜', tireOnly: 'true', offset: '1000' });
+	await client.vehicleCatalog({ specId: 13564 });
+	assert.deepEqual(requests[2].body, { specId: '13564' });
+	assert.throws(() => client.vehicleCatalog({ specId: 0 }), RangeError);
+	assert.throws(() => client.vehicleCatalog({ specId: 1.5 }), RangeError);
 	assert.throws(() => client.vehicleCatalog({ limit: 10001 }), RangeError);
 	assert.throws(() => client.vehicleCatalog({ tireOnly: 'yes' }), TypeError);
-	assert.equal(requests.length, 2);
+	assert.equal(requests.length, 3);
 });
 
 test('exports a focused catalog of 169 named services', () => {

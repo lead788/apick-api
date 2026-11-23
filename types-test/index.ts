@@ -269,7 +269,8 @@ void corpDoc.then((r) => { const officers = r.data?.fields['임원']; const kind
 void faceCheck; void bizDoc;
 
 // vehicleCatalog
-client.vehicleCatalog({ maker: '테슬라', limit: 10000 }).then(r => { const total: number = r.data.총건수; const tire: string | undefined = r.data.차량목록[0]?.전륜타이어; void total; void tire; });
+client.vehicleCatalog({ maker: '테슬라', limit: 10000 }).then(r => { const total: number = r.data.총건수; const tire: string | undefined = r.data.차량목록[0]?.전륜타이어; const id: number | undefined = r.data.차량목록[0]?.제원관리번호; void total; void tire; void id; });
+client.vehicleCatalog({ specId: 13564 }).then(r => { const one: string | undefined = r.data.차량?.차명; void one; });
 client.vehicleCatalog();
 // @ts-expect-error tireOnly 는 boolean 이다.
 client.vehicleCatalog({ tireOnly: 'yes' });

@@ -1,3 +1,10 @@
+## 6.23.1 (2026-11-23)
+
+- 차량목록 조회 `vehicleCatalog(options)` 에 `specId`(제원관리번호, 1 이상 정수)를 추가했습니다. 넣으면 그 한 건만 `data.차량`으로 돌려주며 다른 조건은 무시합니다. 없는 번호는 `data.안내`로 알려줍니다. 무료입니다.
+- 목록의 각 행에 `제원관리번호`가 담기는 것을 타입 `VehicleCatalogItem`에 반영했습니다. `specId`를 넣은 호출은 새 타입 `VehicleCatalogSpecData`(`차량`·`안내`)로, 그 밖의 호출은 기존 `VehicleCatalogData` 그대로 추론됩니다.
+- Added `specId` (spec ID, integer ≥ 1) to `vehicleCatalog(options)`. When set, only that vehicle is returned in `data.차량` and other filters are ignored; an unknown ID returns `data.안내`. Free of charge.
+- `VehicleCatalogItem` now includes `제원관리번호`. Calls with `specId` are typed as the new `VehicleCatalogSpecData` (`차량`, `안내`); other calls keep `VehicleCatalogData` unchanged.
+
 ## 6.23.0 (2026-11-23)
 
 - 문서 JSON에 글 속 이미지 노드 `inlineImage`를 추가했습니다. 문단·표 칸 안의 글자 사이에 서명·도장·이미지를 넣으며, `layout`으로 글자처럼 취급(`inline`) 또는 글자 위에 표시(`front`)를 고릅니다. PNG·JPEG 2MB 이하, 문서당 12개까지입니다. 기존 노드와 `image`는 그대로입니다.

@@ -1191,6 +1191,7 @@ class ApickClient {
 
 	// 차량목록 조회(무료). 제조사만 넣으면 그 제조사의 전체 목록, 모두 비우면 전체 차량 목록을 돌려준다.
 	// 한 번에 최대 10,000건이고 응답의 다음오프셋을 offset 으로 넘겨 이어 조회한다.
+	// specId(제원관리번호)를 넣으면 그 한 건만 data.차량 으로 돌려준다(다른 조건은 무시, 없으면 data.안내).
 	// 포인트가 차감되지 않는다. 입력 오류·서버 오류는 data.error 로 응답한다.
 	vehicleCatalog(options) {
 		const config = options || {};
@@ -1201,7 +1202,8 @@ class ApickClient {
 			trim: optionalText('trim', config.trim, 60),
 			tireOnly: optionalBoolean('tireOnly', config.tireOnly),
 			limit: optionalRangeInteger('limit', config.limit, 1, 10000),
-			offset: optionalRangeInteger('offset', config.offset, 0, Number.MAX_SAFE_INTEGER)
+			offset: optionalRangeInteger('offset', config.offset, 0, Number.MAX_SAFE_INTEGER),
+			specId: optionalRangeInteger('specId', config.specId, 1, Number.MAX_SAFE_INTEGER)
 		});
 	}
 

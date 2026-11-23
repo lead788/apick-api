@@ -724,13 +724,16 @@ await client.vehicleModelInfo({ model: "파나메라 gts 4인승 19년식" });
 
 ### 차량목록 조회 / Vehicle catalog
 
-제조사만 넣으면 그 제조사의 전체 차량 목록(차명·연식·등급, 타이어 규격이 있으면 전륜·후륜 타이어와 휠 크기)을 받습니다. 모두 비우면 전체 차량 목록입니다. 한 번에 최대 10,000건이며 응답의 `다음오프셋`을 `offset`으로 넘겨 이어 받습니다. 차명이 정확히 일치하지 않으면 그 글자가 들어간 차명으로 찾고 `안내`에 적습니다. 무료이며 포인트가 차감되지 않습니다. 입력 오류(알 수 없는 브랜드 포함)·서버 오류는 `data.error`로 응답합니다.
+제조사만 넣으면 그 제조사의 전체 차량 목록(차명·연식·등급, 타이어 규격이 있으면 전륜·후륜 타이어와 휠 크기)을 받습니다. 모두 비우면 전체 차량 목록입니다. 한 번에 최대 10,000건이며 응답의 `다음오프셋`을 `offset`으로 넘겨 이어 받습니다. 차명이 정확히 일치하지 않으면 그 글자가 들어간 차명으로 찾고 `안내`에 적습니다. 각 행의 `제원관리번호`를 `specId`로 넣으면 그 한 건만 `차량`으로 받습니다(다른 조건은 무시, 없는 번호면 `안내`). 무료이며 포인트가 차감되지 않습니다. 입력 오류(알 수 없는 브랜드 포함)·서버 오류는 `data.error`로 응답합니다.
 
-Pass only `maker` to get that brand's full list (model, year, trim, and front/rear tire and wheel size when known); leave everything empty for every vehicle. Up to 10,000 rows per call; pass the response's `다음오프셋` as `offset` to continue. If no model name matches exactly, models containing the text are returned with a `안내` notice. Free of charge: no points are deducted. Input errors (including unknown brands) and server errors are returned in `data.error`.
+Pass only `maker` to get that brand's full list (model, year, trim, and front/rear tire and wheel size when known); leave everything empty for every vehicle. Up to 10,000 rows per call; pass the response's `다음오프셋` as `offset` to continue. If no model name matches exactly, models containing the text are returned with a `안내` notice. Pass a row's `제원관리번호` as `specId` to get only that vehicle in `차량` (other filters are ignored; an unknown ID returns a `안내` notice). Free of charge: no points are deducted. Input errors (including unknown brands) and server errors are returned in `data.error`.
 
 ```js
 const { data } = await client.vehicleCatalog({ maker: "테슬라", limit: 10000 });
 console.log(data.총건수, data.차량목록[0]);
+
+const one = await client.vehicleCatalog({ specId: data.차량목록[0].제원관리번호 });
+console.log(one.data.차량);
 ```
 
 ### 차량정보 안내 / Vehicle information notices

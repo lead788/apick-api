@@ -1608,9 +1608,13 @@ export interface VehicleCatalogOptions {
 	limit?: number;
 	/** 응답의 다음오프셋을 넣어 이어 조회. Pass the previous response's 다음오프셋. */
 	offset?: number;
+	/** 제원관리번호. 넣으면 그 한 건만 data.차량 으로 돌려준다(다른 조건 무시). Spec ID from a list row; returns only that vehicle in data.차량. */
+	specId?: number;
 }
 
 export interface VehicleCatalogItem {
+	/** 제원관리번호. specId 로 다시 넣으면 이 한 건만 조회한다. */
+	제원관리번호: number;
 	제조사: string;
 	차명: string;
 	연식: number | null;
@@ -1626,6 +1630,12 @@ export interface VehicleCatalogData {
 	차량목록: VehicleCatalogItem[];
 	총건수: number;
 	다음오프셋?: number;
+	안내?: string;
+}
+
+/** specId(제원관리번호) 조회 결과. 없는 번호면 차량이 빠지고 안내가 온다. Result of a specId lookup. */
+export interface VehicleCatalogSpecData {
+	차량?: VehicleCatalogItem;
 	안내?: string;
 }
 
@@ -1647,6 +1657,7 @@ export class ApickClient {
 	/** Look up Korean-market vehicle specifications. Values use fixed standard notation (fuel, drive type, transmission, body type, efficiency grade; multiple values joined with `+`). */
 	vehicleModelInfo(options?: VehicleModelInfoOptions): Promise<ApickResult>;
 	/** 차량목록 조회(무료, 최대 10,000건). Flat vehicle list by brand/model/year/trim; free of charge, no points are deducted. */
+	vehicleCatalog(options: VehicleCatalogOptions & { specId: number }): Promise<ApickResult<VehicleCatalogSpecData>>;
 	vehicleCatalog(options?: VehicleCatalogOptions): Promise<ApickResult<VehicleCatalogData>>;
 	ocr(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
 	/** Read a Korean business registration or e-commerce registration certificate field by field. No charge when nothing is read. */

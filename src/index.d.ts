@@ -1242,6 +1242,8 @@ export interface VehicleRegisterContent {
 }
 export interface VehicleRegisterDocResult {
 	문서내용?: VehicleRegisterContent;
+	/** 등록원부의 차명·연식으로 찾은 차량 제원(배기량·연료·치수·타이어·휠 등). 항상 함께 오며 추가 단가가 없다. 해당 차종 제원이 없으면 빠진다. Vehicle specifications always returned with the register at no extra charge; omitted when the model is not found. */
+	제원?: Record<string, unknown>;
 	발급문서?: string;
 	문서확인번호?: string;
 	발급일자?: string;
@@ -1623,7 +1625,7 @@ export class ApickClient {
 	searchAddress(query: string, options?: { page?: number }): Promise<ApickResult>;
 	/** Look up Korean-market vehicle specifications. Values use fixed standard notation (fuel, drive type, transmission, body type, efficiency grade; multiple values joined with `+`). */
 	vehicleModelInfo(options?: VehicleModelInfoOptions): Promise<ApickResult>;
-	/** 차량목록 조회(건당 10P, 최대 10,000건). Flat vehicle list by brand/model/year/trim; 10 points per call, charged even when empty (input and server errors are free). */
+	/** 차량목록 조회(무료, 최대 10,000건). Flat vehicle list by brand/model/year/trim; free of charge, no points are deducted. */
 	vehicleCatalog(options?: VehicleCatalogOptions): Promise<ApickResult<VehicleCatalogData>>;
 	ocr(image: string | BinaryInput | ArrayBuffer | ArrayBufferView, options?: OcrOptions): Promise<ApickResult>;
 	/** Read a Korean business registration or e-commerce registration certificate field by field. No charge when nothing is read. */

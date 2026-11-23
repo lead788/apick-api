@@ -2,7 +2,7 @@
 
 ### Vehicle register
 
-Call `requestVehicleRegisterDoc({ name, birthDate, phone, authProvider, carNumber })` for an owner’s vehicle. After approval, poll `getVehicleRegisterDoc(transactionId)` until the result is available. Read `data.result.vehicleRegisterDoc.발급문서` for the base64 PDF and `문서내용` in the same section for its text (`본문`) and printed vehicle fields. The optional `차대번호` contains a full 17-character VIN only when readable. If extraction fails or the PDF has no text, the original PDF is still returned.
+Call `requestVehicleRegisterDoc({ name, birthDate, phone, authProvider, carNumber })` for an owner’s vehicle. After approval, poll `getVehicleRegisterDoc(transactionId)` until the result is available. Read `data.result.vehicleRegisterDoc.발급문서` for the base64 PDF and `문서내용` in the same section for its text (`본문`) and printed vehicle fields. The optional `차대번호` contains a full 17-character VIN only when readable. If extraction fails or the PDF has no text, the original PDF is still returned. The same section always includes `제원` (vehicle specifications such as displacement, fuel, dimensions, tires and wheels) found from the model name and year, at no extra charge; only `제원` is omitted when the model is not found.
 
 ## Request and response formats
 

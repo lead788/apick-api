@@ -1,3 +1,10 @@
+## 6.22.1 (2026-11-23)
+
+- 차량목록 조회 `vehicleCatalog(options)` 가 무료가 되었습니다. 포인트가 차감되지 않으며 입력 오류·서버 오류는 `data.error`로 응답합니다. 호출 방식과 응답 형식은 그대로입니다.
+- 자동차등록원부 결과에 차량 제원(`vehicleRegisterDoc.제원`, 배기량·연료·치수·타이어·휠 등)이 항상 함께 담기며 추가 요금이 없습니다. 해당 차종 제원이 없으면 `제원`만 빠집니다. 타입 `VehicleRegisterDocResult` 에 선택 항목 `제원`을 추가했습니다.
+- `vehicleCatalog(options)` is now free of charge; no points are deducted. Calling convention and response shape are unchanged. Input and server errors are returned in `data.error`.
+- The vehicle register result now always includes the vehicle specifications (`vehicleRegisterDoc.제원`: displacement, fuel, dimensions, tires, wheels) at no extra charge; only `제원` is omitted when the model is not found. Added the optional `제원` field to `VehicleRegisterDocResult`.
+
 ## 6.22.0 (2026-11-23)
 
 - 차량목록 조회 메서드 `vehicleCatalog(options)` 를 추가했습니다(`POST /rest/vehicle_catalog`, 건당 10P). 제조사만 넣으면 그 제조사의 전체 목록을, 모두 비우면 전체 차량 목록을 돌려줍니다. 한 번에 최대 10,000건이며 `다음오프셋`으로 이어 조회합니다. 정상 조회는 0건이어도 과금되고, 입력 오류·서버 오류는 과금되지 않습니다. `limit`(1~10,000)·`tireOnly`(boolean)는 호출 전에 `RangeError`·`TypeError`로 검사합니다.

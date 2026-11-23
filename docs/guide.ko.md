@@ -2,7 +2,7 @@
 
 ### 자동차등록원부 등본
 
-소유자 본인의 등본은 `requestVehicleRegisterDoc({ name, birthDate, phone, authProvider, carNumber })`로 접수합니다. 간편인증 승인 후 `getVehicleRegisterDoc(transactionId)`의 결과가 준비되면 `data.result.vehicleRegisterDoc`에서 `발급문서`(base64 PDF)와 `문서내용`을 함께 읽습니다. `문서내용.본문`은 등본 텍스트이고, `문서내용.차대번호`는 17자리를 확인한 때에만 제공됩니다. 텍스트가 없거나 추출이 실패해도 원본 PDF는 제공됩니다.
+소유자 본인의 등본은 `requestVehicleRegisterDoc({ name, birthDate, phone, authProvider, carNumber })`로 접수합니다. 간편인증 승인 후 `getVehicleRegisterDoc(transactionId)`의 결과가 준비되면 `data.result.vehicleRegisterDoc`에서 `발급문서`(base64 PDF)와 `문서내용`을 함께 읽습니다. `문서내용.본문`은 등본 텍스트이고, `문서내용.차대번호`는 17자리를 확인한 때에만 제공됩니다. 텍스트가 없거나 추출이 실패해도 원본 PDF는 제공됩니다. 같은 섹션의 `제원`에는 차명·연식으로 찾은 차량 제원(배기량·연료·치수·타이어·휠 등)이 항상 함께 담기며 추가 요금이 없습니다. 해당 차종 제원이 없으면 `제원`만 빠집니다.
 
 ## 요청과 응답 형식
 

@@ -1534,6 +1534,65 @@ export interface TtsQualityData {
 	candidates?: Array<{ candidate_id: string; utterance_id: string; status: string; attempt: number; audio_available?: boolean }>;
 }
 
+/**
+ * 서식 제공 상태. '서비스' 는 만들 수 있는 서식, '준비중' 은 실제로 통용되는 양식을 확인하는 중이라 아직 만들 수 없는 서식이다.
+ * 준비중 서식으로 formDocument 를 부르면 ApickApiError(serviceCode 'FORM_PREPARING', 무과금)가 나고, formBundle 은 그 서식을 _index.txt 에 실패로 적는다.
+ * Form availability: '서비스' (in service) can be generated; '준비중' (preparing) cannot be generated yet; formDocument rejects it with serviceCode 'FORM_PREPARING' at no charge.
+ */
+export type FormStatus = '서비스' | '준비중';
+
+/** formList 의 서식 1건 / One form in formList */
+export interface FormListItem {
+	readonly key: string;
+	readonly title: string;
+	readonly category: string;
+	readonly group?: string;
+	readonly agency?: string;
+	readonly basis?: string;
+	readonly purpose: string;
+	readonly is_new: boolean;
+	/** 제공 상태 / availability status */
+	readonly status: FormStatus;
+	/** false 면 준비중 — 문서를 만들 수 없다 / false while preparing */
+	readonly available: boolean;
+	readonly field_count: number;
+	readonly required_count: number;
+}
+
+/** formList 결과(data.result) / formList result */
+export interface FormListResult {
+	readonly ok: boolean;
+	readonly count: number;
+	readonly categories: readonly string[];
+	readonly forms: readonly FormListItem[];
+}
+
+/** formFields 의 입력 항목 1건 / One input field in formFields */
+export interface FormFieldDefinition {
+	readonly key: string;
+	readonly label: string;
+	readonly type: string;
+	readonly required: boolean;
+	readonly hint?: string;
+	readonly example?: string;
+	readonly options?: readonly string[] | null;
+	readonly aliases?: readonly string[];
+}
+
+/** formFields 결과(data.result) / formFields result */
+export interface FormFieldsResult {
+	readonly ok: boolean;
+	readonly key: string;
+	readonly title: string;
+	readonly purpose: string;
+	readonly basis?: string;
+	readonly agency?: string;
+	readonly status: FormStatus;
+	readonly available: boolean;
+	readonly fields: readonly FormFieldDefinition[];
+	readonly formats?: readonly string[];
+}
+
 export class ApickApiError extends Error {
 	readonly status: number;
 	readonly code: string;
@@ -1794,10 +1853,10 @@ export class ApickClient {
 	formDocument(form: string, options?: { text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }): Promise<ApickBinaryResult>;
 	/** 서식 묶음 — 최대 10건을 한 번에 만들어 ZIP 하나로 받는다(성공한 건만 합계 과금). */
 	formBundle(forms: Array<{ form: string; text?: string; data?: Record<string, unknown>; format?: 'pdf' | 'docx' | 'hwpx' | 'rtf' | 'html' | 'md' | 'txt' | 'json' | 'xlsx'; signature_image?: string; stamp_image?: string }>): Promise<ApickBinaryResult>;
-	/** 무료 — 만들 수 있는 서식 목록(키·이름·분류·필드 수)을 돌려준다. */
-	formList(options?: { category?: string; keyword?: string }): Promise<ApickResult>;
-	/** 무료 — 서식 1종의 입력 항목(키·라벨·형식·필수 여부·예시)을 돌려준다. */
-	formFields(form: string): Promise<ApickResult>;
+	/** 무료 — 만들 수 있는 서식 목록(키·이름·분류·필드 수·제공 상태)을 돌려준다. available 이 false 인 준비중 서식은 formDocument 가 FORM_PREPARING 으로 거절한다(무과금, formBundle 은 _index.txt 에 실패로 적는다). */
+	formList(options?: { category?: string; keyword?: string }): Promise<ApickResult<{ result: FormListResult }>>;
+	/** 무료 — 서식 1종의 입력 항목(키·라벨·형식·필수 여부·예시)과 제공 상태를 돌려준다. */
+	formFields(form: string): Promise<ApickResult<{ result: FormFieldsResult }>>;
 	/** 무료 — 문서를 만들지 않고 인식 결과와 비어 있는 필수 항목만 돌려준다. */
 	formPreview(form: string, options?: { text?: string; data?: Record<string, unknown> }): Promise<ApickResult>;
 	/** AI 채우기 — 상황 설명(최대 3,000자)에서 서식 항목 값만 골라 돌려준다. data 로 준 값은 바꾸지 않고, 글에 없는 사실은 빈칸으로 둔다. */

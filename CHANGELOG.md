@@ -1,3 +1,12 @@
+## 6.24.0 (2026-11-23)
+
+- 서식 목록 `formList`·서식 필드 `formFields` 결과에 제공 상태 `status`(`'서비스'`·`'준비중'`)와 `available`(boolean)을 반영했습니다. 실제로 통용되는 양식을 확인하는 중인 서식은 `available: false`입니다.
+- 준비중 서식으로 `formDocument`를 부르면 `ApickApiError`(`serviceCode` `FORM_PREPARING`)가 나며 포인트는 차감되지 않습니다. `formBundle`은 그 서식을 ZIP의 `_index.txt`에 실패로 적고 나머지를 만듭니다.
+- 타입 `FormStatus`·`FormListItem`·`FormListResult`·`FormFieldDefinition`·`FormFieldsResult`를 추가하고 `formList`·`formFields`의 결과 타입을 지정했습니다. 호출 방식은 그대로입니다.
+- `formList` and `formFields` results now carry `status` (`'서비스'` in service, `'준비중'` preparing) and `available` (boolean). Forms whose commonly used layout is still being confirmed have `available: false`.
+- Calling `formDocument` with a form in preparation throws `ApickApiError` with `serviceCode` `FORM_PREPARING`; no points are deducted. `formBundle` lists such forms as failures in the ZIP's `_index.txt` and builds the rest.
+- Added `FormStatus`, `FormListItem`, `FormListResult`, `FormFieldDefinition` and `FormFieldsResult` types and typed the `formList`/`formFields` results. Calling conventions are unchanged.
+
 ## 6.23.1 (2026-11-23)
 
 - 차량목록 조회 `vehicleCatalog(options)` 에 `specId`(제원관리번호, 1 이상 정수)를 추가했습니다. 넣으면 그 한 건만 `data.차량`으로 돌려주며 다른 조건은 무시합니다. 없는 번호는 `data.안내`로 알려줍니다. 무료입니다.

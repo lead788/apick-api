@@ -274,3 +274,11 @@ client.vehicleCatalog({ specId: 13564 }).then(r => { const one: string | undefin
 client.vehicleCatalog();
 // @ts-expect-error tireOnly 는 boolean 이다.
 client.vehicleCatalog({ tireOnly: 'yes' });
+
+// formList·formFields 제공 상태(준비중 서식은 available false)
+import type { FormListItem, FormStatus } from '../src/index.js';
+client.formList({ keyword: '재직' }).then(r => { const forms: readonly FormListItem[] = r.data.result.forms; const usable = forms.filter(f => f.available); const status: FormStatus | undefined = forms[0]?.status; void usable; void status; });
+client.formFields('hr_employment_certificate').then(r => { const ok: boolean = r.data.result.available; const label: string | undefined = r.data.result.fields[0]?.label; void ok; void label; });
+// @ts-expect-error status 는 '서비스' | '준비중' 이다.
+const badStatus: FormStatus = '중단';
+void badStatus;

@@ -401,6 +401,14 @@ Methods: `documentCreate`, `documentList`, `documentGet`, `documentUpdate`, `doc
 
 Supply a `request_id` for create, update, AI and download; reuse it when retrying the same request. Updates require the last read `version`. Downloads require the quote's `version` and `content_hash`. On conflicts, reload or save a separate copy. AI results are proposals and are not automatically saved. Document `content` uses a JSON tree with a `doc` root, e.g. `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Hello'}]}]}`. To place a signature, stamp or image between characters, put an `{type:'inlineImage',attrs:{src:'data:image/png;base64,...',kind:'stamp',layout:'front',width:64}}` node inside a paragraph. `kind` is `signature`, `stamp` or `image`; `layout` is `inline` (treated like a character) or `front` (drawn over the text). PNG or JPEG up to 2MB, up to 12 per document.
 
+### Form generation — forms in preparation
+
+Each form in `formList` and `formFields` results carries `status` (`'서비스'` in service, `'준비중'` preparing) and `available` (boolean). Forms whose commonly used layout is still being confirmed have `available: false`; calling `formDocument` with one throws `ApickApiError` with `serviceCode` `FORM_PREPARING`, and no points are deducted. `formBundle` lists those forms as failures in the ZIP's `_index.txt` without charging for them and builds the rest. Pick forms with `available: true` before generating.
+
+```js
+const list = await client.formList({ keyword: '재직' });
+const usable = list.data.result.forms.filter((form) => form.available);
+```
 
 ## Core document workflows and verification
 

@@ -134,8 +134,8 @@ Leave the allowed-IP list blank for unrestricted access. To restrict access, reg
 | `jsonToExcel(data, options)` | JSON→Excel | Binary |
 | `formDocument(form, options)` | 서식 자동작성(계약서·증명서·신고서 200종, 서명·도장 이미지, PDF·DOCX·HWPX·RTF·HTML·MD·TXT·JSON·XLSX) / Korean form generation | Binary |
 | `formBundle(forms)` | 서식 묶음 ZIP(최대 10건, 성공한 건만 과금) / Multi-form ZIP bundle | Binary |
-| `formList(options)` | 서식 목록(무료) / Form catalog (free) | JSON |
-| `formFields(form)` | 서식 필드 정의(무료) / Form field guide (free) | JSON |
+| `formList(options)` | 서식 목록·제공 상태(무료, `available: false`는 준비중) / Form catalog with availability (free) | JSON |
+| `formFields(form)` | 서식 필드 정의·제공 상태(무료) / Form field guide with availability (free) | JSON |
 | `formPreview(form, options)` | 서식 미리보기(무료) / Form preview (free) | JSON |
 | `formAiFill(form, text, options)` | 서식 AI 채우기(상황 설명 → 항목 값, 글에 없는 사실은 빈칸, 20P) / AI form filling | JSON |
 | `summarize(text)` | 텍스트 요약 / Text summarization | JSON |

@@ -1337,3 +1337,29 @@ test('국민연금 증명서 발급 9종은 공통·상품별 발급 입력을 �
 	await client.requestNpsRehabilitationCert({ ...user, lang: 'E', year: '2025' });
 	assert.deepEqual(requests.at(-1).body, user);
 });
+
+// 실서버 응답 모양(2026-11-23): HTTP 424, data.error_code FORM_PREPARING, api.cost 0
+test('formDocument surfaces FORM_PREPARING for forms in preparation without charging', async () => {
+	const client = new ApickClient({ apiKey: 'key', baseUrl: 'https://api.example.test', fetch: async () => jsonResponse({
+		data: { error: '준비 중인 서식입니다.', error_code: 'FORM_PREPARING', success: 0 },
+		api: { cost: 0, success: true, ms: 4 },
+	}, { status: 424 }) });
+	await assert.rejects(client.formDocument('civil_payment_note', { format: 'html' }), (error) => {
+		assert.ok(error instanceof ApickApiError);
+		assert.equal(error.serviceCode, 'FORM_PREPARING');
+		assert.equal(error.status, 424);
+		return true;
+	});
+});
+
+test('formList keeps status and available for each form', async () => {
+	const client = new ApickClient({ apiKey: 'key', baseUrl: 'https://api.example.test', fetch: async () => jsonResponse({
+		result: { ok: true, count: 2, categories: ['노무'], forms: [
+			{ key: 'hr_employment_certificate', title: '재직증명서', category: '노무', purpose: '', is_new: false, status: '서비스', available: true, field_count: 18, required_count: 5 },
+			{ key: 'civil_payment_note', title: '지급각서', category: '민사', purpose: '', is_new: false, status: '준비중', available: false, field_count: 9, required_count: 3 },
+		] },
+	}) });
+	const list = await client.formList({ keyword: '재직' });
+	assert.deepEqual(list.data.result.forms.filter((form) => form.available).map((form) => form.key), ['hr_employment_certificate']);
+	assert.equal(list.data.result.forms[1].status, '준비중');
+});

@@ -412,6 +412,14 @@ TTS: [Gemini·ChatGPT·정규화 / engines and normalization](tts.md). `createOp
 
 `content`는 `{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'본문'}]}]}` 구조입니다. 표·목록·이미지·명시적 페이지 나누기도 지원합니다. 서명·도장·이미지를 글자 사이에 넣으려면 문단 안에 `{type:'inlineImage',attrs:{src:'data:image/png;base64,...',kind:'stamp',layout:'front',width:64}}` 노드를 넣습니다. `kind`는 `signature`·`stamp`·`image`, `layout`은 `inline`(글자처럼 취급)·`front`(글자 위에 표시)이며 PNG·JPEG 2MB 이하, 문서당 12개까지입니다. 자세한 제한과 요청 필드는 [문서 개발가이드](https://apick.app/dev_guide/document_create)를 확인하세요.
 
+### 서식 자동작성 — 준비중 서식
+
+`formList`·`formFields` 결과의 서식마다 `status`(`'서비스'`·`'준비중'`)와 `available`(boolean)이 있습니다. 실제로 통용되는 양식을 확인하는 중인 서식은 `available: false`이며, 이 서식으로 `formDocument`를 부르면 `ApickApiError`(`serviceCode` `FORM_PREPARING`)가 나고 포인트는 차감되지 않습니다. `formBundle`은 준비중 서식을 ZIP의 `_index.txt`에 실패로 적고 과금하지 않으며, 나머지 서식은 그대로 만듭니다. 문서를 만들기 전에 `available`이 `true`인 서식을 고르세요.
+
+```js
+const list = await client.formList({ keyword: '재직' });
+const usable = list.data.result.forms.filter((form) => form.available);
+```
 
 ## 핵심 문서 작성·검증
 

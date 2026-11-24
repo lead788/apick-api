@@ -1,3 +1,8 @@
+## 6.24.1 (2026-11-24)
+
+- 등기 열람·발급(`createRegistryRealestateJob`·`createRegistryCorporateJob`) 요금 안내를 현재 값으로 맞췄습니다: 열람 1300P · 발급 1700P. 2026-11-23 요금 변경 안내 문구는 지웠습니다. 호출 방식과 코드는 그대로입니다.
+- Updated the registry view/issue pricing in the README to the current rates: 1300P for view and 1700P for issue. The notice about the 2026-11-23 change was removed. Code and calling conventions are unchanged.
+
 ## 6.24.0 (2026-11-23)
 
 - 서식 목록 `formList`·서식 필드 `formFields` 결과에 제공 상태 `status`(`'서비스'`·`'준비중'`)와 `available`(boolean)을 반영했습니다. 실제로 통용되는 양식을 확인하는 중인 서식은 `available: false`입니다.
